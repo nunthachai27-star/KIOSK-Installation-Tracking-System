@@ -7,7 +7,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const [job, hospitals, users] = await Promise.all([
     prisma.job.findUnique({ where: { id }, include: { hospital: true } }),
     prisma.hospital.findMany({ orderBy: { name: 'asc' } }),
-    prisma.user.findMany({ orderBy: { name: 'asc' } }),
+    prisma.user.findMany({ where: { active: true }, select: { id: true, name: true, role: true }, orderBy: { name: 'asc' } }),
   ])
 
   if (!job) notFound()
