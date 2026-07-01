@@ -34,13 +34,33 @@
 **Interfaces:**
 - Produces: `formatBaht(n: number | string): string` (เช่น `1850000` → `"1,850,000"`), `formatQty(n: number): string`
 
-- [ ] **Step 1: Scaffold Next.js app**
+- [ ] **Step 1: Scaffold Next.js app (into temp, then merge — root is non-empty)**
 
-Run:
+The project root already contains `docs/`, `uploads/`, `*.html`, `*.txt`, `support.js`, `.git`,
+so `create-next-app` will refuse to scaffold in place. Scaffold into a temp dir with **no install**,
+then move the generated files into the root without overwriting existing files.
+
+Run (Git Bash):
 ```bash
-npx create-next-app@latest . --typescript --tailwind --app --src-dir --no-import-alias --use-npm --eslint
+TMP="$(mktemp -d)"
+npx create-next-app@latest "$TMP/app" --typescript --tailwind --app --src-dir \
+  --import-alias "@/*" --use-npm --eslint --skip-install --yes --no-turbopack
+# move generated files into project root, keep existing files
+shopt -s dotglob
+for f in "$TMP/app"/*; do
+  base="$(basename "$f")"
+  case "$base" in
+    .git|.gitignore|README.md) ;;                 # keep our git + gitignore; merge README later
+    *) cp -r "$f" "./$base" ;;
+  esac
+done
+# merge next.js gitignore entries we may be missing (node_modules/.next already covered)
+rm -rf "$TMP"
+npm install
 ```
-Expected: โครง Next.js ถูกสร้างใน current dir (ตอบ Yes ให้ทับไฟล์ที่มีอยู่ถ้าถาม — ไฟล์ spec/mockup อยู่คนละที่ ไม่ถูกแตะ)
+Expected: `src/app/`, `package.json`, `next.config.ts`, `tsconfig.json` (with `@/*` alias) exist in root;
+existing `docs/`, `uploads/`, `.html`, `.txt` untouched; `node_modules/` installed.
+> Note: `tsconfig.json` must contain `"paths": { "@/*": ["./src/*"] }` — verify after scaffold.
 
 - [ ] **Step 2: Install dev/test deps**
 
