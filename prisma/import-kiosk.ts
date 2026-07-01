@@ -197,7 +197,7 @@ function parseWorkbook(path: string): JobDraft[] {
         current = {
           sheet,
           jobCode: `${sheet.replace(/\s+/g, '')}-${seq}`,
-          hospitalName: hosp.replace(/\*+.*$/s, '').trim(),
+          hospitalName: hosp.replace(/\*+[\s\S]*$/, '').trim(),
           province: clean(cell(row, idx.province)) ?? '',
           productType: isLot ? 'Kiosk (BMS)' : sheet.trim(),
           productModel: accessory,
