@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { SerialQcForm } from '@/components/SerialQcForm'
+import { JobStepNav } from '@/components/JobStepNav'
 
 export default async function JobQcPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,5 +12,10 @@ export default async function JobQcPage({ params }: { params: Promise<{ id: stri
 
   if (!job) notFound()
 
-  return <SerialQcForm jobId={job.id} serials={job.serials} qc={job.qc} />
+  return (
+    <>
+      <JobStepNav jobId={job.id} active={2} />
+      <SerialQcForm jobId={job.id} serials={job.serials} qc={job.qc} />
+    </>
+  )
 }
