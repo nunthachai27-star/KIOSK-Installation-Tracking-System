@@ -122,7 +122,7 @@ function matchColumns(headers: string[]): Idx {
 
 const cell = (row: unknown[], i: number): unknown => (i >= 0 ? row[i] : undefined)
 
-function statusFor(j: JobDraft): JobStatus {
+export function statusFor(j: JobDraft): JobStatus {
   if (j.handoverRaw) return 'CLOSED'
   if (j.checklistRaw) return 'HANDED_OVER'
   if (j.remoteDate || j.arrivedDate) return 'INSTALLING'
@@ -181,7 +181,7 @@ function serialsFromRow(row: unknown[], idx: Idx): SerialDraft[] {
   return out
 }
 
-function parseWorkbook(path: string): JobDraft[] {
+export function parseWorkbook(path: string): JobDraft[] {
   const wb = xlsx.readFile(path, { cellDates: true })
   const jobs: JobDraft[] = []
   for (const sheet of wb.SheetNames) {
@@ -372,4 +372,7 @@ async function main() {
   await prisma.$disconnect()
 }
 
-main().catch((e) => { console.error(e); process.exit(1) })
+// Only auto-run when this file is the entry script (not when imported).
+if (process.argv[1]?.includes('import-kiosk')) {
+  main().catch((e) => { console.error(e); process.exit(1) })
+}
