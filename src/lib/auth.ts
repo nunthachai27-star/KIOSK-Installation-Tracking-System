@@ -23,7 +23,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     session: ({ session, token }) => {
-      if (session.user) (session.user as { role?: Role }).role = token.role as Role
+      if (session.user) {
+        const u = session.user as { id?: string; role?: Role }
+        // token.sub holds the user id set by the Credentials `authorize` return.
+        if (token.sub) u.id = token.sub
+        u.role = token.role as Role
+      }
       return session
     },
   },
