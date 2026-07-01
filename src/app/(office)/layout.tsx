@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { SignOutButton } from '@/components/SignOutButton'
+import { OfficeNav } from '@/components/OfficeNav'
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -16,11 +17,7 @@ export default async function OfficeLayout({ children }: { children: React.React
               <span className="w-8 h-8 rounded-lg bg-[#2F6BED] text-white grid place-items-center font-bold text-sm">K</span>
               <span className="font-bold text-base">KIOSK</span>
             </div>
-            <nav className="flex items-center gap-1">
-              <Link href="/" className="px-3.5 py-1.5 rounded-full text-sm font-semibold bg-[#EAF1FF] text-[#2F6BED]">
-                งานทั้งหมด
-              </Link>
-            </nav>
+            <OfficeNav />
           </div>
           <div className="flex items-center gap-4">
             <Link
