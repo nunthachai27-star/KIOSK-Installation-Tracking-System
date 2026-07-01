@@ -70,11 +70,11 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
     return (
       <div className="px-5 pt-10 text-center">
         <div className="text-5xl mb-3">🎉</div>
-        <div className="text-lg font-bold text-[#12233B]">บันทึกงานสำเร็จ</div>
-        <p className="mt-1 text-sm text-[#5A6B82]">ส่งข้อมูลให้ธุรการเรียบร้อยแล้ว</p>
+        <div className="text-lg font-bold text-[#2E3252]">บันทึกงานสำเร็จ</div>
+        <p className="mt-1 text-sm text-[#6E7191]">ส่งข้อมูลให้ธุรการเรียบร้อยแล้ว</p>
         <button
           onClick={() => router.push('/m')}
-          className="mt-6 w-full rounded-xl bg-[#2F6BED] text-white font-semibold py-3.5"
+          className="mt-6 w-full rounded-xl bg-[#4C4FE6] text-white font-semibold py-3.5"
         >
           กลับหน้างานวันนี้
         </button>
@@ -84,7 +84,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
 
   return (
     <div className="px-5 pt-6 pb-6">
-      <h1 className="text-lg font-bold text-[#12233B] mb-4">บันทึกงาน</h1>
+      <h1 className="text-lg font-bold text-[#2E3252] mb-4">บันทึกงาน</h1>
 
       <div className="flex flex-col gap-3">
         {STATUS_OPTIONS.map((opt) => {
@@ -96,12 +96,12 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
               onClick={() => setSelected(opt.status)}
               className="flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-colors"
               style={{
-                borderColor: active ? opt.color : '#E7EDF4',
+                borderColor: active ? opt.color : '#DEDDEC',
                 background: active ? opt.bg : '#FFFFFF',
               }}
             >
               <span className="text-2xl">{opt.icon}</span>
-              <span className="text-[15px] font-semibold" style={{ color: active ? opt.color : '#12233B' }}>
+              <span className="text-[15px] font-semibold" style={{ color: active ? opt.color : '#2E3252' }}>
                 {opt.label}
               </span>
             </button>
@@ -110,7 +110,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
       </div>
 
       <div className="mt-6">
-        <label className="block text-sm font-semibold text-[#12233B] mb-2">ถ่ายรูปหน้างาน</label>
+        <label className="block text-sm font-semibold text-[#2E3252] mb-2">ถ่ายรูปหน้างาน</label>
         <input
           ref={fileInputRef}
           type="file"
@@ -122,7 +122,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
         />
         <label
           htmlFor="photo-input"
-          className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#C7D3E3] py-6 text-sm font-semibold text-[#5A6B82] cursor-pointer"
+          className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#C9C9DD] py-6 text-sm font-semibold text-[#6E7191] cursor-pointer"
         >
           <span className="text-xl">📷</span>
           {photoName || 'แตะเพื่อถ่ายรูป / เลือกรูป'}
@@ -130,13 +130,13 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
       </div>
 
       <div className="mt-6">
-        <label className="block text-sm font-semibold text-[#12233B] mb-2">หมายเหตุ</label>
+        <label className="block text-sm font-semibold text-[#2E3252] mb-2">หมายเหตุ</label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={4}
           placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
-          className="w-full rounded-xl border border-[#E7EDF4] px-4 py-3 text-sm text-[#12233B] focus:outline-none focus:border-[#2F6BED]"
+          className="w-full rounded-xl border border-[#DEDDEC] px-4 py-3 text-sm text-[#2E3252] focus:outline-none focus:border-[#4C4FE6]"
         />
       </div>
 
@@ -146,7 +146,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
         type="button"
         onClick={handleSubmit}
         disabled={saving}
-        className="mt-6 w-full rounded-xl bg-[#2F6BED] text-white font-bold py-4 text-[15px] disabled:opacity-60"
+        className="mt-6 w-full rounded-xl bg-[#4C4FE6] text-white font-bold py-4 text-[15px] disabled:opacity-60"
       >
         {saving ? 'กำลังบันทึก...' : 'บันทึก & ส่งให้ธุรการ'}
       </button>

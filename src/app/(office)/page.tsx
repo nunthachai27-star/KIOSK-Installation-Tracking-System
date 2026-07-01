@@ -16,7 +16,7 @@ export default async function Home() {
   return (
     <div className="p-6 max-w-[1160px] mx-auto">
       <div className="mb-6"><StatStrip items={items} /></div>
-      <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
+      <div className="bg-white border border-[#DEDDEC] rounded-2xl overflow-hidden">
         <div className="px-5 pt-4 pb-1.5 text-[15px] font-bold">รายการงาน</div>
         {jobs.map(j => <JobRow key={j.id} job={j} />)}
       </div>

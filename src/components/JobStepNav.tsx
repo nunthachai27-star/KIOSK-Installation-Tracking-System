@@ -16,8 +16,8 @@ export function JobStepNav({ jobId, active }: { jobId: string; active: 1 | 2 | 3
             className="shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors"
             style={
               isActive
-                ? { background: '#EAF1FF', color: '#2F6BED' }
-                : { color: '#5A6B82' }
+                ? { background: '#E6E6FB', color: '#4C4FE6' }
+                : { color: '#6E7191' }
             }
             aria-current={isActive ? 'step' : undefined}
           >

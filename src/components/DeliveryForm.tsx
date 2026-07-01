@@ -192,48 +192,48 @@ export function DeliveryForm({
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
       <div className="mb-2"><StepTracker active={3} /></div>
 
-      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
+      <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-4">การจัดส่ง</div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ขนออก</label>
-            <input type="date" value={dForm.shippedDate} onChange={e => setD('shippedDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">วันที่ขนออก</label>
+            <input type="date" value={dForm.shippedDate} onChange={e => setD('shippedDate', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ส่งถึง</label>
-            <input type="date" value={dForm.arrivedDate} onChange={e => setD('arrivedDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">วันที่ส่งถึง</label>
+            <input type="date" value={dForm.arrivedDate} onChange={e => setD('arrivedDate', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วิธีจัดส่ง</label>
-            <input value={dForm.method} onChange={e => setD('method', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">วิธีจัดส่ง</label>
+            <input value={dForm.method} onChange={e => setD('method', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">รถ/บริษัทขนส่ง</label>
-            <input value={dForm.vehicle} onChange={e => setD('vehicle', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">รถ/บริษัทขนส่ง</label>
+            <input value={dForm.vehicle} onChange={e => setD('vehicle', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">เลข Tracking</label>
-            <input value={dForm.trackingNo} onChange={e => setD('trackingNo', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">เลข Tracking</label>
+            <input value={dForm.trackingNo} onChange={e => setD('trackingNo', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะจัดส่ง</label>
-            <select value={dForm.status} onChange={e => setD('status', e.target.value as DeliveryStatus)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">สถานะจัดส่ง</label>
+            <select value={dForm.status} onChange={e => setD('status', e.target.value as DeliveryStatus)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5">
               {(Object.keys(DELIVERY_STATUS_LABEL) as DeliveryStatus[]).map(s => (
                 <option key={s} value={s}>{DELIVERY_STATUS_LABEL[s]}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ประมาณการค่าขนส่ง (บาท)</label>
-            <input type="number" min={0} step="0.01" value={dForm.estimatedCost} onChange={e => setD('estimatedCost', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">ประมาณการค่าขนส่ง (บาท)</label>
+            <input type="number" min={0} step="0.01" value={dForm.estimatedCost} onChange={e => setD('estimatedCost', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ค่าขนส่งจริง (บาท)</label>
-            <input type="number" min={0} step="0.01" value={dForm.actualCost} onChange={e => setD('actualCost', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">ค่าขนส่งจริง (บาท)</label>
+            <input type="number" min={0} step="0.01" value={dForm.actualCost} onChange={e => setD('actualCost', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">หมายเหตุ</label>
-            <textarea value={dForm.remark} onChange={e => setD('remark', e.target.value)} rows={2} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">หมายเหตุ</label>
+            <textarea value={dForm.remark} onChange={e => setD('remark', e.target.value)} rows={2} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
         </div>
 
@@ -244,7 +244,7 @@ export function DeliveryForm({
             type="button"
             disabled={dSaving}
             onClick={saveDelivery}
-            className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
+            className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60"
           >
             {dSaving ? 'กำลังบันทึก…' : 'บันทึกการจัดส่ง'}
           </button>
@@ -252,44 +252,44 @@ export function DeliveryForm({
         </div>
       </div>
 
-      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
+      <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-4">Remote &amp; ติดตั้งหน้างาน</div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">รูปแบบการติดตั้ง</label>
-            <select value={iForm.installType} onChange={e => setI('installType', e.target.value as InstallType)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">รูปแบบการติดตั้ง</label>
+            <select value={iForm.installType} onChange={e => setI('installType', e.target.value as InstallType)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5">
               {(Object.keys(INSTALL_TYPE_LABEL) as InstallType[]).map(t => (
                 <option key={t} value={t}>{INSTALL_TYPE_LABEL[t]}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะติดตั้ง</label>
-            <select value={iForm.status} onChange={e => setI('status', e.target.value as InstallStatus)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">สถานะติดตั้ง</label>
+            <select value={iForm.status} onChange={e => setI('status', e.target.value as InstallStatus)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5">
               {(Object.keys(INSTALL_STATUS_LABEL) as InstallStatus[]).map(s => (
                 <option key={s} value={s}>{INSTALL_STATUS_LABEL[s]}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">กำหนด Remote</label>
-            <input type="date" value={iForm.remoteDate} onChange={e => setI('remoteDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">กำหนด Remote</label>
+            <input type="date" value={iForm.remoteDate} onChange={e => setI('remoteDate', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันนัดติดตั้งหน้างาน</label>
-            <input type="date" value={iForm.onsiteDate} onChange={e => setI('onsiteDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">วันนัดติดตั้งหน้างาน</label>
+            <input type="date" value={iForm.onsiteDate} onChange={e => setI('onsiteDate', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ผลการติดตั้ง</label>
-            <input value={iForm.result} onChange={e => setI('result', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">ผลการติดตั้ง</label>
+            <input value={iForm.result} onChange={e => setI('result', e.target.value)} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ปัญหา</label>
-            <textarea value={iForm.problem} onChange={e => setI('problem', e.target.value)} rows={2} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">ปัญหา</label>
+            <textarea value={iForm.problem} onChange={e => setI('problem', e.target.value)} rows={2} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วิธีแก้ไข</label>
-            <textarea value={iForm.solution} onChange={e => setI('solution', e.target.value)} rows={2} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <label className="block text-sm font-semibold text-[#6E7191] mb-1">วิธีแก้ไข</label>
+            <textarea value={iForm.solution} onChange={e => setI('solution', e.target.value)} rows={2} className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5" />
           </div>
         </div>
 
@@ -300,7 +300,7 @@ export function DeliveryForm({
             type="button"
             disabled={iSaving}
             onClick={saveInstallation}
-            className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
+            className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60"
           >
             {iSaving ? 'กำลังบันทึก…' : 'บันทึกการติดตั้ง'}
           </button>

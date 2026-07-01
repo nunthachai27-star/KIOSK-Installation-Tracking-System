@@ -8,16 +8,16 @@ export default async function OfficeLayout({ children }: { children: React.React
   const initial = name.trim().charAt(0).toUpperCase() || '?'
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB]">
-      <header className="bg-white border-b border-[#E7EDF4]">
+    <div className="min-h-screen bg-[#EDEDF5]">
+      <header className="bg-white border-b border-[#DEDDEC]">
         <div className="max-w-[1160px] mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-lg bg-[#2F6BED] text-white grid place-items-center font-bold text-sm">K</span>
+              <span className="w-8 h-8 rounded-lg bg-[#4C4FE6] text-white grid place-items-center font-bold text-sm">K</span>
               <span className="font-bold text-base">KIOSK</span>
             </div>
             <nav className="flex items-center gap-1">
-              <Link href="/" className="px-3.5 py-1.5 rounded-full text-sm font-semibold bg-[#EAF1FF] text-[#2F6BED]">
+              <Link href="/" className="px-3.5 py-1.5 rounded-full text-sm font-semibold bg-[#E6E6FB] text-[#4C4FE6]">
                 งานทั้งหมด
               </Link>
             </nav>
@@ -25,12 +25,12 @@ export default async function OfficeLayout({ children }: { children: React.React
           <div className="flex items-center gap-4">
             <Link
               href="/jobs/new"
-              className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#2558C5]"
+              className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#3E40C4]"
             >
               ＋ เพิ่มงาน
             </Link>
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-[#2F6BED] text-white grid place-items-center font-bold text-sm">
+              <span className="w-8 h-8 rounded-full bg-[#4C4FE6] text-white grid place-items-center font-bold text-sm">
                 {initial}
               </span>
               <SignOutButton />
