@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OFFICE
+  FIELD
+  ADMIN
+  TECHNICIAN
+  EXECUTIVE
+  SYSTEM_ADMIN
+}
+
+enum JobStatus {
+  DATA_ENTRY
+  PREPARING
+  READY_TO_SHIP
+  INSTALLING
+  HANDED_OVER
+  WAIT_INVOICE
+  CLOSED
+  PROBLEM
+  CANCELLED
+}
+
+enum SerialType {
+  BMS
+  KIOSK
+  UPS
+  MINI_PC
+  SMART_CARD_READER
+  PRINTER
+  KEY_ID
+}
+
+enum DeliveryStatus {
+  PENDING
+  SCHEDULED
+  SHIPPING
+  ARRIVED
+  DELAYED
+  PROBLEM
+}
+
+enum InstallType {
+  REMOTE
+  ONSITE
+  REMOTE_ONSITE
+}
+
+enum InstallStatus {
+  PENDING
+  SCHEDULED
+  INSTALLING
+  DONE
+  FAILED
+  PROBLEM
+  POSTPONED
+}
+
+enum QcStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum HandoverStatus {
+  PENDING
+  RECEIVED
+  DELIVERED
+}
+
+enum InvoiceStatus {
+  PENDING
+  ISSUED
+}
+
+enum ActivityType {
+  DELIVERY
+  REMOTE
+  ONSITE
+  TRAINING
+}
+
+enum ActivityStatus {
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  DONE
+  POSTPONED
+  PROBLEM
+}
+
+model User {
+  id            String        @id @default(cuid())
+  username      String        @unique
+  passwordHash  String
+  name          String
+  role          Role          @default(FIELD)
+  avatarColor   String?
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  adminJobs     Job[]         @relation("AdminOwner")
+  installerJobs Job[]         @relation("InstallerOwner")
+  activities    JobActivity[]
+}
+
+model Hospital {
+  id           String  @id @default(cuid())
+  name         String
+  province     String
+  healthRegion String?
+  address      String?
+  latitude     Float?
+  longitude    Float?
+  remark       String?
+  jobs         Job[]
+}
+
+model Job {
+  id                String              @id @default(cuid())
+  jobCode           String              @unique
+  sourceLot         String?
+  hospital          Hospital            @relation(fields: [hospitalId], references: [id])
+  hospitalId        String
+  province          String
+  productType       String
+  productModel      String?
+  color             String?
+  quantity          Int                 @default(1)
+  salesAmount       Decimal             @default(0)
+  contactName       String?
+  contactPhone      String?
+  contractNo        String?
+  contractStartDate DateTime?
+  contractEndDate   DateTime?
+  deliveryDueDate   DateTime?
+  currentStatus     JobStatus           @default(DATA_ENTRY)
+  adminOwner        User?               @relation("AdminOwner", fields: [adminOwnerId], references: [id])
+  adminOwnerId      String?
+  installerOwner    User?               @relation("InstallerOwner", fields: [installerOwnerId], references: [id])
+  installerOwnerId  String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  serials           SerialNumber[]
+  qc                QcRecord?
+  delivery          DeliveryRecord?
+  installation      InstallationRecord?
+  handover          HandoverRecord?
+  invoice           InvoiceRecord?
+  activities        JobActivity[]
+}
+
+model SerialNumber {
+  id         String     @id @default(cuid())
+  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId      String
+  serialType SerialType
+  serialNo   String
+  remark     String?
+
+  @@index([jobId])
+}
+
+model QcRecord {
+  id        String   @id @default(cuid())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId     String   @unique
+  status    QcStatus @default(PENDING)
+  checklist Json     @default("[]")
+  remark    String?
+}
+
+model DeliveryRecord {
+  id            String         @id @default(cuid())
+  job           Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId         String         @unique
+  shippedDate   DateTime?
+  arrivedDate   DateTime?
+  method        String?
+  vehicle       String?
+  trackingNo    String?
+  estimatedCost Decimal?
+  actualCost    Decimal?
+  status        DeliveryStatus @default(PENDING)
+  remark        String?
+}
+
+model InstallationRecord {
+  id          String        @id @default(cuid())
+  job         Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId       String        @unique
+  installType InstallType   @default(REMOTE_ONSITE)
+  remoteDate  DateTime?
+  onsiteDate  DateTime?
+  result      String?
+  problem     String?
+  solution    String?
+  status      InstallStatus @default(PENDING)
+}
+
+model HandoverRecord {
+  id                    String         @id @default(cuid())
+  job                   Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId                 String         @unique
+  checklistStatus       HandoverStatus @default(PENDING)
+  checklistReceivedDate DateTime?
+  handoverStatus        HandoverStatus @default(PENDING)
+  handoverDate          DateTime?
+  remark                String?
+}
+
+model InvoiceRecord {
+  id            String        @id @default(cuid())
+  job           Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId         String        @unique
+  status        InvoiceStatus @default(PENDING)
+  invoiceDate   DateTime?
+  invoiceNo     String?
+  invoiceAmount Decimal?
+  remark        String?
+}
+
+model JobActivity {
+  id                String         @id @default(cuid())
+  job               Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId             String
+  activityType      ActivityType
+  activityDate      DateTime
+  responsibleUser   User?          @relation(fields: [responsibleUserId], references: [id])
+  responsibleUserId String?
+  status            ActivityStatus @default(PENDING)
+  remark            String?
+
+  @@index([activityDate])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  refTable     String
+  refId        String
+  fileName     String
+  fileType     String
+  filePath     String
+  fileSize     Int
+  uploadedById String?
+  uploadedAt   DateTime @default(now())
+
+  @@index([refTable, refId])
+}

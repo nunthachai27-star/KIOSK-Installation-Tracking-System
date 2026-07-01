@@ -16,6 +16,8 @@
 - TypeScript strict mode = true
 - ทุก UI เป็นภาษาไทย; ฟอนต์ `IBM Plex Sans Thai`, สีแบรนด์ `#2F6BED`, พื้นหลัง `#F6F9FC`
 - Database provider = `postgresql`; connection ผ่าน env `DATABASE_URL`
+- Prisma **v6** (pinned — classic `datasource db { url = env(...) }` + `new PrismaClient()`; ไม่ใช้ v7 adapter/prisma.config pattern)
+- `schema.prisma` ต้องเป็น PSL หลายบรรทัดมาตรฐาน (generator/datasource เป็น block หลายบรรทัด, ค่า enum หนึ่งค่าต่อบรรทัด); รัน `npx prisma format` ให้ผ่านก่อน migrate
 - Password hash ด้วย `bcryptjs` (pure JS, ไม่ต้อง compile native บน Windows)
 - Test runner = Vitest; ทุก business logic ต้องมี unit test
 - Commit หลังจบทุก Task ด้วย conventional commits (`feat:`, `test:`, `chore:`)
@@ -173,14 +175,15 @@ git add -A && git commit -m "chore: scaffold Next.js app with Tailwind, Vitest, 
 - Produces: singleton `prisma` (PrismaClient) จาก `src/lib/prisma.ts`
 - Produces: Prisma models `User, Hospital, Job, SerialNumber, QcRecord, DeliveryRecord, InstallationRecord, HandoverRecord, InvoiceRecord, JobActivity, Attachment` และ enums `Role, JobStatus, SerialType, DeliveryStatus, InstallStatus, ActivityType, ActivityStatus`
 
-- [ ] **Step 1: Install Prisma**
+- [ ] **Step 1: Install Prisma (pinned to v6)**
 
 Run:
 ```bash
-npm i -D prisma
-npm i @prisma/client bcryptjs
+npm i -D prisma@6
+npm i @prisma/client@6 bcryptjs
 npm i -D @types/bcryptjs
 ```
+Verify `npx prisma -v` reports a 6.x version.
 
 - [ ] **Step 2: Docker Compose for Postgres**
 
