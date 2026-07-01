@@ -19,10 +19,12 @@ export async function getProductTypes(): Promise<string[]> {
   return rows.map(r => r.productType).filter(Boolean)
 }
 
-export async function getJobList() {
+export async function getJobList(includeClosed = false) {
   // Newest first: order by contract start date (then end date) descending, so
   // the current/most-recent year shows on top. Jobs without dates sort last.
+  // Closed jobs are hidden unless includeClosed is set.
   return prisma.job.findMany({
+    where: includeClosed ? {} : { currentStatus: { not: 'CLOSED' } },
     include: { hospital: true },
     orderBy: [
       { contractStartDate: { sort: 'desc', nulls: 'last' } },
@@ -30,4 +32,8 @@ export async function getJobList() {
       { updatedAt: 'desc' },
     ],
   })
+}
+
+export async function countClosed(): Promise<number> {
+  return prisma.job.count({ where: { currentStatus: 'CLOSED' } })
 }
