@@ -10,6 +10,15 @@ export async function getSummary(now: Date) {
   return { total, toShip, toHandover, overdue }
 }
 
+export async function getProductTypes(): Promise<string[]> {
+  const rows = await prisma.job.findMany({
+    distinct: ['productType'],
+    select: { productType: true },
+    orderBy: { productType: 'asc' },
+  })
+  return rows.map(r => r.productType).filter(Boolean)
+}
+
 export async function getJobList() {
   // Newest first: order by contract start date (then end date) descending, so
   // the current/most-recent year shows on top. Jobs without dates sort last.

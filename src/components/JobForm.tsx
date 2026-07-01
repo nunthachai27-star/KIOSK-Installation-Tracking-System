@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Hospital, User } from '@prisma/client'
 import type { SerializedJob } from '@/lib/serialize'
+import { THAI_PROVINCES, withCurrent } from '@/lib/options'
 
 type HospitalOption = Pick<Hospital, 'id' | 'name' | 'province'>
 type UserOption = Pick<User, 'id' | 'name' | 'role'>
@@ -56,7 +57,7 @@ function initialState(job?: SerializedJob): JobFormState {
 
 type FieldErrors = Record<string, string[] | undefined>
 
-export function JobForm({ job, hospitals, users }: { job?: SerializedJob; hospitals: HospitalOption[]; users: UserOption[] }) {
+export function JobForm({ job, hospitals, users, productTypes }: { job?: SerializedJob; hospitals: HospitalOption[]; users: UserOption[]; productTypes: string[] }) {
   const router = useRouter()
   const isEdit = Boolean(job)
   const [form, setForm] = useState<JobFormState>(() => initialState(job))
@@ -159,12 +160,18 @@ export function JobForm({ job, hospitals, users }: { job?: SerializedJob; hospit
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1">จังหวัด</label>
-              <input value={form.province} onChange={e => set('province', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+              <select value={form.province} onChange={e => set('province', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
+                <option value="">— เลือกจังหวัด —</option>
+                {withCurrent(THAI_PROVINCES, form.province).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
               {err('province') && <p className="text-xs text-[#C13540] mt-1">{err('province')}</p>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ประเภทสินค้า</label>
-              <input value={form.productType} onChange={e => set('productType', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+              <select value={form.productType} onChange={e => set('productType', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
+                <option value="">— เลือกประเภทสินค้า —</option>
+                {withCurrent(productTypes, form.productType).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
               {err('productType') && <p className="text-xs text-[#C13540] mt-1">{err('productType')}</p>}
             </div>
             <div>
