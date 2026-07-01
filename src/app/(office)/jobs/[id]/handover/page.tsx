@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { HandoverForm } from '@/components/HandoverForm'
 import { JobStepNav } from '@/components/JobStepNav'
+import { serializeJob, serializeInvoice } from '@/lib/serialize'
 
 export default async function JobHandoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -15,7 +16,7 @@ export default async function JobHandoverPage({ params }: { params: Promise<{ id
   return (
     <>
       <JobStepNav jobId={job.id} active={4} />
-      <HandoverForm job={job} handover={job.handover} invoice={job.invoice} />
+      <HandoverForm job={serializeJob(job)} handover={job.handover} invoice={serializeInvoice(job.invoice)} />
     </>
   )
 }

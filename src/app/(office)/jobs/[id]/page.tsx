@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { JobForm } from '@/components/JobForm'
 import { JobStepNav } from '@/components/JobStepNav'
+import { serializeJob } from '@/lib/serialize'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,7 +17,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   return (
     <>
       <JobStepNav jobId={id} active={1} />
-      <JobForm job={job} hospitals={hospitals} users={users} />
+      <JobForm job={serializeJob(job)} hospitals={hospitals} users={users} />
     </>
   )
 }

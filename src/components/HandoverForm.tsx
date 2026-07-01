@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Job, HandoverRecord, InvoiceRecord, HandoverStatus, InvoiceStatus } from '@prisma/client'
+import type { HandoverRecord, HandoverStatus, InvoiceStatus } from '@prisma/client'
+import type { SerializedJob, SerializedInvoice } from '@/lib/serialize'
 import { StepTracker } from './StepTracker'
 import { StatusBadge } from './StatusBadge'
 import { canCloseJob } from '@/lib/close'
@@ -56,7 +57,7 @@ function initialHandover(handover: HandoverRecord | null): HandoverFormState {
   }
 }
 
-function initialInvoice(invoice: InvoiceRecord | null): InvoiceFormState {
+function initialInvoice(invoice: SerializedInvoice | null): InvoiceFormState {
   return {
     status: invoice?.status ?? 'PENDING',
     invoiceDate: toDateInput(invoice?.invoiceDate),
@@ -71,9 +72,9 @@ export function HandoverForm({
   handover,
   invoice,
 }: {
-  job: Job
+  job: SerializedJob
   handover: HandoverRecord | null
-  invoice: InvoiceRecord | null
+  invoice: SerializedInvoice | null
 }) {
   const router = useRouter()
   const [hForm, setHForm] = useState<HandoverFormState>(() => initialHandover(handover))

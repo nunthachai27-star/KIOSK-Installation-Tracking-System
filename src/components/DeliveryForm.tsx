@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Job, DeliveryRecord, InstallationRecord, DeliveryStatus, InstallType, InstallStatus } from '@prisma/client'
+import type { InstallationRecord, DeliveryStatus, InstallType, InstallStatus } from '@prisma/client'
+import type { SerializedJob, SerializedDelivery } from '@/lib/serialize'
 import { StepTracker } from './StepTracker'
 
 function toDateInput(v: Date | string | null | undefined): string {
@@ -58,7 +59,7 @@ type InstallationFormState = {
   solution: string
 }
 
-function initialDelivery(delivery: DeliveryRecord | null): DeliveryFormState {
+function initialDelivery(delivery: SerializedDelivery | null): DeliveryFormState {
   return {
     shippedDate: toDateInput(delivery?.shippedDate),
     arrivedDate: toDateInput(delivery?.arrivedDate),
@@ -89,8 +90,8 @@ export function DeliveryForm({
   delivery,
   installation,
 }: {
-  job: Job
-  delivery: DeliveryRecord | null
+  job: SerializedJob
+  delivery: SerializedDelivery | null
   installation: InstallationRecord | null
 }) {
   const router = useRouter()

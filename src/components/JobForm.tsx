@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Job, Hospital, User } from '@prisma/client'
+import type { Hospital, User } from '@prisma/client'
+import type { SerializedJob } from '@/lib/serialize'
 import { StepTracker } from './StepTracker'
 
 type HospitalOption = Pick<Hospital, 'id' | 'name' | 'province'>
@@ -33,7 +34,7 @@ type JobFormState = {
   installerOwnerId: string
 }
 
-function initialState(job?: Job): JobFormState {
+function initialState(job?: SerializedJob): JobFormState {
   return {
     jobCode: job?.jobCode ?? '',
     hospitalId: job?.hospitalId ?? '',
@@ -56,7 +57,7 @@ function initialState(job?: Job): JobFormState {
 
 type FieldErrors = Record<string, string[] | undefined>
 
-export function JobForm({ job, hospitals, users }: { job?: Job; hospitals: HospitalOption[]; users: UserOption[] }) {
+export function JobForm({ job, hospitals, users }: { job?: SerializedJob; hospitals: HospitalOption[]; users: UserOption[] }) {
   const router = useRouter()
   const isEdit = Boolean(job)
   const [form, setForm] = useState<JobFormState>(() => initialState(job))
