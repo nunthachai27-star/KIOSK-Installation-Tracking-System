@@ -1,0 +1,40 @@
+# Production compose for the KIOSK app. Run with an explicit project name so it
+# stays isolated from other stacks on the host:
+#   docker compose -p kiosk -f docker-compose.prod.yml up -d --build
+#
+# Only the app port is published; Postgres stays internal to the kiosk network.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: kiosk
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: kiosk
+    volumes:
+      - kiosk_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kiosk -d kiosk"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://kiosk:${DB_PASSWORD}@db:5432/kiosk?schema=public
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL}
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3100:3000"
+    restart: unless-stopped
+
+volumes:
+  kiosk_pgdata:

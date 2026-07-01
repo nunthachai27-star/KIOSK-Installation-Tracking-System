@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env*.local
+uploads/*
+!uploads/.gitkeep
+.playwright-mcp
+*.png
+.superpowers
+docs
+KIOSK Installation Tracking System.txt
+KIOSK Tracking Screens.dc.html
+support.js
+.thumbnail
