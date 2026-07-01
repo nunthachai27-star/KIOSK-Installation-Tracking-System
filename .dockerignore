@@ -13,3 +13,5 @@ KIOSK Installation Tracking System.txt
 KIOSK Tracking Screens.dc.html
 support.js
 .thumbnail
+*.xlsx
+*.xls

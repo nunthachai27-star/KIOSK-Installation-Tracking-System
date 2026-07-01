@@ -9,3 +9,5 @@ dist/
 .playwright-mcp/
 *.png
 devserver.log
+*.xlsx
+*.xls
