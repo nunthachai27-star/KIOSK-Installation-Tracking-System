@@ -4,6 +4,17 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
+  // Safety guard: this seed wipes all data (deleteMany) and creates well-known
+  // dev accounts (password "1234"). Prisma runs it automatically during
+  // `migrate dev`/`migrate reset`, so refuse to run against a production DB
+  // unless explicitly overridden.
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+    throw new Error(
+      'Refusing to run destructive seed with NODE_ENV=production. ' +
+        'Set ALLOW_DESTRUCTIVE_SEED=true only if you really intend to wipe and seed this database.',
+    )
+  }
+
   await prisma.jobActivity.deleteMany()
   await prisma.serialNumber.deleteMany()
   await prisma.job.deleteMany()
