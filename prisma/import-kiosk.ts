@@ -39,15 +39,22 @@ function beToCe(y: number): number {
   if (y < 100) y += 2500 // "66" -> 2566
   return y >= 2400 ? y - 543 : y // BE -> CE
 }
+// Some source cells have a typo'd thousands digit (e.g. BE "3568" for "2568"),
+// which lands a millennium off after conversion. Snap 30xx years back to 20xx.
+function fixYear(dt: Date): Date {
+  const y = dt.getUTCFullYear()
+  if (y >= 3000 && y < 3100) return new Date(Date.UTC(y - 1000, dt.getUTCMonth(), dt.getUTCDate()))
+  return dt
+}
 function mkDate(y: number, m: number, d: number): Date | null {
   if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) return null
   const dt = new Date(Date.UTC(beToCe(y), m - 1, d))
-  return isNaN(dt.getTime()) ? null : dt
+  return isNaN(dt.getTime()) ? null : fixYear(dt)
 }
 export function parseDate(v: unknown): Date | null {
   if (v instanceof Date && !isNaN(v.getTime())) {
     const y = v.getUTCFullYear()
-    return y >= 2400 ? new Date(Date.UTC(y - 543, v.getUTCMonth(), v.getUTCDate())) : v
+    return fixYear(y >= 2400 ? new Date(Date.UTC(y - 543, v.getUTCMonth(), v.getUTCDate())) : v)
   }
   let s = norm(v)
   if (!s) return null
