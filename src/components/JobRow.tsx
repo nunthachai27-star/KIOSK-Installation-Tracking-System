@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Job, Hospital } from '@prisma/client'
 import { StatusBadge } from './StatusBadge'
 import { stepForStatus } from '@/lib/status'
-import { formatQty } from '@/lib/format'
+import { formatQty, formatThaiDate } from '@/lib/format'
 
 export function JobRow({ job }: { job: Job & { hospital: Hospital } }) {
   const step = stepForStatus(job.currentStatus)
@@ -10,13 +10,17 @@ export function JobRow({ job }: { job: Job & { hospital: Hospital } }) {
   return (
     <Link
       href={`/jobs/${job.id}`}
-      className="grid grid-cols-[1.5fr_1fr_88px_120px_78px] items-center px-5 py-3.5 border-t border-[#F1F5F9] hover:bg-[#FBFCFE]"
+      className="grid grid-cols-[1.4fr_1fr_150px_84px_112px_70px] items-center gap-2 px-5 py-3.5 border-t border-[#F1F5F9] hover:bg-[#FBFCFE]"
     >
       <div>
         <div className="text-sm font-semibold">{job.hospital.name}</div>
         <div className="text-xs text-[#8492A6]">{job.jobCode} · {job.province}</div>
       </div>
       <div className="text-[13px] text-[#3C4A5E]">{job.productType} ×{formatQty(job.quantity)}</div>
+      <div className="text-[11.5px] text-[#5A6B82] leading-tight">
+        <div>เริ่ม {formatThaiDate(job.contractStartDate)}</div>
+        <div>สิ้นสุด {formatThaiDate(job.contractEndDate)}</div>
+      </div>
       <div className="flex gap-1.5 items-center">
         {[1, 2, 3, 4].map((i) => (
           <span
