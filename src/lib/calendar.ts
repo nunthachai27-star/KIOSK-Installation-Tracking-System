@@ -51,19 +51,20 @@ export async function getCalendarEvents(from: Date, to: Date): Promise<CalEvent[
   return events
 }
 
-// The most recent event date across all sources (used to open the calendar on a
-// populated month by default).
+// The most recent event date that isn't in the future (used to open the
+// calendar on a populated month by default). Capping at "now" avoids opening on
+// mis-parsed far-future dates from the source data.
 export async function latestEventDate(): Promise<Date | null> {
-  const [d, i, j] = await Promise.all([
-    prisma.deliveryRecord.aggregate({ _max: { arrivedDate: true, shippedDate: true } }),
-    prisma.installationRecord.aggregate({ _max: { remoteDate: true } }),
-    prisma.job.aggregate({ _max: { deliveryDueDate: true } }),
+  const now = new Date()
+  const [a, s, r, d] = await Promise.all([
+    prisma.deliveryRecord.findFirst({ where: { arrivedDate: { lte: now } }, orderBy: { arrivedDate: 'desc' }, select: { arrivedDate: true } }),
+    prisma.deliveryRecord.findFirst({ where: { shippedDate: { lte: now } }, orderBy: { shippedDate: 'desc' }, select: { shippedDate: true } }),
+    prisma.installationRecord.findFirst({ where: { remoteDate: { lte: now } }, orderBy: { remoteDate: 'desc' }, select: { remoteDate: true } }),
+    prisma.job.findFirst({ where: { deliveryDueDate: { lte: now } }, orderBy: { deliveryDueDate: 'desc' }, select: { deliveryDueDate: true } }),
   ])
-  const dates = [d._max.arrivedDate, d._max.shippedDate, i._max.remoteDate, j._max.deliveryDueDate].filter(
-    (x): x is Date => x != null,
-  )
+  const dates = [a?.arrivedDate, s?.shippedDate, r?.remoteDate, d?.deliveryDueDate].filter((x): x is Date => x != null)
   if (!dates.length) return null
-  return dates.reduce((a, b) => (a > b ? a : b))
+  return dates.reduce((x, y) => (x > y ? x : y))
 }
 
 // Build a 6x7 month grid (Sunday-first) of UTC dates.
