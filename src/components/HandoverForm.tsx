@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { HandoverRecord, HandoverStatus, InvoiceStatus } from '@prisma/client'
 import type { SerializedJob, SerializedInvoice } from '@/lib/serialize'
-import { StepTracker } from './StepTracker'
 import { StatusBadge } from './StatusBadge'
 import { canCloseJob } from '@/lib/close'
 
@@ -203,7 +202,6 @@ export function HandoverForm({
 
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
-      <div className="mb-2"><StepTracker active={4} /></div>
 
       <div className="grid grid-cols-3 gap-6 items-start">
         <div className="col-span-2 flex flex-col gap-6">

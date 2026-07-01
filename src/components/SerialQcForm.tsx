@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { SerialNumber, QcRecord, SerialType } from '@prisma/client'
-import { StepTracker } from './StepTracker'
 
 const SERIAL_TYPES: { type: SerialType; label: string }[] = [
   { type: 'KIOSK', label: 'S/N ตู้ KIOSK' },
@@ -130,7 +129,6 @@ export function SerialQcForm({
 
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
-      <div className="mb-2"><StepTracker active={2} /></div>
 
       <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-4">หมายเลข Serial</div>

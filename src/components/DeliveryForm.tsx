@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { InstallationRecord, DeliveryStatus, InstallType, InstallStatus } from '@prisma/client'
 import type { SerializedJob, SerializedDelivery } from '@/lib/serialize'
-import { StepTracker } from './StepTracker'
 
 function toDateInput(v: Date | string | null | undefined): string {
   if (!v) return ''
@@ -190,7 +189,6 @@ export function DeliveryForm({
 
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
-      <div className="mb-2"><StepTracker active={3} /></div>
 
       <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-4">การจัดส่ง</div>
