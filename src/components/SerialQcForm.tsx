@@ -59,8 +59,20 @@ export function SerialQcForm({
   const [qcError, setQcError] = useState('')
   const [passed, setPassed] = useState(qc?.status === 'PASSED')
 
-  function existingSerial(type: SerialType) {
-    return rows.find(r => r.serialType === type)
+  function serialsOfType(type: SerialType) {
+    return rows.filter(r => r.serialType === type)
+  }
+
+  async function removeSerial(id: string) {
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/serials/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setRows(r => r.filter(x => x.id !== id))
+        router.refresh()
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   async function addSerial(type: SerialType) {
@@ -131,41 +143,57 @@ export function SerialQcForm({
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
 
       <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
-        <div className="text-[15px] font-bold mb-4">หมายเลข Serial</div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[15px] font-bold">หมายเลข Serial</div>
+          <div className="text-xs text-[#8492A6]">แต่ละประเภทเพิ่มได้หลายเลข · ทั้งหมด {rows.length} เลข</div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {SERIAL_TYPES.map(({ type, label }) => {
-            const existing = existingSerial(type)
+            const items = serialsOfType(type)
             return (
               <div key={type}>
-                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">{label}</label>
-                {existing ? (
-                  <div className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 bg-[#F7F9FC] text-sm font-medium text-[#12233B]">
-                    {existing.serialNo}
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      value={inputs[type] ?? ''}
-                      onChange={e => setInputs(i => ({ ...i, [type]: e.target.value }))}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          addSerial(type)
-                        }
-                      }}
-                      placeholder="กรอกหมายเลข Serial"
-                      className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-2.5"
-                    />
-                    <button
-                      type="button"
-                      disabled={saving[type]}
-                      onClick={() => addSerial(type)}
-                      className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
-                    >
-                      {saving[type] ? 'กำลังบันทึก…' : 'เพิ่ม'}
-                    </button>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">
+                  {label} {items.length > 0 && <span className="text-[#8492A6] font-normal">({items.length})</span>}
+                </label>
+                {items.length > 0 && (
+                  <div className="flex flex-col gap-1.5 mb-2">
+                    {items.map(s => (
+                      <div key={s.id} className="flex items-center justify-between border border-[#D6DFEA] rounded-lg px-3 py-2 bg-[#F7F9FC]">
+                        <span className="text-sm font-medium text-[#12233B] break-all">{s.serialNo}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeSerial(s.id)}
+                          aria-label="ลบ"
+                          className="ml-2 shrink-0 w-6 h-6 grid place-items-center rounded-md text-[#C13540] hover:bg-[#FBE4E4]"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
+                <div className="flex gap-2">
+                  <input
+                    value={inputs[type] ?? ''}
+                    onChange={e => setInputs(i => ({ ...i, [type]: e.target.value }))}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addSerial(type)
+                      }
+                    }}
+                    placeholder="เพิ่มหมายเลข Serial"
+                    className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-2.5"
+                  />
+                  <button
+                    type="button"
+                    disabled={saving[type]}
+                    onClick={() => addSerial(type)}
+                    className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
+                  >
+                    {saving[type] ? 'กำลังบันทึก…' : 'เพิ่ม'}
+                  </button>
+                </div>
                 {errors[type] && <p className="text-xs text-[#C13540] mt-1">{errors[type]}</p>}
               </div>
             )
