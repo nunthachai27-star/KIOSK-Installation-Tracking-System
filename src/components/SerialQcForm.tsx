@@ -132,16 +132,16 @@ export function SerialQcForm({
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
       <div className="mb-2"><StepTracker active={2} /></div>
 
-      <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5">
+      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-4">หมายเลข Serial</div>
         <div className="grid grid-cols-2 gap-4">
           {SERIAL_TYPES.map(({ type, label }) => {
             const existing = existingSerial(type)
             return (
               <div key={type}>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">{label}</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">{label}</label>
                 {existing ? (
-                  <div className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5 bg-[#EAEAF2] text-sm font-medium text-[#2E3252]">
+                  <div className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 bg-[#F7F9FC] text-sm font-medium text-[#12233B]">
                     {existing.serialNo}
                   </div>
                 ) : (
@@ -156,13 +156,13 @@ export function SerialQcForm({
                         }
                       }}
                       placeholder="กรอกหมายเลข Serial"
-                      className="flex-1 border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                      className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                     />
                     <button
                       type="button"
                       disabled={saving[type]}
                       onClick={() => addSerial(type)}
-                      className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60"
+                      className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
                     >
                       {saving[type] ? 'กำลังบันทึก…' : 'เพิ่ม'}
                     </button>
@@ -175,12 +175,12 @@ export function SerialQcForm({
         </div>
       </div>
 
-      <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5">
+      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-4">QC Checklist</div>
         <div className="flex flex-col gap-3">
           {CHECKLIST_ITEMS.map(item => (
-            <div key={item} className="flex items-center justify-between border border-[#DEDDEC] rounded-lg px-4 py-3">
-              <span className="text-sm font-medium text-[#2E3252]">{item}</span>
+            <div key={item} className="flex items-center justify-between border border-[#E7EDF4] rounded-lg px-4 py-3">
+              <span className="text-sm font-medium text-[#12233B]">{item}</span>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -189,7 +189,7 @@ export function SerialQcForm({
                   style={
                     checklist[item] === 'pass'
                       ? { background: '#157F4C', color: '#fff' }
-                      : { background: '#E4E4EF', color: '#A6A7C2' }
+                      : { background: '#EAEFF6', color: '#A2AEC0' }
                   }
                 >
                   ✓
@@ -201,7 +201,7 @@ export function SerialQcForm({
                   style={
                     checklist[item] === 'fail'
                       ? { background: '#C13540', color: '#fff' }
-                      : { background: '#E4E4EF', color: '#A6A7C2' }
+                      : { background: '#EAEFF6', color: '#A2AEC0' }
                   }
                 >
                   !
@@ -219,7 +219,7 @@ export function SerialQcForm({
           type="button"
           disabled={qcSaving}
           onClick={() => submitQc('PASSED')}
-          className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60"
+          className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
         >
           {qcSaving ? 'กำลังบันทึก…' : 'QC ผ่าน → พร้อมจัดส่ง'}
         </button>

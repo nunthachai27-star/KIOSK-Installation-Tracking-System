@@ -10,7 +10,7 @@ const ACTIVITY_LABEL: Record<ActivityType, string> = {
 }
 
 const ACTIVITY_COLOR: Record<ActivityType, { color: string; bg: string }> = {
-  DELIVERY: { color: '#3E40C4', bg: '#E6E6FB' },
+  DELIVERY: { color: '#1B5FD9', bg: '#E4EEFF' },
   REMOTE: { color: '#9A6B10', bg: '#FAF0D8' },
   ONSITE: { color: '#9A6B10', bg: '#FAF0D8' },
   TRAINING: { color: '#157F4C', bg: '#E2F3EA' },
@@ -37,9 +37,9 @@ export function MobileTaskCard({
   const badge = ACTIVITY_COLOR[activity.activityType]
 
   return (
-    <div className="bg-white rounded-2xl border border-[#DEDDEC] p-4 shadow-sm">
+    <div className="bg-white rounded-2xl border border-[#E7EDF4] p-4 shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold text-[#2E3252]">{formatTime(activity.activityDate)}</span>
+        <span className="text-sm font-bold text-[#12233B]">{formatTime(activity.activityDate)}</span>
         <span
           className="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold"
           style={{ background: badge.bg, color: badge.color }}
@@ -48,8 +48,8 @@ export function MobileTaskCard({
         </span>
       </div>
 
-      <div className="text-[15px] font-bold text-[#2E3252]">{hospital.name}</div>
-      <div className="text-[13px] text-[#6E7191] mt-0.5">
+      <div className="text-[15px] font-bold text-[#12233B]">{hospital.name}</div>
+      <div className="text-[13px] text-[#5A6B82] mt-0.5">
         {hospital.province} · {job.productType}
         {job.productModel ? ` · ${job.productModel}` : ''} ×{formatQty(job.quantity)}
       </div>
@@ -60,8 +60,8 @@ export function MobileTaskCard({
           aria-disabled={!job.contactPhone}
           className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold ${
             job.contactPhone
-              ? 'bg-[#E6E6FB] text-[#4C4FE6]'
-              : 'bg-[#ECECF4] text-[#B6B7CE] pointer-events-none'
+              ? 'bg-[#EAF1FF] text-[#2F6BED]'
+              : 'bg-[#F1F5F9] text-[#B7C1CE] pointer-events-none'
           }`}
         >
           <span className="text-base">📞</span>
@@ -71,14 +71,14 @@ export function MobileTaskCard({
           href={mapsUrl(hospital)}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#E6E6FB] text-[#4C4FE6]"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#EAF1FF] text-[#2F6BED]"
         >
           <span className="text-base">🧭</span>
           นำทาง
         </a>
         <Link
           href={`/m/jobs/${job.id}/report`}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#4C4FE6] text-white"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#2F6BED] text-white"
         >
           <span className="text-base">📝</span>
           บันทึกงาน

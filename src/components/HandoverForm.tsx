@@ -207,15 +207,15 @@ export function HandoverForm({
 
       <div className="grid grid-cols-3 gap-6 items-start">
         <div className="col-span-2 flex flex-col gap-6">
-          <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5">
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
             <div className="text-[15px] font-bold mb-4">Checklist &amp; ส่งมอบงาน</div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">Checklist ตอบกลับ</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">Checklist ตอบกลับ</label>
                 <select
                   value={hForm.checklistStatus}
                   onChange={e => setH('checklistStatus', e.target.value as HandoverStatus)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 >
                   {(Object.keys(CHECKLIST_STATUS_LABEL) as HandoverStatus[]).map(s => (
                     <option key={s} value={s}>{CHECKLIST_STATUS_LABEL[s]}</option>
@@ -223,20 +223,20 @@ export function HandoverForm({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">วันที่ได้รับ Checklist</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ได้รับ Checklist</label>
                 <input
                   type="date"
                   value={hForm.checklistReceivedDate}
                   onChange={e => setH('checklistReceivedDate', e.target.value)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">สถานะส่งมอบงาน</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะส่งมอบงาน</label>
                 <select
                   value={hForm.handoverStatus}
                   onChange={e => setH('handoverStatus', e.target.value as HandoverStatus)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 >
                   {(Object.keys(HANDOVER_STATUS_LABEL) as HandoverStatus[]).map(s => (
                     <option key={s} value={s}>{HANDOVER_STATUS_LABEL[s]}</option>
@@ -244,21 +244,21 @@ export function HandoverForm({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">วันที่แจ้งส่งมอบ</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่แจ้งส่งมอบ</label>
                 <input
                   type="date"
                   value={hForm.handoverDate}
                   onChange={e => setH('handoverDate', e.target.value)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">หมายเหตุ</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">หมายเหตุ</label>
                 <textarea
                   value={hForm.remark}
                   onChange={e => setH('remark', e.target.value)}
                   rows={2}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
             </div>
@@ -270,7 +270,7 @@ export function HandoverForm({
                 type="button"
                 disabled={hSaving}
                 onClick={saveHandover}
-                className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60"
+                className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
               >
                 {hSaving ? 'กำลังบันทึก…' : 'บันทึกการส่งมอบ'}
               </button>
@@ -278,15 +278,15 @@ export function HandoverForm({
             </div>
           </div>
 
-          <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5">
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
             <div className="text-[15px] font-bold mb-4">ใบแจ้งหนี้</div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">สถานะเปิดใบแจ้งหนี้</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะเปิดใบแจ้งหนี้</label>
                 <select
                   value={iForm.status}
                   onChange={e => setI('status', e.target.value as InvoiceStatus)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 >
                   {(Object.keys(INVOICE_STATUS_LABEL) as InvoiceStatus[]).map(s => (
                     <option key={s} value={s}>{INVOICE_STATUS_LABEL[s]}</option>
@@ -294,40 +294,40 @@ export function HandoverForm({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">วันที่เปิด</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่เปิด</label>
                 <input
                   type="date"
                   value={iForm.invoiceDate}
                   onChange={e => setI('invoiceDate', e.target.value)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">เลขที่ใบแจ้งหนี้</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">เลขที่ใบแจ้งหนี้</label>
                 <input
                   value={iForm.invoiceNo}
                   onChange={e => setI('invoiceNo', e.target.value)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">มูลค่า (บาท)</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">มูลค่า (บาท)</label>
                 <input
                   type="number"
                   min={0}
                   step="0.01"
                   value={iForm.invoiceAmount}
                   onChange={e => setI('invoiceAmount', e.target.value)}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-[#6E7191] mb-1">หมายเหตุ</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">หมายเหตุ</label>
                 <textarea
                   value={iForm.remark}
                   onChange={e => setI('remark', e.target.value)}
                   rows={2}
-                  className="w-full border border-[#D3D2E4] rounded-lg px-3 py-2.5"
+                  className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5"
                 />
               </div>
             </div>
@@ -339,7 +339,7 @@ export function HandoverForm({
                 type="button"
                 disabled={iSaving}
                 onClick={saveInvoice}
-                className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60"
+                className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#2558C5] disabled:opacity-60"
               >
                 {iSaving ? 'กำลังบันทึก…' : 'บันทึกใบแจ้งหนี้'}
               </button>
@@ -348,11 +348,11 @@ export function HandoverForm({
           </div>
         </div>
 
-        <div className="bg-white border border-[#DEDDEC] rounded-2xl p-5 flex flex-col gap-4">
+        <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5 flex flex-col gap-4">
           <div className="text-[15px] font-bold">ความพร้อมปิดงาน</div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[#6E7191]">สถานะงาน</span>
+            <span className="text-sm text-[#5A6B82]">สถานะงาน</span>
             <StatusBadge status={closed ? 'CLOSED' : job.currentStatus} />
           </div>
 
@@ -363,12 +363,12 @@ export function HandoverForm({
                 style={
                   hForm.handoverStatus === 'DELIVERED'
                     ? { background: '#157F4C', color: '#fff' }
-                    : { background: '#E4E4EF', color: '#A6A7C2' }
+                    : { background: '#EAEFF6', color: '#A2AEC0' }
                 }
               >
                 ✓
               </span>
-              <span className="text-sm font-medium text-[#2E3252]">ส่งมอบงานแล้ว</span>
+              <span className="text-sm font-medium text-[#12233B]">ส่งมอบงานแล้ว</span>
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -376,12 +376,12 @@ export function HandoverForm({
                 style={
                   iForm.status === 'ISSUED'
                     ? { background: '#157F4C', color: '#fff' }
-                    : { background: '#E4E4EF', color: '#A6A7C2' }
+                    : { background: '#EAEFF6', color: '#A2AEC0' }
                 }
               >
                 ✓
               </span>
-              <span className="text-sm font-medium text-[#2E3252]">เปิดใบแจ้งหนี้แล้ว</span>
+              <span className="text-sm font-medium text-[#12233B]">เปิดใบแจ้งหนี้แล้ว</span>
             </div>
           </div>
 
@@ -402,7 +402,7 @@ export function HandoverForm({
               type="button"
               disabled={!readiness.ok || closing}
               onClick={closeJob}
-              className="bg-[#4C4FE6] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#3E40C4] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-[#2F6BED] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#2558C5] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {closing ? 'กำลังปิดงาน…' : 'ปิดงาน'}
             </button>
