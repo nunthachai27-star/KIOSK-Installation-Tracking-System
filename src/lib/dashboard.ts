@@ -11,5 +11,14 @@ export async function getSummary(now: Date) {
 }
 
 export async function getJobList() {
-  return prisma.job.findMany({ include: { hospital: true }, orderBy: { updatedAt: 'desc' } })
+  // Ordered by contract start date, then contract end date (jobs without those
+  // dates sort last). Falls back to updatedAt for a stable order.
+  return prisma.job.findMany({
+    include: { hospital: true },
+    orderBy: [
+      { contractStartDate: { sort: 'asc', nulls: 'last' } },
+      { contractEndDate: { sort: 'asc', nulls: 'last' } },
+      { updatedAt: 'desc' },
+    ],
+  })
 }
