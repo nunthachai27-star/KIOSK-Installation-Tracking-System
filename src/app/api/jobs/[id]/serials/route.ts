@@ -21,7 +21,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const job = await prisma.job.findUnique({ where: { id }, select: { id: true } })
   if (!job) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-  if (await findDuplicateSerial(serialNo)) {
+  // Duplicate = same serial already recorded on a DIFFERENT job (allow re-saving
+  // within the same job, e.g. correcting an entry).
+  if (await findDuplicateSerial(serialNo, id)) {
     return NextResponse.json({ error: 'duplicate serial' }, { status: 409 })
   }
 
