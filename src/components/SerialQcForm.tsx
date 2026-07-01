@@ -147,28 +147,31 @@ export function SerialQcForm({
           <div className="text-[15px] font-bold">หมายเลข Serial</div>
           <div className="text-xs text-[#8492A6]">แต่ละประเภทเพิ่มได้หลายเลข · ทั้งหมด {rows.length} เลข</div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 items-start">
           {SERIAL_TYPES.map(({ type, label }) => {
             const items = serialsOfType(type)
             return (
               <div key={type}>
-                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">
                   {label} {items.length > 0 && <span className="text-[#8492A6] font-normal">({items.length})</span>}
                 </label>
                 {items.length > 0 && (
-                  <div className="flex flex-col gap-1.5 mb-2">
+                  <div className="flex flex-wrap gap-2 mb-2.5">
                     {items.map(s => (
-                      <div key={s.id} className="flex items-center justify-between border border-[#D6DFEA] rounded-lg px-3 py-2 bg-[#F7F9FC]">
-                        <span className="text-sm font-medium text-[#12233B] break-all">{s.serialNo}</span>
+                      <span
+                        key={s.id}
+                        className="inline-flex items-center gap-1 bg-[#EAF1FF] text-[#12233B] rounded-lg pl-2.5 pr-1 py-1 text-[12.5px] font-medium"
+                      >
+                        <span className="break-all">{s.serialNo}</span>
                         <button
                           type="button"
                           onClick={() => removeSerial(s.id)}
                           aria-label="ลบ"
-                          className="ml-2 shrink-0 w-6 h-6 grid place-items-center rounded-md text-[#C13540] hover:bg-[#FBE4E4]"
+                          className="w-5 h-5 grid place-items-center rounded text-[#7C8AA0] hover:text-[#C13540] hover:bg-white text-xs"
                         >
                           ✕
                         </button>
-                      </div>
+                      </span>
                     ))}
                   </div>
                 )}
