@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Anuphan:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  *{ box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  body{ margin:0; background:#D9E1EC; }
+  @keyframes livedot{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.3; transform:scale(.7);} }
+</style>
+</helmet>
+
+<!-- ============================ LITE · ทีม 3 คน ============================ -->
+<section style="display:flex; flex-direction:column; gap:32px; padding:80px 88px 20px; font-family:'IBM Plex Sans Thai',sans-serif; color:#12233B;">
+
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span style="display:inline-flex; align-items:center; justify-content:center; height:30px; padding:0 14px; border-radius:8px; background:#2F6BED; color:#fff; font-weight:700; font-size:14px; letter-spacing:.5px;">LITE</span>
+    <div>
+      <div style="font-size:21px; font-weight:700;">เวอร์ชันสำหรับทีม 3 คน</div>
+      <div style="font-size:14px; color:#5A6B82;">ง่าย เร็ว มือถือเป็นหลัก · ยุบ 15 แท็บเหลือ 4 สเต็ป · 2 มุมมอง (ออฟฟิศ / หน้างาน)</div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:56px; flex-wrap:wrap; align-items:flex-start;">
+
+    <!-- DESKTOP · ศูนย์รวมงาน -->
+    <div>
+      <div style="font-size:12.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#7C8AA0; margin-bottom:11px;">Desktop · ศูนย์รวมงาน (ออฟฟิศ)</div>
+      <div style="width:1120px; border-radius:16px; overflow:hidden; border:1px solid #DCE4EF; box-shadow:0 30px 70px -28px rgba(18,45,90,.35); background:#fff;">
+        <div style="height:40px; background:#EEF3F9; border-bottom:1px solid #E1E9F3; display:flex; align-items:center; gap:8px; padding:0 16px;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#E9959B;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#F0CE93;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#A9D6AE;"></span>
+          <div style="margin-left:14px; height:24px; flex:1; max-width:360px; background:#fff; border:1px solid #E1E9F3; border-radius:7px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:#8492A6;">kiosk.thaihealth.co.th</div>
+        </div>
+        <!-- top nav -->
+        <div style="height:60px; background:#fff; border-bottom:1px solid #E7EDF4; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+          <div style="display:flex; align-items:center; gap:24px;">
+            <div style="display:flex; align-items:center; gap:10px;"><span style="width:32px;height:32px;border-radius:9px;background:#2F6BED;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">K</span><span style="font-weight:700;font-size:15px;">KIOSK</span></div>
+            <div style="display:flex; gap:6px; font-size:13.5px;">
+              <span style="padding:8px 14px; border-radius:9px; background:#EAF1FF; color:#2F6BED; font-weight:600;">งานทั้งหมด</span>
+              <span style="padding:8px 14px; border-radius:9px; color:#5A6B82;">สัปดาห์นี้</span>
+              <span style="padding:8px 14px; border-radius:9px; color:#5A6B82;">ปฏิทิน</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="background:#2F6BED; color:#fff; border-radius:9px; padding:9px 18px; font-size:13.5px; font-weight:600;">＋ เพิ่มงาน</span>
+            <span style="width:36px;height:36px;border-radius:50%;background:#DCE7FA;color:#2F6BED;display:flex;align-items:center;justify-content:center;font-weight:600;">จ</span>
+          </div>
+        </div>
+        <div style="padding:24px; background:#F6F9FC;">
+          <!-- stat strip -->
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;">
+            <sc-for list="{{ liteStat }}" as="s" hint-placeholder-count="4">
+              <div style="background:#fff; border:1px solid #E7EDF4; border-radius:14px; padding:16px 18px;">
+                <div style="font-size:13px; color:#5A6B82; font-weight:500;">{{ s.label }}</div>
+                <div style="font-size:34px; font-weight:700; margin-top:4px; letter-spacing:-.5px; color:#12233B;">{{ s.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <!-- expanded job flow card -->
+          <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:17px; font-weight:700;">รพ.ศรีนครินทร์</span>
+                <span style="font-size:12.5px; color:#8492A6;">#0142 · ขอนแก่น · Kiosk HI-END ×2</span>
+              </div>
+              <span style="display:inline-block; padding:5px 14px; border-radius:999px; font-size:12.5px; font-weight:600; background:#FAF0D8; color:#9A6B10;">กำลังติดตั้ง</span>
+            </div>
+            <!-- 4-step tracker -->
+            <div style="display:flex; align-items:flex-start; gap:0;">
+              <sc-for list="{{ flowSteps }}" as="f" hint-placeholder-count="4">
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; position:relative;">
+                  <span style="width:40px;height:40px;border-radius:50%;background:{{ f.numBg }};color:{{ f.numFg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;z-index:1;">{{ f.n }}</span>
+                  <span style="font-size:13.5px; font-weight:600; color:{{ f.labFg }};">{{ f.label }}</span>
+                  <span style="font-size:11px; font-weight:600; padding:2px 10px; border-radius:999px; background:{{ f.badgeBg }}; color:{{ f.badgeFg }};">{{ f.badge }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #F1F5F9;">
+              <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:11px 22px; font-size:13.5px; font-weight:600;">ทำสเต็ปถัดไป: จัดส่ง & ติดตั้ง</span>
+              <span style="border:1px solid #D6DFEA; color:#5A6B82; border-radius:10px; padding:11px 20px; font-size:13.5px; font-weight:500;">ดูรายละเอียด</span>
+            </div>
+          </div>
+          <!-- simple job list -->
+          <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; overflow:hidden;">
+            <div style="padding:15px 20px 6px; font-size:15px; font-weight:700;">งานอื่น ๆ</div>
+            <sc-for list="{{ liteJobs }}" as="j" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:1.6fr 1.3fr 150px 130px 90px; align-items:center; padding:14px 20px; border-top:1px solid #F1F5F9;">
+                <div><div style="font-size:14px; font-weight:600;">{{ j.hosp }}</div><div style="font-size:12px; color:#8492A6;">{{ j.code }} · {{ j.prov }}</div></div>
+                <div style="font-size:13px; color:#3C4A5E;">{{ j.prod }}</div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <sc-for list="{{ j.dots }}" as="d" hint-placeholder-count="4">
+                    <span style="width:12px;height:12px;border-radius:50%;background:{{ d.bg }};"></span>
+                  </sc-for>
+                </div>
+                <div><span style="display:inline-block; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:600; background:{{ j.bg }}; color:{{ j.fg }};">{{ j.status }}</span></div>
+                <div style="text-align:right;"><span style="font-size:12.5px; font-weight:600; color:#2F6BED;">อัปเดต ›</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DESKTOP · บันทึกข้อมูลงาน -->
+    <div>
+      <div style="font-size:12.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#7C8AA0; margin-bottom:11px;">Desktop · บันทึกข้อมูลงาน (ธุรการ · หน้าเดียวจบ)</div>
+      <div style="width:1120px; border-radius:16px; overflow:hidden; border:1px solid #DCE4EF; box-shadow:0 30px 70px -28px rgba(18,45,90,.35); background:#fff;">
+        <div style="height:40px; background:#EEF3F9; border-bottom:1px solid #E1E9F3; display:flex; align-items:center; gap:8px; padding:0 16px;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#E9959B;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#F0CE93;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#A9D6AE;"></span>
+          <div style="margin-left:14px; height:24px; flex:1; max-width:360px; background:#fff; border:1px solid #E1E9F3; border-radius:7px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:#8492A6;">kiosk.thaihealth.co.th/งาน/0142</div>
+        </div>
+        <!-- record header -->
+        <div style="background:#fff; border-bottom:1px solid #E7EDF4; padding:16px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div style="display:flex; align-items:center; gap:13px;">
+              <span style="width:34px;height:34px;border-radius:10px;background:#EAF1FF;color:#2F6BED;display:flex;align-items:center;justify-content:center;font-size:18px;">‹</span>
+              <div>
+                <div style="font-size:18px; font-weight:700;">รพ.ศรีนครินทร์</div>
+                <div style="font-size:12.5px; color:#8492A6;">งาน #0142 · ขอนแก่น</div>
+              </div>
+              <span style="display:inline-block; padding:5px 13px; border-radius:999px; font-size:12.5px; font-weight:600; background:#FAF0D8; color:#9A6B10;">กำลังติดตั้ง</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px;">
+              <span style="border:1px solid #D6DFEA; border-radius:10px; padding:10px 18px; color:#5A6B82; font-weight:500;">ยกเลิก</span>
+              <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:10px 22px; font-weight:600;">บันทึก</span>
+            </div>
+          </div>
+          <!-- compact step tracker -->
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+            <sc-for list="{{ flowSteps }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:8px; padding:7px 14px 7px 9px; border-radius:999px; background:{{ f.badgeBg }};">
+                <span style="width:22px;height:22px;border-radius:50%;background:{{ f.numBg }};color:{{ f.numFg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">{{ f.n }}</span>
+                <span style="font-size:13px; font-weight:600; color:{{ f.labFg }};">{{ f.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <!-- body -->
+        <div style="padding:22px 24px; background:#F6F9FC; display:grid; grid-template-columns:1.85fr 1fr; gap:18px;">
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <!-- ข้อมูลงาน -->
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:16px;">ข้อมูลงาน</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div style="grid-column:span 2;"><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">โรงพยาบาล</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">โรงพยาบาลศรีนครินทร์<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">จังหวัด</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">ขอนแก่น<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">ประเภทสินค้า</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">Kiosk HI-END<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">รุ่น / อุปกรณ์เสริม</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;">HE-2024 + Smart Card Reader</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">สี</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">ขาว-น้ำเงิน<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">จำนวน (เครื่อง)</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;">2</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">ยอดขาย (บาท)</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;font-variant-numeric:tabular-nums;">1,850,000</div></div>
+              </div>
+            </div>
+            <!-- ผู้ติดต่อ & เอกสาร -->
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:16px;">ผู้ติดต่อ &amp; เอกสาร</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">ผู้ติดต่อหลัก</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;">คุณกนกวรรณ (ฝ่าย IT)</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">เบอร์โทร</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;font-variant-numeric:tabular-nums;">043-363-xxx</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">เลขที่สัญญา / PO</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;font-family:'IBM Plex Mono',monospace;">PO-2568-0471</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันที่เริ่มสัญญา</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">10 มิ.ย. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันสิ้นสุดสัญญา</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">31 ก.ค. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#C13540;margin-bottom:6px;">กำหนดส่งมอบงาน</div><div style="border:1px solid #F3D6D4;border-radius:10px;padding:11px 13px;font-size:14px;color:#C13540;font-weight:600;background:#FFF6F5;display:flex;align-items:center;justify-content:space-between;">15 ก.ค. 2568 · เหลือ 14 วัน<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C13540" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div style="grid-column:span 2;"><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">แนบเอกสาร (สัญญา / ใบสั่งซื้อ)</div><div style="border:1px dashed #B9C7DA;border-radius:10px;padding:16px;font-size:13px;color:#2F6BED;text-align:center;background:#FAFCFF;">＋ ลากไฟล์มาวาง หรือกดเพื่อเลือก (PDF, JPG)</div></div>
+              </div>
+            </div>
+          </div>
+          <!-- right rail -->
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:10px;">สถานะงาน</div>
+              <div style="border:1px solid #2F6BED;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;background:#F5F9FF;"><span style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#9A6B10;"></span>กำลังติดตั้ง</span><span style="color:#2F6BED;">▾</span></div>
+              <div style="font-size:11.5px;color:#8492A6;margin-top:8px;">อัปเดตอัตโนมัติเมื่อทีมหน้างานส่งงานเข้ามา</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:14px;">ผู้รับผิดชอบ</div>
+              <div style="display:flex; flex-direction:column; gap:13px;">
+                <div style="display:flex; align-items:center; gap:11px;"><span style="width:34px;height:34px;border-radius:10px;background:#EAF1FF;color:#2F6BED;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;">จ</span><div><div style="font-size:13.5px;font-weight:600;">จันทนา</div><div style="font-size:11.5px;color:#8492A6;">ออฟฟิศ / ธุรการ</div></div></div>
+                <div style="display:flex; align-items:center; gap:11px;"><span style="width:34px;height:34px;border-radius:10px;background:#E9EAFB;color:#3B45C4;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;">ป</span><div><div style="font-size:13.5px;font-weight:600;">ประเสริฐ</div><div style="font-size:11.5px;color:#8492A6;">หน้างาน / ช่าง</div></div></div>
+                <div style="display:flex; align-items:center; gap:11px;"><span style="width:34px;height:34px;border-radius:10px;background:#DCF1F2;color:#0B7C86;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;">อ</span><div><div style="font-size:13.5px;font-weight:600;">อนุชา</div><div style="font-size:11.5px;color:#8492A6;">หน้างาน / ติดตั้ง</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- save bar -->
+        <div style="background:#fff; border-top:1px solid #E7EDF4; padding:14px 24px; display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-size:12.5px; color:#8492A6;">บันทึกอัตโนมัติ · แก้ไขล่าสุด 27 มิ.ย. 08:30</span>
+          <div style="display:flex; gap:10px; font-size:13.5px;">
+            <span style="border:1px solid #D6DFEA; border-radius:10px; padding:11px 20px; color:#5A6B82; font-weight:500;">บันทึกร่าง</span>
+            <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:11px 26px; font-weight:600;">บันทึกข้อมูล</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DESKTOP · จัดส่ง & ติดตั้ง (สเต็ป 3) -->
+    <div>
+      <div style="font-size:12.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#7C8AA0; margin-bottom:11px;">Desktop · จัดส่ง &amp; ติดตั้ง (สเต็ป 3)</div>
+      <div style="width:1120px; border-radius:16px; overflow:hidden; border:1px solid #DCE4EF; box-shadow:0 30px 70px -28px rgba(18,45,90,.35); background:#fff;">
+        <div style="height:40px; background:#EEF3F9; border-bottom:1px solid #E1E9F3; display:flex; align-items:center; gap:8px; padding:0 16px;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#E9959B;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#F0CE93;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#A9D6AE;"></span>
+          <div style="margin-left:14px; height:24px; flex:1; max-width:360px; background:#fff; border:1px solid #E1E9F3; border-radius:7px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:#8492A6;">kiosk.thaihealth.co.th/งาน/0142/จัดส่ง</div>
+        </div>
+        <div style="background:#fff; border-bottom:1px solid #E7EDF4; padding:16px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div style="display:flex; align-items:center; gap:13px;">
+              <span style="width:34px;height:34px;border-radius:10px;background:#EAF1FF;color:#2F6BED;display:flex;align-items:center;justify-content:center;font-size:18px;">‹</span>
+              <div><div style="font-size:18px; font-weight:700;">รพ.ศรีนครินทร์</div><div style="font-size:12.5px; color:#8492A6;">งาน #0142 · ขอนแก่น · Kiosk HI-END ×2</div></div>
+              <span style="display:inline-block; padding:5px 13px; border-radius:999px; font-size:12.5px; font-weight:600; background:#FAF0D8; color:#9A6B10;">กำลังติดตั้ง</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px;">
+              <span style="border:1px solid #D6DFEA; border-radius:10px; padding:10px 18px; color:#5A6B82; font-weight:500;">ยกเลิก</span>
+              <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:10px 22px; font-weight:600;">บันทึก</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+            <sc-for list="{{ flowSteps }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:8px; padding:7px 14px 7px 9px; border-radius:999px; background:{{ f.badgeBg }};">
+                <span style="width:22px;height:22px;border-radius:50%;background:{{ f.numBg }};color:{{ f.numFg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">{{ f.n }}</span>
+                <span style="font-size:13px; font-weight:600; color:{{ f.labFg }};">{{ f.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:22px 24px; background:#F6F9FC; display:grid; grid-template-columns:1.85fr 1fr; gap:18px;">
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:16px;">การจัดส่ง</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันที่ขนออกจากบริษัท</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">28 มิ.ย. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันที่ส่งถึงโรงพยาบาล</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#A2AEC0;display:flex;align-items:center;justify-content:space-between;">ยังไม่ระบุ<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วิธีจัดส่ง</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">รถบริษัท<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">บริษัท / รถขนส่ง</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;">รถ 6 ล้อ · ทะเบียน 82-4471</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">เลข Tracking</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;font-family:'IBM Plex Mono',monospace;">TRK-0142-KKN</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">สถานะจัดส่ง</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#1B5FD9;"></span>กำลังจัดส่ง</span><span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">ประมาณการค่าขนส่ง (บาท)</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;font-variant-numeric:tabular-nums;">8,500</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">ค่าขนส่งจริง (บาท)</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#A2AEC0;font-variant-numeric:tabular-nums;">รอสรุปหลังส่ง</div></div>
+              </div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:16px;">Remote &amp; ติดตั้งหน้างาน</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">รูปแบบการติดตั้ง</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">Remote + Onsite<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">เจ้าหน้าที่ Remote</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">ประเสริฐ ค.<span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">กำหนด Remote</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">1 ก.ค. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันนัดติดตั้งหน้างาน</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">3 ก.ค. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div style="grid-column:span 2;"><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">ปัญหาที่พบ / วิธีแก้ไข</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#A2AEC0;min-height:52px;">บันทึกปัญหาหน้างานและวิธีแก้ไข (ถ้ามี)…</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:10px;">รูปหน้างาน / เอกสารรับของ</div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div style="width:70px;height:70px;border-radius:12px;background:#EAF1FF;border:1px dashed #B9C7DA;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#2F6BED;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F6BED" stroke-width="1.8"><path d="M3 8a2 2 0 0 1 2-2h1.5l1.2-2h6.6l1.2 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+                  <span style="font-size:9.5px; font-weight:600;">เพิ่มรูป</span>
+                </div>
+                <div style="width:70px;height:70px;border-radius:12px;background:#E7EDF4;"></div>
+                <div style="width:70px;height:70px;border-radius:12px;background:#E7EDF4;"></div>
+              </div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:6px;">ผลการติดตั้ง</div>
+              <div style="font-size:12px; color:#8492A6; margin-bottom:12px;">ทีมหน้างานอัปเดตให้อัตโนมัติ</div>
+              <div style="display:flex; align-items:center; gap:9px; padding:12px 14px; border-radius:12px; background:#FFFBEF; border:1px solid #F0E3C0;">
+                <span style="width:26px;height:26px;border-radius:50%;background:#FAF0D8;color:#9A6B10;display:flex;align-items:center;justify-content:center;font-weight:700;">◷</span>
+                <span style="font-size:13.5px; font-weight:600; color:#9A6B10;">กำลังติดตั้ง · รอผลจากหน้างาน</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff; border-top:1px solid #E7EDF4; padding:14px 24px; display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-size:12.5px; color:#8492A6;">บันทึกอัตโนมัติ · แก้ไขล่าสุด 1 ก.ค. 10:20</span>
+          <div style="display:flex; gap:10px; font-size:13.5px;">
+            <span style="border:1px solid #D6DFEA; border-radius:10px; padding:11px 20px; color:#5A6B82; font-weight:500;">บันทึกร่าง</span>
+            <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:11px 26px; font-weight:600;">บันทึกข้อมูล</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DESKTOP · ส่งมอบ & ใบแจ้งหนี้ (สเต็ป 4) -->
+    <div>
+      <div style="font-size:12.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#7C8AA0; margin-bottom:11px;">Desktop · ส่งมอบ &amp; ใบแจ้งหนี้ (สเต็ป 4 · ปิดงาน)</div>
+      <div style="width:1120px; border-radius:16px; overflow:hidden; border:1px solid #DCE4EF; box-shadow:0 30px 70px -28px rgba(18,45,90,.35); background:#fff;">
+        <div style="height:40px; background:#EEF3F9; border-bottom:1px solid #E1E9F3; display:flex; align-items:center; gap:8px; padding:0 16px;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#E9959B;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#F0CE93;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#A9D6AE;"></span>
+          <div style="margin-left:14px; height:24px; flex:1; max-width:360px; background:#fff; border:1px solid #E1E9F3; border-radius:7px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:#8492A6;">kiosk.thaihealth.co.th/งาน/0142/ส่งมอบ</div>
+        </div>
+        <div style="background:#fff; border-bottom:1px solid #E7EDF4; padding:16px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div style="display:flex; align-items:center; gap:13px;">
+              <span style="width:34px;height:34px;border-radius:10px;background:#EAF1FF;color:#2F6BED;display:flex;align-items:center;justify-content:center;font-size:18px;">‹</span>
+              <div><div style="font-size:18px; font-weight:700;">รพ.ศรีนครินทร์</div><div style="font-size:12.5px; color:#8492A6;">งาน #0142 · ขอนแก่น</div></div>
+              <span style="display:inline-block; padding:5px 13px; border-radius:999px; font-size:12.5px; font-weight:600; background:#E4EEFF; color:#1B5FD9;">รอเปิดใบแจ้งหนี้</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px;">
+              <span style="border:1px solid #D6DFEA; border-radius:10px; padding:10px 18px; color:#5A6B82; font-weight:500;">ยกเลิก</span>
+              <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:10px 22px; font-weight:600;">บันทึก</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+            <sc-for list="{{ flowStepsHandover }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:8px; padding:7px 14px 7px 9px; border-radius:999px; background:{{ f.badgeBg }};">
+                <span style="width:22px;height:22px;border-radius:50%;background:{{ f.numBg }};color:{{ f.numFg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">{{ f.n }}</span>
+                <span style="font-size:13px; font-weight:600; color:{{ f.labFg }};">{{ f.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:22px 24px; background:#F6F9FC; display:grid; grid-template-columns:1.85fr 1fr; gap:18px;">
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:16px;">Checklist &amp; ส่งมอบงาน</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">Checklist ตอบกลับ</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#157F4C;"></span>ได้รับแล้ว</span><span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันที่ได้รับ Checklist</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">5 ก.ค. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">สถานะส่งมอบงาน</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#157F4C;"></span>ส่งมอบแล้ว</span><span style="color:#8492A6;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันที่แจ้งส่งมอบ</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;">6 ก.ค. 2568<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div style="grid-column:span 2;"><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">แนบเอกสาร (Checklist / ใบส่งมอบ)</div><div style="border:1px dashed #B9C7DA;border-radius:10px;padding:16px;font-size:13px;color:#2F6BED;text-align:center;background:#FAFCFF;">＋ แนบไฟล์ · มีแล้ว 2 ไฟล์</div></div>
+              </div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:16px;">ใบแจ้งหนี้</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">สถานะเปิดใบแจ้งหนี้</div><div style="border:1px solid #2F6BED;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;display:flex;align-items:center;justify-content:space-between;background:#F5F9FF;"><span style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#1B5FD9;"></span>รอเปิด</span><span style="color:#2F6BED;">▾</span></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">วันที่เปิดใบแจ้งหนี้</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#A2AEC0;display:flex;align-items:center;justify-content:space-between;">ยังไม่ระบุ<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8492A6" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">เลขที่ใบแจ้งหนี้</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#A2AEC0;font-family:'IBM Plex Mono',monospace;">INV-______</div></div>
+                <div><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">มูลค่าใบแจ้งหนี้ (บาท)</div><div style="border:1px solid #D6DFEA;border-radius:10px;padding:11px 13px;font-size:14px;color:#12233B;font-variant-numeric:tabular-nums;">1,850,000</div></div>
+                <div style="grid-column:span 2;"><div style="font-size:12px;font-weight:600;color:#5A6B82;margin-bottom:6px;">แนบเอกสารใบแจ้งหนี้</div><div style="border:1px dashed #B9C7DA;border-radius:10px;padding:16px;font-size:13px;color:#2F6BED;text-align:center;background:#FAFCFF;">＋ แนบไฟล์ (PDF)</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:20px 22px;">
+              <div style="font-size:15px; font-weight:700; margin-bottom:14px;">ความพร้อมปิดงาน</div>
+              <div style="display:flex; flex-direction:column; gap:11px;">
+                <div style="display:flex; align-items:center; gap:10px;"><span style="width:22px;height:22px;border-radius:50%;background:#E2F3EA;color:#157F4C;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">✓</span><span style="font-size:13px; color:#3C4A5E;">ติดตั้ง & อบรมเสร็จ</span></div>
+                <div style="display:flex; align-items:center; gap:10px;"><span style="width:22px;height:22px;border-radius:50%;background:#E2F3EA;color:#157F4C;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">✓</span><span style="font-size:13px; color:#3C4A5E;">Checklist ตอบกลับแล้ว</span></div>
+                <div style="display:flex; align-items:center; gap:10px;"><span style="width:22px;height:22px;border-radius:50%;background:#E2F3EA;color:#157F4C;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">✓</span><span style="font-size:13px; color:#3C4A5E;">ส่งมอบงานแล้ว</span></div>
+                <div style="display:flex; align-items:center; gap:10px;"><span style="width:22px;height:22px;border-radius:50%;background:#FBE4E4;color:#C13540;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">!</span><span style="font-size:13px; color:#C13540; font-weight:500;">ยังไม่เปิดใบแจ้งหนี้</span></div>
+              </div>
+            </div>
+            <div style="background:#0E2A22; border-radius:16px; padding:20px 22px; color:#fff;">
+              <div style="font-size:14px; font-weight:700;">พร้อมปิดงาน?</div>
+              <div style="font-size:12px; color:#9CC7B6; margin-top:4px; margin-bottom:14px;">เปิดใบแจ้งหนี้ให้เสร็จก่อนปิดงาน</div>
+              <div style="text-align:center; padding:12px; border-radius:12px; background:#2E7D63; color:#fff; font-size:14px; font-weight:700; opacity:.55;">ปิดงาน (รอใบแจ้งหนี้)</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff; border-top:1px solid #E7EDF4; padding:14px 24px; display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-size:12.5px; color:#8492A6;">บันทึกอัตโนมัติ · แก้ไขล่าสุด 6 ก.ค. 09:10</span>
+          <div style="display:flex; gap:10px; font-size:13.5px;">
+            <span style="border:1px solid #D6DFEA; border-radius:10px; padding:11px 20px; color:#5A6B82; font-weight:500;">บันทึกร่าง</span>
+            <span style="background:#2F6BED; color:#fff; border-radius:10px; padding:11px 26px; font-weight:600;">บันทึกข้อมูล</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE ROW LITE -->
+    <div style="display:flex; gap:48px; flex-wrap:wrap;">
+      <!-- งานวันนี้ -->
+      <div>
+        <div style="font-size:12.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#7C8AA0; margin-bottom:11px;">Mobile · งานวันนี้ (หน้างาน)</div>
+        <div style="width:378px; height:790px; background:#0E1B2C; border-radius:46px; padding:11px; box-shadow:0 34px 70px -26px rgba(18,45,90,.45);">
+          <div style="width:100%; height:100%; background:#F6F9FC; border-radius:36px; overflow:hidden; display:flex; flex-direction:column;">
+            <div style="height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 26px; font-size:13px; font-weight:600; color:#12233B; flex-shrink:0;">
+              <span>09:41</span><span style="letter-spacing:1px;">●●●● ▮</span>
+            </div>
+            <div style="padding:12px 22px 20px; background:#2F6BED; color:#fff;">
+              <div style="font-size:13px; opacity:.85;">สวัสดี, อนุชา</div>
+              <div style="font-size:24px; font-weight:700; margin-top:2px;">งานวันนี้ 3 งาน</div>
+              <div style="font-size:12.5px; opacity:.85; margin-top:2px;">อังคาร 1 กรกฎาคม</div>
+            </div>
+            <div style="flex:1; overflow:hidden; padding:18px 18px; display:flex; flex-direction:column; gap:14px;">
+              <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="3">
+                <div style="background:#fff; border:1px solid #E7EDF4; border-radius:16px; padding:16px; box-shadow:0 8px 20px -14px rgba(18,45,90,.3);">
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-size:17px; font-weight:700;">{{ t.time }}</span>
+                    <span style="display:inline-block; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:600; background:{{ t.bg }}; color:{{ t.fg }};">{{ t.typeLabel }}</span>
+                  </div>
+                  <div style="font-size:16px; font-weight:700; margin-top:9px;">{{ t.hosp }}</div>
+                  <div style="font-size:13px; color:#5A6B82; margin-top:2px;">{{ t.prov }} · {{ t.prod }}</div>
+                  <div style="display:flex; gap:9px; margin-top:14px;">
+                    <span style="width:48px; display:flex; align-items:center; justify-content:center; padding:12px 0; border-radius:12px; background:#EAF1FF; color:#2F6BED; font-size:15px; font-weight:700;">☎</span>
+                    <span style="width:48px; display:flex; align-items:center; justify-content:center; padding:12px 0; border-radius:12px; background:#EAF1FF; color:#2F6BED; font-size:15px; font-weight:700;">◎</span>
+                    <span style="flex:1; display:flex; align-items:center; justify-content:center; padding:12px 0; border-radius:12px; background:#2F6BED; color:#fff; font-size:14px; font-weight:600;">บันทึกงาน</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:70px; background:#fff; border-top:1px solid #EAEFF6; display:flex; align-items:center; justify-content:space-around; padding:0 20px 8px; flex-shrink:0;">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#2F6BED;"><span style="font-size:20px; font-weight:700;">▣</span><span style="font-size:11px; font-weight:600;">งาน</span></div>
+              <div style="width:52px;height:52px;border-radius:50%;background:#2F6BED;color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:300;margin-top:-18px;box-shadow:0 8px 18px -6px rgba(47,107,237,.6);">＋</div>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#8492A6;"><span style="font-size:20px;">●</span><span style="font-size:11px;">ฉัน</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- บันทึกงาน -->
+      <div>
+        <div style="font-size:12.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#7C8AA0; margin-bottom:11px;">Mobile · บันทึกงาน (สเต็ปเดียวจบ)</div>
+        <div style="width:378px; height:790px; background:#0E1B2C; border-radius:46px; padding:11px; box-shadow:0 34px 70px -26px rgba(18,45,90,.45);">
+          <div style="width:100%; height:100%; background:#F6F9FC; border-radius:36px; overflow:hidden; display:flex; flex-direction:column;">
+            <div style="height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 26px; font-size:13px; font-weight:600; color:#12233B; flex-shrink:0;">
+              <span>09:41</span><span style="letter-spacing:1px;">●●●● ▮</span>
+            </div>
+            <div style="padding:10px 18px 14px; background:#fff; border-bottom:1px solid #EAEFF6; flex-shrink:0;">
+              <div style="display:flex; align-items:center; gap:11px;">
+                <span style="width:32px;height:32px;border-radius:10px;background:#EAF1FF;color:#2F6BED;display:flex;align-items:center;justify-content:center;font-size:18px;">‹</span>
+                <div><div style="font-size:16px; font-weight:700;">บันทึกงาน</div><div style="font-size:12px; color:#8492A6;">รพ.ศรีนครินทร์ · ติดตั้งหน้างาน</div></div>
+              </div>
+            </div>
+            <div style="flex:1; overflow:hidden; padding:16px 18px; display:flex; flex-direction:column; gap:16px;">
+              <!-- quick status big buttons -->
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#3C4A5E; margin-bottom:10px;">งานวันนี้เป็นยังไง?</div>
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                  <div style="display:flex; align-items:center; gap:12px; padding:15px; border-radius:14px; border:2px solid #2F6BED; background:#F5F9FF;">
+                    <span style="width:26px;height:26px;border-radius:50%;background:#157F4C;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">✓</span>
+                    <span style="font-size:15px; font-weight:600;">ติดตั้งเสร็จเรียบร้อย</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:12px; padding:15px; border-radius:14px; border:1px solid #E1E9F3; background:#fff;">
+                    <span style="width:26px;height:26px;border-radius:50%;background:#EEF1F5;color:#8492A6;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;">◷</span>
+                    <span style="font-size:15px; font-weight:500; color:#5A6B82;">ยังทำอยู่ / มาต่อพรุ่งนี้</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:12px; padding:15px; border-radius:14px; border:1px solid #F3D6D4; background:#fff;">
+                    <span style="width:26px;height:26px;border-radius:50%;background:#FBE4E4;color:#C13540;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;">!</span>
+                    <span style="font-size:15px; font-weight:500; color:#C13540;">ติดปัญหา ต้องแจ้งทีม</span>
+                  </div>
+                </div>
+              </div>
+              <!-- photo -->
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#3C4A5E; margin-bottom:10px;">ถ่ายรูปหน้างาน</div>
+                <div style="display:flex; gap:10px;">
+                  <div style="width:78px;height:78px;border-radius:14px;background:#EAF1FF;border:1px dashed #B9C7DA;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#2F6BED;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6BED" stroke-width="1.8"><path d="M3 8a2 2 0 0 1 2-2h1.5l1.2-2h6.6l1.2 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+                    <span style="font-size:10px; font-weight:600;">ถ่ายรูป</span>
+                  </div>
+                  <div style="width:78px;height:78px;border-radius:14px;background:#E7EDF4;"></div>
+                  <div style="width:78px;height:78px;border-radius:14px;background:#E7EDF4;"></div>
+                </div>
+              </div>
+              <!-- note -->
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#3C4A5E; margin-bottom:10px;">หมายเหตุ (ถ้ามี)</div>
+                <div style="border:1px solid #D6DFEA; border-radius:12px; padding:12px; font-size:13.5px; color:#A2AEC0; min-height:60px; background:#fff;">พิมพ์สิ่งที่ต้องแจ้งธุรการ…</div>
+              </div>
+            </div>
+            <div style="padding:14px 18px 20px; background:#fff; border-top:1px solid #EAEFF6; flex-shrink:0;">
+              <div style="text-align:center; padding:16px; border-radius:14px; background:#2F6BED; color:#fff; font-size:15.5px; font-weight:700;">บันทึก & ส่งให้ธุรการ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = {
+      total:['#EAF0F8','#12233B'], delivery:['#E4EEFF','#1B5FD9'], remote:['#DCF1F2','#0B7C86'],
+      onsite:['#E9EAFB','#3B45C4'], training:['#FAF0D8','#9A6B10'], issue:['#FBE4E4','#C13540'],
+      done:['#E2F3EA','#157F4C'], pending:['#EDF0F4','#5A6B82'], ready:['#E2F3EA','#157F4C'],
+      progress:['#FAF0D8','#9A6B10']
+    };
+    const tint = t => { const p = C[t] || C.pending; return { bg:p[0], fg:p[1] }; };
+
+    const weekly = [
+      {day:'จ.', date:'30 มิ.ย.', time:'09:00', act:'ส่งของ',        hosp:'รพ.ศรีนครินทร์',        prov:'ขอนแก่น',  prod:'Kiosk HI-END ×2',    owner:'สมชาย ก.',   status:'กำลังจัดส่ง',    type:'delivery'},
+      {day:'จ.', date:'30 มิ.ย.', time:'13:30', act:'Remote ติดตั้ง', hosp:'รพ.ชลบุรี',            prov:'ชลบุรี',    prod:'Kiosk Start Smart',  owner:'ปิยะ ส.',    status:'นัดหมายแล้ว',    type:'remote'},
+      {day:'อ.', date:'1 ก.ค.',  time:'10:00', act:'ติดตั้งหน้างาน', hosp:'รพ.มหาราชนครเชียงใหม่', prov:'เชียงใหม่', prod:'Kiosk HI-END ×3',    owner:'อนุชา ต.',   status:'กำลังดำเนินการ', type:'onsite'},
+      {day:'อ.', date:'1 ก.ค.',  time:'14:00', act:'อบรมการใช้งาน',  hosp:'รพ.สระบุรี',            prov:'สระบุรี',   prod:'Mini Kiosk ×2',      owner:'วราภรณ์ น.', status:'นัดหมายแล้ว',    type:'training'},
+      {day:'พ.', date:'2 ก.ค.',  time:'09:30', act:'ติดตั้งหน้างาน', hosp:'รพ.บุรีรัมย์',          prov:'บุรีรัมย์', prod:'ชุดปิดสิทธิ ×4',      owner:'อนุชา ต.',   status:'รอดำเนินการ',    type:'pending'},
+      {day:'พ.', date:'2 ก.ค.',  time:'11:00', act:'ส่งของ',        hosp:'รพ.อุดรธานี',          prov:'อุดรธานี',  prod:'QR Payment ×6',      owner:'สมชาย ก.',   status:'ติดปัญหา',       type:'issue'},
+      {day:'พฤ.',date:'3 ก.ค.',  time:'13:00', act:'อบรมการใช้งาน',  hosp:'รพ.สงขลานครินทร์',      prov:'สงขลา',    prod:'Kiosk HI-END ×2',    owner:'วราภรณ์ น.', status:'เสร็จแล้ว',      type:'done'},
+      {day:'ศ.', date:'4 ก.ค.',  time:'10:30', act:'Remote ติดตั้ง', hosp:'รพ.นครพิงค์',          prov:'เชียงใหม่', prod:'Kiosk Start Smart',  owner:'ปิยะ ส.',    status:'เลื่อนนัด',      type:'pending'},
+    ].map((r,i) => ({ ...r, ...tint(r.type), zebra: i%2 ? '#FBFCFE' : '#ffffff' }));
+
+    const summary = [
+      {label:'งานทั้งหมดสัปดาห์นี้', value:'24', type:'total'},
+      {label:'ต้องส่งของ', value:'6', type:'delivery'},
+      {label:'Remote ติดตั้ง', value:'4', type:'remote'},
+      {label:'ติดตั้งหน้างาน', value:'5', type:'onsite'},
+      {label:'อบรมการใช้งาน', value:'3', type:'training'},
+      {label:'เลยกำหนด', value:'3', type:'issue'},
+    ].map(s => ({ ...s, ...tint(s.type) }));
+
+    const statbar = [
+      {label:'งานทั้งหมด', value:'24', type:'total'},
+      {label:'ส่งของ', value:'6', type:'delivery'},
+      {label:'Remote', value:'4', type:'remote'},
+      {label:'ติดตั้งหน้างาน', value:'5', type:'onsite'},
+      {label:'อบรม', value:'3', type:'training'},
+      {label:'รอ Checklist', value:'7', type:'pending'},
+      {label:'รอส่งมอบ', value:'4', type:'pending'},
+      {label:'รอใบแจ้งหนี้', value:'5', type:'pending'},
+      {label:'เลยกำหนด', value:'3', type:'issue'},
+      {label:'ติดปัญหา', value:'2', type:'issue'},
+    ].map(s => ({ ...s, ...tint(s.type) }));
+
+    const backlog = [
+      {label:'รอ Checklist ตอบกลับ', value:'7'},
+      {label:'รอส่งมอบงาน', value:'4'},
+      {label:'รอเปิดใบแจ้งหนี้', value:'5'},
+    ];
+    const alerts = [
+      {label:'งานเลยกำหนดส่งมอบ', sub:'ต้องเร่งติดตามด่วน', value:'3'},
+      {label:'งานติดปัญหา', sub:'ยังไม่มอบหมายผู้แก้ไข', value:'2'},
+    ];
+
+    const jobs = [
+      {code:'JOB-2568-0142', hosp:'รพ.ศรีนครินทร์',        prov:'ขอนแก่น',  prod:'Kiosk HI-END',       qty:2, sales:'1,850,000', status:'พร้อมจัดส่ง',   type:'ready',    avatar:'ส'},
+      {code:'JOB-2568-0138', hosp:'รพ.มหาราชนครเชียงใหม่', prov:'เชียงใหม่', prod:'Kiosk HI-END',       qty:3, sales:'2,640,000', status:'กำลังติดตั้ง',  type:'progress', avatar:'อ'},
+      {code:'JOB-2568-0134', hosp:'รพ.สงขลานครินทร์',      prov:'สงขลา',    prod:'Kiosk Start Smart',  qty:2, sales:'1,780,000', status:'รออบรม',        type:'progress', avatar:'ว'},
+      {code:'JOB-2568-0131', hosp:'รพ.ชลบุรี',            prov:'ชลบุรี',    prod:'Kiosk Start Smart',  qty:1, sales:'420,000',   status:'รอ QC',         type:'pending',  avatar:'ป'},
+      {code:'JOB-2568-0129', hosp:'รพ.อุดรธานี',          prov:'อุดรธานี',  prod:'QR Payment',         qty:6, sales:'540,000',   status:'เลยกำหนด',      type:'issue',    avatar:'ส'},
+      {code:'JOB-2568-0126', hosp:'รพ.สระบุรี',            prov:'สระบุรี',   prod:'Mini Kiosk',         qty:2, sales:'760,000',   status:'จัดส่งแล้ว',    type:'delivery', avatar:'อ'},
+      {code:'JOB-2568-0121', hosp:'รพ.บุรีรัมย์',          prov:'บุรีรัมย์', prod:'ชุดปิดสิทธิ',         qty:4, sales:'980,000',   status:'ปิดงานแล้ว',    type:'done',     avatar:'จ'},
+      {code:'JOB-2568-0118', hosp:'รพ.นครพิงค์',          prov:'เชียงใหม่', prod:'รถเข็น Start Smart', qty:2, sales:'310,000',   status:'รอส่งมอบ',      type:'progress', avatar:'ป'},
+    ].map((j,i) => ({ ...j, ...tint(j.type), zebra: i%2 ? '#FBFCFE' : '#ffffff' }));
+
+    const navItems = [
+      ['หน้าหลัก','home'], ['แผนงานสัปดาห์','weekly'], ['รายการงาน','jobs'],
+      ['โรงพยาบาล','hosp'], ['สินค้า & Serial','prod'], ['การจัดส่ง','deliv'],
+      ['รายงาน','report'],
+    ];
+    const mkNav = (active, theme) => navItems.map(([label,key]) => {
+      const on = key === active;
+      if (theme === 'A') return { label, w: on?'600':'500', fg: on?'#1B5FD9':'#5A6B82', bg: on?'#EAF1FF':'transparent', dot: on?'#1B5FD9':'#C7D2E0' };
+      return { label, w: on?'600':'400', fg: on?'#fff':'#9FB3CD', bg: on?'#153C63':'transparent', dot: on?'#2F80ED':'#3E5470' };
+    });
+
+    const jobFilters = [
+      {label:'ทั้งหมด', on:true}, {label:'รอ QC', on:false}, {label:'พร้อมจัดส่ง', on:false},
+      {label:'กำลังติดตั้ง', on:false}, {label:'เลยกำหนด', on:false},
+    ].map(f => f.on
+      ? {label:f.label, w:'600', bg:'#1B5FD9', fg:'#fff', bd:'#1B5FD9'}
+      : {label:f.label, w:'500', bg:'#fff', fg:'#5A6B82', bd:'#E1E9F3'});
+    const jobFiltersB = [
+      {label:'ทั้งหมด · 142', on:true}, {label:'รอ QC · 18', on:false}, {label:'พร้อมจัดส่ง · 24', on:false},
+      {label:'กำลังติดตั้ง · 31', on:false}, {label:'เลยกำหนด · 3', on:false}, {label:'ปิดงาน · 66', on:false},
+    ].map(f => f.on
+      ? {label:f.label, w:'600', bg:'#0A2540', fg:'#fff'}
+      : {label:f.label, w:'500', bg:'#fff', fg:'#5A6B82'});
+
+    const tasks = [
+      {time:'09:00', typeLabel:'ส่งของ',       hosp:'รพ.ศรีนครินทร์',        prov:'ขอนแก่น',  prod:'Kiosk HI-END ×2', status:'กำลังจัดส่ง', type:'delivery'},
+      {time:'10:00', typeLabel:'ติดตั้งหน้างาน', hosp:'รพ.มหาราชนครเชียงใหม่', prov:'เชียงใหม่', prod:'Kiosk HI-END ×3', status:'กำลังติดตั้ง', type:'progress'},
+      {time:'14:00', typeLabel:'อบรม',         hosp:'รพ.สระบุรี',            prov:'สระบุรี',   prod:'Mini Kiosk ×2',   status:'นัดหมายแล้ว', type:'pending'},
+    ].map(t => ({ ...t, ...tint(t.type) }));
+
+    const mkMnav = (theme) => {
+      const items = [['งาน','■',true],['แผน','▤',false],['แจ้ง','◈',false],['ฉัน','●',false]];
+      return items.map(([label,icon,on]) => {
+        if (theme === 'A') return { label, icon, w: on?'600':'500', fg: on?'#1B5FD9':'#8492A6', bg: on?'#1B5FD9':'transparent', ic: on?'#fff':'#8492A6' };
+        return { label, icon, w: on?'600':'400', fg: on?'#fff':'#7B93B2', bg: on?'#2F80ED':'transparent', ic: on?'#fff':'#7B93B2' };
+      }).map(m => ({ ...m, icon: m.icon }));
+    };
+    // For theme A mobile nav the icon char sits in a colored square; recolor properly
+    const mnavA = [
+      {label:'งาน', icon:'▣', on:true}, {label:'แผน', icon:'▤', on:false},
+      {label:'แจ้ง', icon:'◈', on:false}, {label:'ฉัน', icon:'●', on:false},
+    ].map(m => m.on
+      ? {label:m.label, icon:m.icon, w:'600', fg:'#1B5FD9', bg:'#1B5FD9'}
+      : {label:m.label, icon:m.icon, w:'500', fg:'#8492A6', bg:'#EAEFF6'});
+    const mnavB = [
+      {label:'งาน', icon:'▣', on:true}, {label:'แผน', icon:'▤', on:false},
+      {label:'แจ้ง', icon:'◈', on:false}, {label:'ฉัน', icon:'●', on:false},
+    ].map(m => m.on
+      ? {label:m.label, icon:m.icon, w:'600', fg:'#fff', bg:'#2F80ED', ic:'#fff'}
+      : {label:m.label, icon:m.icon, w:'400', fg:'#7B93B2', bg:'#123152', ic:'#7B93B2'});
+
+    const serialsRaw = [
+      {label:'S/N ตู้ KIOSK',            value:'KSK-24A-00871', done:true},
+      {label:'S/N Mini PC',              value:'MPC-77-45120',  done:true},
+      {label:'S/N UPS',                  value:'UPS-APC-9930',  done:true},
+      {label:'S/N Printer',              value:'PRN-EP-33418',  done:true},
+      {label:'S/N Smart Card Reader',    value:'ยังไม่บันทึก',   done:false},
+      {label:'S/N BMS',                  value:'ยังไม่บันทึก',   done:false},
+      {label:'Key ID (QR Payment)',      value:'ยังไม่บันทึก',   done:false},
+    ];
+    const serials = serialsRaw.map(s => s.done
+      ? {label:s.label, value:s.value, mark:'✓', markBg:'#E2F3EA', markFg:'#157F4C', bd:'#E7EDF4', valFg:'#12233B'}
+      : {label:s.label, value:s.value, mark:'+', markBg:'#EAF0F8', markFg:'#1B5FD9', bd:'#DDE6F2', valFg:'#A2AEC0'});
+    const serialDone = serialsRaw.filter(s => s.done).length;
+
+    const qc = [
+      {label:'อุปกรณ์ครบตามรายการ',   ok:true},
+      {label:'ทดสอบเปิด-ปิดเครื่อง',   ok:true},
+      {label:'ทดสอบ Smart Card Reader', ok:false},
+      {label:'ทดสอบเครื่องพิมพ์',      ok:true},
+      {label:'ตรวจสภาพภายนอก / สี',    ok:true},
+    ].map(q => q.ok
+      ? {label:q.label, icon:'✓', bg:'#E2F3EA', fg:'#157F4C'}
+      : {label:q.label, icon:'!', bg:'#FBE4E4', fg:'#C13540'});
+
+    const detailTabs = [
+      'ข้อมูลทั่วไป','โรงพยาบาล & ผู้ติดต่อ','สัญญา / ใบสั่งซื้อ','รายการสินค้า','Serial Number',
+      'QC','การจัดส่ง','การติดตั้ง','อบรม','Checklist','ส่งมอบ','ใบแจ้งหนี้','ปัญหา','ไฟล์แนบ','ประวัติ'
+    ].map((label,i) => i===0
+      ? {label, w:'600', fg:'#0A2540', bd:'#2F80ED', bg:'#EAF1FF'}
+      : {label, w:'500', fg:'#5A6B82', bd:'transparent', bg:'transparent'});
+
+    const jobTimeline = [
+      {title:'นำเข้าข้อมูลจาก Excel', meta:'ธุรการ · จันทนา', date:'12 มิ.ย. 09:20', state:'done'},
+      {title:'ข้อมูลตั้งต้นสมบูรณ์', meta:'ธุรการ · จันทนา', date:'12 มิ.ย. 14:05', state:'done'},
+      {title:'บันทึกสัญญา / ใบสั่งซื้อ', meta:'PO-2568-0471', date:'14 มิ.ย. 10:40', state:'done'},
+      {title:'บันทึก Serial & QC ผ่าน', meta:'ทีมช่าง · ประเสริฐ', date:'26 มิ.ย. 16:10', state:'done'},
+      {title:'พร้อมจัดส่ง', meta:'สถานะปัจจุบัน', date:'27 มิ.ย. 08:30', state:'active'},
+      {title:'จัดส่ง → ติดตั้ง → อบรม', meta:'รอดำเนินการ', date:'—', state:'todo'},
+    ].map(t => ({
+      ...t,
+      dot: t.state==='done' ? '#157F4C' : t.state==='active' ? '#2F80ED' : '#C7D2E0',
+      titleFg: t.state==='todo' ? '#8492A6' : '#0D1B2A'
+    }));
+
+    const stepStyle = s => ({
+      ...s,
+      numBg: s.state==='done' ? '#157F4C' : s.state==='active' ? '#2F6BED' : '#EAEFF6',
+      numFg: s.state==='todo' ? '#A2AEC0' : '#fff',
+      labFg: s.state==='todo' ? '#A2AEC0' : '#12233B',
+      badge: s.state==='done' ? 'เสร็จ' : s.state==='active' ? 'กำลังทำ' : 'รอ',
+      badgeBg: s.state==='done' ? '#E2F3EA' : s.state==='active' ? '#E4EEFF' : '#EEF1F5',
+      badgeFg: s.state==='done' ? '#157F4C' : s.state==='active' ? '#2F6BED' : '#8492A6',
+    });
+    const mkFlow = active => ['ข้อมูลงาน','สินค้า & QC','จัดส่ง & ติดตั้ง','ส่งมอบ & บิล']
+      .map((label,i) => stepStyle({ n:String(i+1), label, state: (i+1)<active ? 'done' : (i+1)===active ? 'active' : 'todo' }));
+    const flowSteps = mkFlow(3);
+    const flowStepsHandover = mkFlow(4);
+
+    const liteStat = [
+      {label:'งานสัปดาห์นี้', value:'24'},
+      {label:'ต้องส่ง / ติดตั้ง', value:'9'},
+      {label:'รอส่งมอบ', value:'4'},
+      {label:'เลยกำหนด', value:'3', warn:true},
+    ];
+
+    const liteJobs = [
+      {code:'#0142', hosp:'รพ.ศรีนครินทร์',   prov:'ขอนแก่น',  prod:'Kiosk HI-END ×2', done:3, status:'กำลังติดตั้ง', type:'progress'},
+      {code:'#0138', hosp:'รพ.เชียงใหม่',      prov:'เชียงใหม่', prod:'Kiosk HI-END ×3', done:2, status:'พร้อมจัดส่ง', type:'ready'},
+      {code:'#0129', hosp:'รพ.อุดรธานี',       prov:'อุดรธานี',  prod:'QR Payment ×6',  done:2, status:'เลยกำหนด',   type:'issue'},
+      {code:'#0126', hosp:'รพ.สระบุรี',        prov:'สระบุรี',   prod:'Mini Kiosk ×2',  done:3, status:'จัดส่งแล้ว',  type:'delivery'},
+      {code:'#0121', hosp:'รพ.บุรีรัมย์',      prov:'บุรีรัมย์', prod:'ชุดปิดสิทธิ ×4',  done:4, status:'ปิดงานแล้ว',  type:'done'},
+    ].map(j => ({
+      ...j, ...tint(j.type),
+      dots: [1,2,3,4].map(i => ({ bg: i<=j.done ? (j.type==='issue' ? '#C13540' : '#2F6BED') : '#E1E9F3' }))
+    }));
+
+    return {
+      weekly, summary, statbar, backlog, alerts, jobs, detailTabs, jobTimeline,
+      flowSteps, flowStepsHandover, liteStat, liteJobs,
+      navA: mkNav('weekly','A'), navAjobs: mkNav('jobs','A'),
+      navB: mkNav('weekly','B'), navBjobs: mkNav('jobs','B'),
+      jobFilters, jobFiltersB, tasks, mnavA, mnavB,
+      serials, serialDone, qc,
+    };
+  }
+}
+</script>
+</body>
+</html>

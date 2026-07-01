@@ -1,0 +1,1736 @@
+# Top Level Specification (TLS)
+
+## ระบบบันทึกและติดตามงานติดตั้ง KIOSK
+
+KIOSK Installation Tracking System
+
+---
+
+## 1. Project Overview
+
+### 1.1 ชื่อระบบ
+
+ระบบบันทึกและติดตามงานติดตั้ง KIOSK
+KIOSK Installation Tracking System
+
+### 1.2 วัตถุประสงค์ของระบบ
+
+พัฒนาระบบสำหรับบริหารจัดการงานติดตั้ง KIOSK แบบครบวงจร โดยนำข้อมูลจาก Excel เดิมมาเป็นข้อมูลตั้งต้น และเปลี่ยนกระบวนการทำงานจากการบันทึกหลายชีตใน Excel ให้เป็นระบบฐานข้อมูลกลาง
+
+ระบบต้องรองรับการทำงานของ 3 กลุ่มหลัก ได้แก่
+
+1. งานธุรการ
+   บันทึกข้อมูลตั้งต้น สัญญา ใบสั่งซื้อ เอกสารส่งมอบ และการเปิดใบแจ้งหนี้
+
+2. ทีมช่าง
+   บันทึกรายละเอียดสินค้า อุปกรณ์ Serial Number และผลการตรวจสอบ QC
+
+3. ทีมติดตั้ง
+   บันทึกข้อมูลการจัดส่ง การ Remote ติดตั้ง การติดตั้งหน้างาน การอบรม Checklist และปัญหาที่พบ
+
+ระบบต้องรองรับการใช้งานผ่าน
+
+* Desktop / Notebook
+* Tablet
+* Mobile Phone
+
+ในรูปแบบ Responsive Web Application ตั้งแต่ระยะแรก
+
+---
+
+## 2. Business Objective
+
+### 2.1 เป้าหมายทางธุรกิจ
+
+ระบบนี้มีเป้าหมายเพื่อยกระดับการติดตามงาน KIOSK จาก Excel Tracking ให้เป็น Operation Management System ที่สามารถติดตามงานได้ตั้งแต่เริ่มต้นจนถึงปิดงาน
+
+### 2.2 ผลลัพธ์ที่ต้องการ
+
+* รวมข้อมูล KIOSK ทั้งหมดไว้ในระบบเดียว
+* ลดการใช้ Excel หลายชีต
+* ลดข้อมูลซ้ำและข้อมูลตกหล่น
+* ติดตามสถานะงานได้แบบ Real-time
+* เห็นแผนงานประจำสัปดาห์ชัดเจน
+* รู้ว่าสัปดาห์นี้ต้องส่งของ ติดตั้ง หรืออบรมที่ใด
+* ติดตาม Serial Number ได้ครบถ้วน
+* ติดตามงานค้าง Checklist / ส่งมอบ / เปิดใบแจ้งหนี้ ได้ง่าย
+* รองรับการใช้งานภาคสนามผ่านมือถือและ Tablet
+* ผู้บริหารสามารถดู Dashboard เพื่อบริหารงานได้ทันที
+
+---
+
+## 3. System Scope
+
+### 3.1 In Scope
+
+ระบบต้องรองรับความสามารถหลักดังนี้
+
+1. Login และกำหนดสิทธิ์ผู้ใช้งาน
+2. Import ข้อมูลจาก Excel เดิม
+3. จัดการข้อมูลงานติดตั้ง
+4. จัดการข้อมูลโรงพยาบาล
+5. จัดการข้อมูลผู้ติดต่อโรงพยาบาล
+6. จัดการข้อมูลสัญญา / ใบสั่งซื้อ
+7. จัดการข้อมูลสินค้าและอุปกรณ์
+8. บันทึก Serial Number
+9. ตรวจสอบ Serial Number ซ้ำ
+10. บันทึกผล QC สินค้า
+11. บันทึกการจัดส่งสินค้า
+12. บันทึกการ Remote ติดตั้ง
+13. บันทึกการติดตั้งหน้างาน
+14. บันทึกการอบรม
+15. บันทึกปัญหาและวิธีแก้ไข
+16. บันทึก Checklist
+17. บันทึกเอกสารส่งมอบงาน
+18. บันทึกสถานะการเปิดใบแจ้งหนี้
+19. Dashboard แผนงานประจำสัปดาห์
+20. รายงานสำหรับผู้บริหาร
+21. แจ้งเตือนงานค้าง / งานใกล้ครบกำหนด
+22. รองรับ Mobile และ Tablet
+23. Export รายงานเป็น Excel / PDF
+
+### 3.2 Out of Scope ระยะแรก
+
+รายการที่ยังไม่จำเป็นต้องพัฒนาใน Phase แรก
+
+* ระบบบัญชีเต็มรูปแบบ
+* ระบบ Stock / Inventory แบบสมบูรณ์
+* ระบบ GPS Tracking ขนส่ง
+* Native Mobile Application
+* ระบบอนุมัติเอกสารหลายระดับ
+* เชื่อมต่อระบบบัญชีภายนอก
+* เชื่อมต่อ HOSxP โดยตรง
+
+---
+
+## 4. User Roles
+
+### 4.1 Admin / งานธุรการ
+
+หน้าที่หลัก
+
+* Import Excel
+* ตรวจสอบข้อมูลตั้งต้น
+* บันทึกข้อมูลโรงพยาบาล
+* บันทึกข้อมูลผู้ติดต่อ
+* บันทึกสัญญา / ใบสั่งซื้อ
+* บันทึกวันที่เริ่มสัญญา
+* บันทึกกำหนดส่งมอบ
+* แนบเอกสาร
+* ติดตาม Checklist
+* บันทึกส่งมอบงาน
+* บันทึกเปิดใบแจ้งหนี้
+* ปิดงาน
+
+### 4.2 Technician / ทีมช่าง
+
+หน้าที่หลัก
+
+* ดูงานที่รอเตรียมสินค้า
+* บันทึกรายละเอียดสินค้า
+* บันทึกอุปกรณ์เสริม
+* บันทึกสี / รุ่นสินค้า
+* บันทึก Serial Number
+* แนบรูปสินค้า
+* แนบรูป Serial Number
+* บันทึกผล QC
+* เปลี่ยนสถานะเป็นพร้อมจัดส่ง
+
+### 4.3 Installer / ทีมติดตั้ง
+
+หน้าที่หลัก
+
+* ดูงานที่ต้องส่งของ
+* ดูงานที่ต้องติดตั้ง
+* ดูงานที่ต้องอบรม
+* บันทึกวันที่ขนของออกจากบริษัท
+* บันทึกวันที่ส่งถึงโรงพยาบาล
+* บันทึกกำหนด Remote
+* บันทึกผลติดตั้ง
+* บันทึกผลอบรม
+* บันทึกปัญหาที่พบ
+* บันทึกวิธีแก้ไข
+* แนบรูปหน้างาน
+* แนบ Checklist
+* ส่งสถานะกลับให้ธุรการ
+
+### 4.4 Executive / ผู้บริหาร
+
+หน้าที่หลัก
+
+* ดู Dashboard ภาพรวม
+* ดูแผนงานประจำสัปดาห์
+* ดูงานล่าช้า
+* ดูงานที่มีปัญหา
+* ดูงานค้างส่งมอบ
+* ดูงานค้างเปิดใบแจ้งหนี้
+* ดูรายงานยอดขาย
+* Export รายงาน
+
+### 4.5 System Admin
+
+หน้าที่หลัก
+
+* จัดการผู้ใช้งาน
+* จัดการ Role และ Permission
+* จัดการ Master Data
+* ดู Audit Log
+* ตั้งค่าระบบ
+
+---
+
+## 5. High Level Workflow
+
+### 5.1 Workflow หลักของระบบ
+
+1. ธุรการ Import ข้อมูลจาก Excel เดิม
+2. ระบบอ่านข้อมูลจากหลายชีตและแปลงเป็นรูปแบบกลาง
+3. ธุรการตรวจสอบข้อมูลโรงพยาบาล จังหวัด จำนวน ยอดขาย และเอกสาร
+4. ธุรการบันทึกข้อมูลสัญญา ใบสั่งซื้อ และกำหนดส่งมอบ
+5. ระบบส่งงานต่อให้ทีมช่าง
+6. ทีมช่างบันทึกรายละเอียดสินค้าและ Serial Number
+7. ทีมช่างบันทึกผล QC
+8. เมื่อ QC ผ่าน ระบบเปลี่ยนสถานะเป็นพร้อมจัดส่ง
+9. ทีมติดตั้งบันทึกข้อมูลจัดส่ง
+10. ทีมติดตั้งกำหนดวัน Remote / Onsite
+11. ทีมติดตั้งบันทึกผลติดตั้ง
+12. ทีมติดตั้งบันทึกผลอบรม
+13. ทีมติดตั้งแนบ Checklist และรูปหน้างาน
+14. ธุรการตรวจสอบเอกสาร Checklist
+15. ธุรการบันทึกส่งมอบงาน
+16. ธุรการบันทึกเปิดใบแจ้งหนี้
+17. ระบบเปลี่ยนสถานะเป็นปิดงาน
+
+---
+
+## 6. Main Functional Modules
+
+---
+
+## 6.1 Module: Authentication & User Management
+
+### วัตถุประสงค์
+
+ใช้สำหรับเข้าสู่ระบบและควบคุมสิทธิ์การใช้งานตามบทบาท
+
+### Functional Requirements
+
+* Login ด้วย Username / Password
+* Logout
+* Reset Password
+* จัดการ User
+* กำหนด Role
+* กำหนด Permission
+* เปิด / ปิดสถานะผู้ใช้งาน
+* บันทึกประวัติการเข้าใช้งาน
+
+### User Roles
+
+* Admin
+* Technician
+* Installer
+* Executive
+* System Admin
+
+---
+
+## 6.2 Module: Excel Import
+
+### วัตถุประสงค์
+
+ใช้สำหรับนำเข้าข้อมูลจาก Excel เดิม เพื่อใช้เป็นข้อมูลตั้งต้นของระบบ
+
+### Functional Requirements
+
+* Upload ไฟล์ Excel
+* อ่านข้อมูลจากหลาย Sheet
+* แสดงรายการ Sheet ที่พบ
+* เลือก Sheet ที่ต้องการ Import
+* Mapping Column จาก Excel เข้ากับ Field ของระบบ
+* Preview ข้อมูลก่อน Import
+* ตรวจสอบข้อมูลซ้ำ
+* ตรวจสอบข้อมูลว่าง
+* ตรวจสอบรูปแบบวันที่
+* ตรวจสอบ Serial Number ซ้ำ
+* Import ข้อมูลเข้าสู่ระบบ
+* เก็บประวัติการ Import
+* แสดงรายการ Import สำเร็จ / ไม่สำเร็จ
+
+### ข้อมูลจาก Excel ที่ต้องรองรับ
+
+* โรงพยาบาล
+* จังหวัด
+* จำนวน
+* ประเภทสินค้า
+* อุปกรณ์ / รุ่น
+* สี
+* ยอดขาย
+* ผู้ติดต่อโรงพยาบาล
+* สัญญา / ใบสั่งซื้อ
+* วันที่เริ่มสัญญา
+* กำหนดส่งมอบงาน
+* วันที่สิ้นสุดสัญญา
+* S/N BMS
+* S/N ตู้ KIOSK
+* S/N UPS
+* S/N Mini PC
+* S/N Smart Card Reader
+* S/N Printer
+* Key ID
+* วันที่ขนสินค้าออกจากบริษัท
+* วันที่ส่งถึงโรงพยาบาล
+* กำหนด Remote ติดตั้ง
+* เจ้าหน้าที่ Remote
+* Checklist ตอบกลับ
+* แจ้งส่งมอบงาน
+* เปิดใบแจ้งหนี้
+* ประมาณการค่าขนส่ง
+* ค่าขนส่งจริง
+
+---
+
+## 6.3 Module: Installation Job Management
+
+### วัตถุประสงค์
+
+เป็นหน้าจอกลางสำหรับจัดการงานติดตั้งแต่ละรายการ
+
+### Functional Requirements
+
+* เพิ่มงานติดตั้งใหม่
+* แก้ไขข้อมูลงานติดตั้ง
+* ค้นหางานตามโรงพยาบาล
+* ค้นหางานตามจังหวัด
+* ค้นหางานตามประเภทสินค้า
+* ค้นหางานตามสถานะ
+* ค้นหางานตามผู้รับผิดชอบ
+* ดูรายละเอียดงานแบบ 360 องศา
+* แสดง Timeline ของงาน
+* แสดงประวัติการเปลี่ยนสถานะ
+* แนบไฟล์ที่เกี่ยวข้อง
+* เปลี่ยนสถานะงานตาม Workflow
+
+### Core Fields
+
+* Job ID
+* Job Code
+* Lot / แหล่งข้อมูลเดิม
+* Hospital ID
+* Province
+* Product Type
+* Quantity
+* Sales Amount
+* Current Status
+* Admin Owner
+* Technician Owner
+* Installer Owner
+* Created Date
+* Updated Date
+
+---
+
+## 6.4 Module: Hospital & Contact Management
+
+### วัตถุประสงค์
+
+จัดเก็บข้อมูลโรงพยาบาลและผู้ติดต่อที่เกี่ยวข้องกับงานติดตั้ง
+
+### Functional Requirements
+
+* เพิ่ม / แก้ไขข้อมูลโรงพยาบาล
+* ตรวจสอบชื่อโรงพยาบาลซ้ำ
+* บันทึกจังหวัด
+* บันทึกเขตสุขภาพ
+* บันทึกประเภทหน่วยบริการ
+* บันทึกที่อยู่
+* บันทึกผู้ติดต่อหลายคนต่อโรงพยาบาล
+* แยกผู้ติดต่อเป็นฝ่าย เช่น IT, พัสดุ, การเงิน, ผู้ประสานงาน
+* รองรับปุ่มโทรออกจากมือถือ
+* รองรับการเปิดแผนที่นำทางไปโรงพยาบาล
+
+### Hospital Fields
+
+* Hospital ID
+* Hospital Name
+* Province
+* Health Region
+* Hospital Type
+* Address
+* Phone
+* Latitude
+* Longitude
+* Remark
+
+### Contact Fields
+
+* Contact ID
+* Hospital ID
+* Contact Name
+* Department / Position
+* Phone
+* Line ID
+* Email
+* Remark
+
+---
+
+## 6.5 Module: Contract & Document Management
+
+### วัตถุประสงค์
+
+ใช้จัดเก็บข้อมูลสัญญา ใบสั่งซื้อ และเอกสารที่เกี่ยวข้อง
+
+### Functional Requirements
+
+* บันทึกประเภทเอกสาร
+* บันทึกเลขที่สัญญา / ใบสั่งซื้อ
+* บันทึกวันที่เอกสาร
+* บันทึกวันที่เริ่มสัญญา
+* บันทึกระยะเวลาส่งมอบ
+* บันทึกกำหนดส่งมอบงาน
+* บันทึกวันที่สิ้นสุดสัญญา
+* แนบไฟล์เอกสาร
+* แจ้งเตือนงานใกล้ครบกำหนดส่งมอบ
+* แจ้งเตือนงานเลยกำหนดส่งมอบ
+
+### Core Fields
+
+* Contract ID
+* Job ID
+* Document Type
+* Document No
+* Document Date
+* Contract Start Date
+* Delivery Period
+* Delivery Due Date
+* Contract End Date
+* Attached File
+* Remark
+
+---
+
+## 6.6 Module: Product & Serial Number Management
+
+### วัตถุประสงค์
+
+ใช้บันทึกรายละเอียดสินค้า อุปกรณ์ และ Serial Number
+
+### Functional Requirements
+
+* เพิ่มรายการสินค้าในงานติดตั้ง
+* รองรับ 1 งานมีหลายสินค้า
+* รองรับ 1 สินค้ามีหลาย Serial Number
+* บันทึกประเภทสินค้า
+* บันทึกรุ่นสินค้า
+* บันทึกอุปกรณ์เสริม
+* บันทึกสี
+* บันทึก Serial Number
+* ตรวจสอบ Serial Number ซ้ำ
+* บันทึก Key ID สำหรับ QR Payment
+* แนบรูปสินค้า
+* แนบรูป Serial Number
+* บันทึกสถานะสินค้า
+* ใช้งานผ่าน Mobile / Tablet ได้
+* รองรับการถ่ายรูปจากกล้องมือถือ
+
+### Product Type ตัวอย่าง
+
+* Kiosk HI-END
+* Kiosk Start Smart
+* Mini Kiosk
+* ชุดปิดสิทธิ
+* อุปกรณ์ Kiosk
+* รถเข็น
+* รถเข็น Start Smart
+* NonCash
+* Payment
+* QR Payment
+
+### Serial Number Type
+
+* S/N BMS
+* S/N KIOSK
+* S/N UPS
+* S/N Mini PC
+* S/N Smart Card Reader
+* S/N Printer
+* Key ID
+
+---
+
+## 6.7 Module: QC Management
+
+### วัตถุประสงค์
+
+ใช้ตรวจสอบความพร้อมของสินค้าก่อนจัดส่ง
+
+### Functional Requirements
+
+* บันทึก Checklist การ QC
+* ตรวจสอบอุปกรณ์ครบถ้วน
+* ตรวจสอบ Serial Number ครบถ้วน
+* ตรวจสอบการทำงานของเครื่อง
+* ตรวจสอบอุปกรณ์เสริม
+* แนบรูปยืนยันผล QC
+* บันทึกผล QC ผ่าน / ไม่ผ่าน
+* บันทึกปัญหา
+* บันทึกวิธีแก้ไข
+* เปลี่ยนสถานะเป็นพร้อมจัดส่งเมื่อ QC ผ่าน
+
+### QC Status
+
+* รอ QC
+* กำลัง QC
+* QC ผ่าน
+* QC ไม่ผ่าน
+* รอแก้ไข
+* พร้อมจัดส่ง
+
+---
+
+## 6.8 Module: Delivery Management
+
+### วัตถุประสงค์
+
+ใช้บันทึกและติดตามการจัดส่งสินค้าไปยังโรงพยาบาล
+
+### Functional Requirements
+
+* บันทึกวันที่ขนสินค้าออกจากบริษัท
+* บันทึกวันที่คาดว่าจะถึงโรงพยาบาล
+* บันทึกวันที่ส่งถึงจริง
+* บันทึกวิธีจัดส่ง
+* บันทึกรถ / บริษัทขนส่ง
+* บันทึกเลข Tracking
+* บันทึกค่าขนส่งประมาณการ
+* บันทึกค่าขนส่งจริง
+* บันทึกผู้รับผิดชอบการจัดส่ง
+* บันทึกสถานะการจัดส่ง
+* แนบรูปการส่งของ
+* แนบเอกสารรับของ
+* รองรับการอัปเดตผ่านมือถือ
+
+### Delivery Status
+
+* รอจัดส่ง
+* นัดจัดส่งแล้ว
+* กำลังจัดส่ง
+* ส่งถึงโรงพยาบาลแล้ว
+* ส่งล่าช้า
+* มีปัญหาในการจัดส่ง
+
+---
+
+## 6.9 Module: Installation & Remote Management
+
+### วัตถุประสงค์
+
+ใช้บันทึกแผนและผลการ Remote / ติดตั้งหน้างาน
+
+### Functional Requirements
+
+* บันทึกวันที่นัดติดตั้ง
+* บันทึกรูปแบบการติดตั้ง
+* บันทึกเจ้าหน้าที่ Remote
+* บันทึกเจ้าหน้าที่ติดตั้ง
+* บันทึกเวลาเริ่มงาน
+* บันทึกเวลาจบงาน
+* บันทึกผลการติดตั้ง
+* บันทึกผลการทดสอบระบบ
+* บันทึกปัญหาที่พบ
+* บันทึกวิธีแก้ไข
+* บันทึกงานที่ต้องติดตามต่อ
+* แนบรูปถ่ายหน้างาน
+* แนบ Checklist
+* เปลี่ยนสถานะติดตั้งสำเร็จ / ติดปัญหา
+* ใช้งานผ่าน Mobile และ Tablet ได้
+
+### Installation Type
+
+* Remote
+* Onsite
+* Remote + Onsite
+
+### Installation Status
+
+* รอนัดติดตั้ง
+* นัดติดตั้งแล้ว
+* กำลังติดตั้ง
+* ติดตั้งสำเร็จ
+* ติดตั้งไม่สำเร็จ
+* ติดปัญหา
+* เลื่อนนัด
+
+---
+
+## 6.10 Module: Training Management
+
+### วัตถุประสงค์
+
+ใช้บันทึกข้อมูลการอบรมการใช้งานให้กับโรงพยาบาล
+
+### Functional Requirements
+
+* บันทึกวันที่อบรม
+* บันทึกรูปแบบอบรม
+* บันทึกกลุ่มผู้เข้าอบรม
+* บันทึกจำนวนผู้เข้าอบรม
+* บันทึกผู้สอน
+* แนบเอกสารประกอบการอบรม
+* บันทึกผลการอบรม
+* บันทึกปัญหาหลังอบรม
+* บันทึกงานที่ต้องติดตามต่อ
+
+### Training Type
+
+* Online
+* Onsite
+* Remote Training
+
+### Training Audience
+
+* IT
+* เวชระเบียน
+* การเงิน
+* พยาบาล
+* ห้องยา
+* ผู้ดูแลระบบ
+* เจ้าหน้าที่ทั่วไป
+
+---
+
+## 6.11 Module: Checklist, Handover & Invoice
+
+### วัตถุประสงค์
+
+ใช้ติดตามเอกสารหลังติดตั้ง การส่งมอบงาน และการเปิดใบแจ้งหนี้
+
+### Functional Requirements
+
+* บันทึกสถานะ Checklist
+* บันทึกวันที่ได้รับ Checklist
+* แนบไฟล์ Checklist
+* บันทึกสถานะเอกสารส่งมอบ
+* บันทึกวันที่แจ้งส่งมอบงาน
+* แนบไฟล์เอกสารส่งมอบ
+* บันทึกสถานะการเปิดใบแจ้งหนี้
+* บันทึกวันที่เปิดใบแจ้งหนี้
+* บันทึกเลขที่ใบแจ้งหนี้
+* บันทึกมูลค่าใบแจ้งหนี้
+* แนบเอกสารใบแจ้งหนี้
+* บันทึกหมายเหตุ
+* เปลี่ยนสถานะปิดงาน
+
+### Core Fields
+
+* Checklist ID
+* Job ID
+* Checklist Status
+* Checklist Received Date
+* Handover Status
+* Handover Date
+* Invoice Status
+* Invoice Date
+* Invoice No
+* Invoice Amount
+* Attached Files
+* Remark
+
+---
+
+## 6.12 Module: Issue & Problem Tracking
+
+### วัตถุประสงค์
+
+ใช้บันทึกปัญหาที่พบระหว่างการเตรียมสินค้า ส่งของ ติดตั้ง หรืออบรม
+
+### Functional Requirements
+
+* บันทึกประเภทปัญหา
+* บันทึกรายละเอียดปัญหา
+* ระบุผู้รับผิดชอบ
+* บันทึกวันที่พบปัญหา
+* บันทึกวิธีแก้ไข
+* บันทึกวันที่แก้ไขเสร็จ
+* แนบรูปหรือไฟล์ประกอบ
+* เปลี่ยนสถานะปัญหา
+
+### Issue Status
+
+* เปิดปัญหา
+* รอผู้รับผิดชอบ
+* กำลังแก้ไข
+* แก้ไขแล้ว
+* ปิดปัญหา
+
+---
+
+## 6.13 Module: Weekly Operation Dashboard
+
+### วัตถุประสงค์
+
+แสดงแผนงานประจำสัปดาห์ เพื่อให้เห็นว่าในสัปดาห์นั้นต้องดำเนินการอะไร ที่ไหน ใครรับผิดชอบ และงานใดมีความเสี่ยง
+
+Dashboard ต้องตอบคำถามสำคัญได้ว่า
+
+* สัปดาห์นี้ต้องส่งของที่ไหน
+* สัปดาห์นี้ต้อง Remote ที่ไหน
+* สัปดาห์นี้ต้องติดตั้งที่ไหน
+* สัปดาห์นี้ต้องอบรมที่ไหน
+* งานไหนรอ Checklist
+* งานไหนรอส่งมอบ
+* งานไหนรอเปิดใบแจ้งหนี้
+* งานไหนเลยกำหนด
+* งานไหนมีปัญหา
+* ใครเป็นผู้รับผิดชอบ
+
+### Summary Cards
+
+* งานทั้งหมดในสัปดาห์นี้
+* งานต้องส่งของ
+* งานต้อง Remote ติดตั้ง
+* งานต้องติดตั้งหน้างาน
+* งานต้องอบรม
+* งานรอ Checklist
+* งานรอส่งมอบ
+* งานรอเปิดใบแจ้งหนี้
+* งานค้าง / เลยกำหนด
+* งานติดปัญหา
+
+### Activity Type
+
+* เตรียมสินค้า
+* QC สินค้า
+* ส่งของ
+* Remote ติดตั้ง
+* ติดตั้งหน้างาน
+* อบรมการใช้งาน
+* ติดตามปัญหา
+* ติดตาม Checklist
+* ส่งมอบงาน
+* เปิดใบแจ้งหนี้
+* ปิดงาน
+
+### Weekly Activity Table
+
+| วันที่ | เวลา | กิจกรรม | โรงพยาบาล | จังหวัด | สินค้า | ผู้รับผิดชอบ | สถานะ | หมายเหตุ |
+| ------ | ---- | ------- | --------- | ------- | ------ | ------------ | ----- | -------- |
+
+### Dashboard Views
+
+1. Summary View
+   แสดงตัวเลขภาพรวมประจำสัปดาห์
+
+2. Calendar View
+   แสดงแผนงานตามวัน จันทร์ถึงอาทิตย์
+
+3. Table View
+   แสดงรายการงานทั้งหมดในรูปแบบตาราง
+
+4. Map View
+   แสดงงานตามจังหวัดเพื่อช่วยวางแผนการเดินทาง
+
+5. Mobile View
+   แสดงแบบ Card สั้น ๆ สำหรับมือถือ
+
+### Filter
+
+* เลือกสัปดาห์
+* เลือกเดือน
+* ประเภทกิจกรรม
+* ประเภทสินค้า
+* จังหวัด
+* เจ้าหน้าที่รับผิดชอบ
+* สถานะงาน
+* งานเลยกำหนด
+* งานมีปัญหา
+* งานยังไม่ปิดงาน
+
+---
+
+## 6.14 Module: Mobile & Tablet Support
+
+### วัตถุประสงค์
+
+รองรับการใช้งานจริงของทีมภาคสนามผ่าน Mobile และ Tablet โดยไม่จำเป็นต้องติดตั้ง Application ในระยะแรก
+
+ระบบต้องเป็น Responsive Web Application และสามารถใช้งานผ่าน Browser ได้
+
+### Device Support
+
+* Desktop / Notebook
+* Tablet
+* Mobile Phone
+
+### Mobile Features
+
+ระบบต้องรองรับฟังก์ชันสำคัญบนมือถือ ได้แก่
+
+* ดู Dashboard แบบย่อ
+* ดู My Task / งานของฉัน
+* ดูแผนงานวันนี้
+* ดูแผนงานสัปดาห์นี้
+* ค้นหาโรงพยาบาล
+* ดูข้อมูลผู้ติดต่อ
+* กดโทรหาผู้ติดต่อ
+* เปิดแผนที่นำทาง
+* อัปเดตสถานะงาน
+* บันทึก Serial Number
+* ถ่ายรูปสินค้า
+* ถ่ายรูป Serial Number
+* ถ่ายรูปหน้างาน
+* แนบ Checklist
+* บันทึกผลติดตั้ง
+* บันทึกผลอบรม
+* บันทึกปัญหา
+* บันทึกวิธีแก้ไข
+
+### Mobile UI Requirement
+
+* ใช้ Card Layout
+* ปุ่มใหญ่ กดง่าย
+* รองรับ Bottom Navigation
+* ลดจำนวน Field ต่อหน้าจอ
+* ใช้ Dropdown แทนการพิมพ์
+* มี Quick Update Status
+* มีปุ่มบันทึกร่าง
+* รองรับการถ่ายรูปจากกล้อง
+* รองรับการอัปโหลดหลายรูป
+* แสดงสถานะด้วยสีและ Icon
+* ไม่ต้องซูมหน้าจอเพื่อใช้งาน
+
+### Tablet UI Requirement
+
+* รองรับการกรอกข้อมูลที่ยาวกว่ามือถือ
+* แสดง Table แบบย่อได้
+* ใช้สำหรับทีมช่างบันทึกสินค้าและ QC
+* ใช้สำหรับทีมติดตั้งดูแผนงาน
+* ใช้สำหรับผู้บริหารดู Dashboard
+
+### Phase ถัดไปสำหรับ Mobile
+
+ระบบควรออกแบบให้ต่อยอดเป็น PWA ได้ในอนาคต เช่น
+
+* Add to Home Screen
+* Push Notification
+* Offline Draft
+* Background Sync
+* Local Cache สำหรับงานของฉัน
+
+---
+
+## 6.15 Module: Notification & Alert
+
+### วัตถุประสงค์
+
+แจ้งเตือนงานที่ต้องติดตาม เพื่อป้องกันงานตกหล่น
+
+### Alert Rules
+
+ระบบต้องแจ้งเตือนเมื่อพบเงื่อนไขดังนี้
+
+* งานใกล้ครบกำหนดส่งมอบภายใน 7 วัน
+* งานเลยกำหนดส่งมอบ
+* งานยังไม่ระบุ Serial Number
+* งานยังไม่ผ่าน QC
+* งานพร้อมส่งแต่ยังไม่จัดส่ง
+* งานจัดส่งแล้วแต่ยังไม่ติดตั้ง
+* งานติดตั้งแล้วแต่ยังไม่ได้อบรม
+* งานติดตั้งแล้วแต่ยังไม่ได้ Checklist
+* งานมี Checklist แล้วแต่ยังไม่ส่งมอบงาน
+* งานส่งมอบแล้วแต่ยังไม่เปิดใบแจ้งหนี้
+* งานมีปัญหาแต่ยังไม่ได้มอบหมายผู้รับผิดชอบ
+
+### Notification Channel ระยะแรก
+
+* แจ้งเตือนในระบบ
+* แสดง Badge บน Dashboard
+* แสดงรายการแจ้งเตือนใน My Task
+* Export รายการแจ้งเตือนเป็น Excel
+
+### Notification Channel ระยะถัดไป
+
+* Email
+* LINE OA
+* Microsoft Teams
+* Push Notification ผ่าน PWA
+
+---
+
+## 6.16 Module: Report & Export
+
+### รายงานที่ต้องมี
+
+1. รายงานภาพรวมงานติดตั้ง
+2. รายงานแผนงานประจำสัปดาห์
+3. รายงานงานค้างส่งของ
+4. รายงานงานค้างติดตั้ง
+5. รายงานงานค้างอบรม
+6. รายงานงานค้าง Checklist
+7. รายงานงานค้างส่งมอบ
+8. รายงานงานค้างเปิดใบแจ้งหนี้
+9. รายงานตามประเภทสินค้า
+10. รายงานตามจังหวัด
+11. รายงานตามเจ้าหน้าที่
+12. รายงานยอดขาย
+13. รายงานค่าขนส่ง
+14. รายงาน Serial Number
+15. รายงานปัญหาและการแก้ไข
+
+### Export Format
+
+* Excel
+* PDF
+* CSV
+
+---
+
+## 7. Master Data
+
+ระบบควรมี Master Data เพื่อลดการพิมพ์ผิดและควบคุมมาตรฐานข้อมูล
+
+### 7.1 Product Master
+
+* Product Code
+* Product Name
+* Product Type
+* Product Model
+* Default Accessories
+* Active Status
+
+### 7.2 Province Master
+
+* Province Code
+* Province Name
+* Region
+* Health Region
+
+### 7.3 User Master
+
+* User ID
+* Name
+* Department
+* Role
+* Email
+* Phone
+* Active Status
+
+### 7.4 Activity Type Master
+
+* Activity Type Code
+* Activity Type Name
+* Description
+* Default Status
+
+### 7.5 Status Master
+
+* Status Code
+* Status Name
+* Status Group
+* Display Color
+* Sequence
+
+---
+
+## 8. Top Level Data Model
+
+ระบบควรมี Entity หลักดังนี้
+
+1. users
+2. roles
+3. permissions
+4. hospitals
+5. hospital_contacts
+6. installation_jobs
+7. contracts
+8. product_items
+9. serial_numbers
+10. qc_records
+11. delivery_records
+12. installation_records
+13. training_records
+14. checklist_records
+15. handover_records
+16. invoice_records
+17. job_activities
+18. issue_logs
+19. attachments
+20. import_batches
+21. audit_logs
+
+---
+
+## 9. Recommended Database Structure
+
+### 9.1 installation_jobs
+
+ใช้เป็นตารางหลักของงานติดตั้ง
+
+Fields สำคัญ
+
+* id
+* job_code
+* source_lot
+* hospital_id
+* province_id
+* product_type
+* quantity
+* sales_amount
+* current_status
+* admin_owner_id
+* technician_owner_id
+* installer_owner_id
+* created_at
+* updated_at
+
+### 9.2 job_activities
+
+ใช้เก็บกิจกรรมรายสัปดาห์ของแต่ละงาน
+
+Fields สำคัญ
+
+* id
+* job_id
+* activity_type
+* activity_date
+* start_time
+* end_time
+* location
+* work_mode
+* responsible_user_id
+* activity_status
+* remark
+* created_at
+* updated_at
+
+### 9.3 product_items
+
+ใช้เก็บรายการสินค้าในแต่ละงาน
+
+Fields สำคัญ
+
+* id
+* job_id
+* product_type
+* product_model
+* accessories
+* color
+* quantity
+* product_status
+* qc_status
+* remark
+
+### 9.4 serial_numbers
+
+ใช้เก็บ Serial Number ของอุปกรณ์
+
+Fields สำคัญ
+
+* id
+* product_item_id
+* serial_type
+* serial_no
+* key_id
+* photo_file_id
+* remark
+
+### 9.5 delivery_records
+
+ใช้เก็บข้อมูลการจัดส่ง
+
+Fields สำคัญ
+
+* id
+* job_id
+* shipped_date
+* expected_arrival_date
+* arrived_date
+* delivery_method
+* vehicle
+* tracking_no
+* estimated_cost
+* actual_cost
+* delivery_status
+* responsible_user_id
+* remark
+
+### 9.6 installation_records
+
+ใช้เก็บข้อมูลการติดตั้ง
+
+Fields สำคัญ
+
+* id
+* job_id
+* installation_date
+* installation_type
+* remote_staff_id
+* onsite_staff_id
+* start_time
+* end_time
+* installation_status
+* test_result
+* problem_found
+* solution
+* follow_up_task
+* remark
+
+### 9.7 training_records
+
+ใช้เก็บข้อมูลอบรม
+
+Fields สำคัญ
+
+* id
+* job_id
+* training_date
+* training_type
+* audience_group
+* participant_count
+* trainer_id
+* training_result
+* problem_after_training
+* follow_up_task
+* remark
+
+### 9.8 checklist_records
+
+ใช้เก็บ Checklist
+
+Fields สำคัญ
+
+* id
+* job_id
+* checklist_status
+* received_date
+* file_id
+* remark
+
+### 9.9 handover_records
+
+ใช้เก็บข้อมูลส่งมอบงาน
+
+Fields สำคัญ
+
+* id
+* job_id
+* handover_status
+* handover_date
+* file_id
+* remark
+
+### 9.10 invoice_records
+
+ใช้เก็บข้อมูลเปิดใบแจ้งหนี้
+
+Fields สำคัญ
+
+* id
+* job_id
+* invoice_status
+* invoice_date
+* invoice_no
+* invoice_amount
+* file_id
+* remark
+
+### 9.11 attachments
+
+ใช้เก็บไฟล์แนบและรูปภาพ
+
+Fields สำคัญ
+
+* id
+* ref_table
+* ref_id
+* file_name
+* file_type
+* file_path
+* file_size
+* uploaded_by
+* uploaded_at
+
+### 9.12 audit_logs
+
+ใช้เก็บประวัติการแก้ไขข้อมูล
+
+Fields สำคัญ
+
+* id
+* user_id
+* action
+* table_name
+* record_id
+* old_value
+* new_value
+* ip_address
+* created_at
+
+---
+
+## 10. Status Design
+
+### 10.1 Job Status
+
+* นำเข้าข้อมูลแล้ว
+* รอตรวจสอบข้อมูล
+* ข้อมูลตั้งต้นสมบูรณ์
+* รอเตรียมสินค้า
+* กำลังเตรียมสินค้า
+* รอ QC
+* QC ผ่าน
+* พร้อมจัดส่ง
+* จัดส่งแล้ว
+* รอติดตั้ง
+* นัดติดตั้งแล้ว
+* กำลังติดตั้ง
+* ติดตั้งสำเร็จ
+* รออบรม
+* อบรมแล้ว
+* รอ Checklist
+* Checklist ตอบกลับแล้ว
+* รอส่งมอบงาน
+* ส่งมอบงานแล้ว
+* รอเปิดใบแจ้งหนี้
+* เปิดใบแจ้งหนี้แล้ว
+* ปิดงานแล้ว
+* มีปัญหารอแก้ไข
+* เลื่อนกำหนดการ
+* ยกเลิก
+
+### 10.2 Activity Status
+
+* รอดำเนินการ
+* นัดหมายแล้ว
+* กำลังดำเนินการ
+* เสร็จแล้ว
+* เลื่อน
+* ติดปัญหา
+* รอติดตาม
+* ยกเลิก
+
+---
+
+## 11. Role-Based Access Control
+
+### 11.1 Admin / ธุรการ
+
+* View all jobs
+* Create job
+* Edit job initial data
+* Import Excel
+* Manage contract
+* Manage document
+* Manage checklist
+* Manage handover
+* Manage invoice
+* Close job
+
+### 11.2 Technician
+
+* View assigned jobs
+* Edit product details
+* Add serial number
+* Update QC
+* Upload product images
+* Change product status
+
+### 11.3 Installer
+
+* View assigned jobs
+* Update delivery
+* Update remote schedule
+* Update installation result
+* Update training result
+* Upload onsite images
+* Upload checklist
+* Add issue log
+* Quick update status from mobile
+
+### 11.4 Executive
+
+* View dashboard
+* View reports
+* Export reports
+* Read-only access
+
+### 11.5 System Admin
+
+* Manage users
+* Manage roles
+* Manage master data
+* Manage system configuration
+* View audit logs
+
+---
+
+## 12. UI / Screen Requirements
+
+### 12.1 Desktop Screens
+
+1. Login Page
+2. Main Dashboard
+3. Weekly Dashboard
+4. Job List
+5. Job Detail
+6. Excel Import
+7. Product & Serial Management
+8. QC Management
+9. Delivery Management
+10. Installation Management
+11. Training Management
+12. Checklist / Handover / Invoice
+13. Issue Tracking
+14. Report Page
+15. Master Data
+16. User Management
+
+### 12.2 Job Detail Page Tabs
+
+หน้ารายละเอียดงานควรแบ่งเป็น Tab ดังนี้
+
+1. ข้อมูลทั่วไป
+2. โรงพยาบาลและผู้ติดต่อ
+3. สัญญา / ใบสั่งซื้อ
+4. รายการสินค้า
+5. Serial Number
+6. QC
+7. การจัดส่ง
+8. การติดตั้ง
+9. การอบรม
+10. Checklist
+11. ส่งมอบงาน
+12. ใบแจ้งหนี้
+13. ปัญหาและการติดตาม
+14. ไฟล์แนบ
+15. ประวัติการแก้ไข
+
+### 12.3 Mobile Screens
+
+1. Mobile Dashboard
+2. My Task
+3. My Weekly Plan
+4. Job Detail Mobile View
+5. Product & Serial Mobile Form
+6. QC Mobile Form
+7. Delivery Mobile Form
+8. Installation Mobile Form
+9. Training Mobile Form
+10. Checklist Upload
+11. Issue Report
+
+### 12.4 Mobile Quick Actions
+
+* โทรหาผู้ติดต่อ
+* เปิดแผนที่
+* อัปเดตสถานะ
+* ถ่ายรูป
+* แนบไฟล์
+* บันทึก Serial Number
+* บันทึกผลติดตั้ง
+* บันทึกปัญหา
+* ส่งงานให้ธุรการตรวจสอบ
+
+---
+
+## 13. Dashboard Logic
+
+### 13.1 Logic การดึงงานประจำสัปดาห์
+
+Dashboard ต้องดึงข้อมูลจาก `job_activities` เป็นหลัก โดยใช้ `activity_date` อยู่ในช่วงสัปดาห์ที่เลือก
+
+### 13.2 ตัวอย่าง Logic
+
+* ถ้า activity_type = ส่งของ และ activity_date อยู่ในสัปดาห์นี้ ให้แสดงในกลุ่มงานส่งของ
+* ถ้า activity_type = Remote ติดตั้ง และ activity_date อยู่ในสัปดาห์นี้ ให้แสดงในกลุ่ม Remote
+* ถ้า activity_type = ติดตั้งหน้างาน และ activity_date อยู่ในสัปดาห์นี้ ให้แสดงในกลุ่ม Onsite
+* ถ้า activity_type = อบรม และ activity_date อยู่ในสัปดาห์นี้ ให้แสดงในกลุ่มอบรม
+* ถ้างานเลยกำหนดส่งมอบและยังไม่ปิดงาน ให้แสดงในกลุ่ม Overdue
+* ถ้าติดตั้งแล้วแต่ยังไม่มี Checklist ให้แสดงในกลุ่มรอ Checklist
+* ถ้าส่งมอบแล้วแต่ยังไม่เปิดใบแจ้งหนี้ ให้แสดงในกลุ่มรอเปิดใบแจ้งหนี้
+
+---
+
+## 14. API Specification: Top Level
+
+### 14.1 Authentication API
+
+* POST /api/auth/login
+* POST /api/auth/logout
+* GET /api/auth/me
+* POST /api/auth/refresh-token
+
+### 14.2 Job API
+
+* GET /api/jobs
+* POST /api/jobs
+* GET /api/jobs/{id}
+* PUT /api/jobs/{id}
+* PATCH /api/jobs/{id}/status
+* DELETE /api/jobs/{id}
+
+### 14.3 Import API
+
+* POST /api/import/excel
+* GET /api/import/batches
+* GET /api/import/batches/{id}
+* POST /api/import/batches/{id}/confirm
+
+### 14.4 Hospital API
+
+* GET /api/hospitals
+* POST /api/hospitals
+* GET /api/hospitals/{id}
+* PUT /api/hospitals/{id}
+
+### 14.5 Product API
+
+* GET /api/jobs/{job_id}/products
+* POST /api/jobs/{job_id}/products
+* PUT /api/products/{id}
+* POST /api/products/{id}/serials
+* POST /api/products/{id}/qc
+
+### 14.6 Delivery API
+
+* GET /api/jobs/{job_id}/deliveries
+* POST /api/jobs/{job_id}/deliveries
+* PUT /api/deliveries/{id}
+
+### 14.7 Installation API
+
+* GET /api/jobs/{job_id}/installations
+* POST /api/jobs/{job_id}/installations
+* PUT /api/installations/{id}
+
+### 14.8 Training API
+
+* GET /api/jobs/{job_id}/trainings
+* POST /api/jobs/{job_id}/trainings
+* PUT /api/trainings/{id}
+
+### 14.9 Activity API
+
+* GET /api/activities
+* POST /api/jobs/{job_id}/activities
+* PUT /api/activities/{id}
+* DELETE /api/activities/{id}
+
+### 14.10 Dashboard API
+
+* GET /api/dashboard/weekly-summary
+* GET /api/dashboard/weekly-activities
+* GET /api/dashboard/overdue-jobs
+* GET /api/dashboard/problem-jobs
+* GET /api/dashboard/map
+
+### 14.11 Report API
+
+* GET /api/reports/jobs
+* GET /api/reports/weekly-plan
+* GET /api/reports/products
+* GET /api/reports/provinces
+* GET /api/reports/staff
+* GET /api/reports/invoices
+* GET /api/reports/export
+
+### 14.12 Attachment API
+
+* POST /api/attachments/upload
+* GET /api/attachments/{id}
+* DELETE /api/attachments/{id}
+
+---
+
+## 15. Non-Functional Requirements
+
+### 15.1 Performance
+
+* Dashboard ต้องโหลดภายใน 3 วินาทีสำหรับข้อมูลทั่วไป
+* Search รายการงานต้องตอบสนองภายใน 3 วินาที
+* Import Excel ต้องรองรับอย่างน้อย 10,000 rows ต่อไฟล์
+* Export Excel ต้องรองรับอย่างน้อย 50,000 rows
+* Mobile page ต้องโหลดเร็วและไม่ใช้ข้อมูลมากเกินจำเป็น
+
+### 15.2 Security
+
+* ต้องมีระบบ Login
+* ต้องมี Role-Based Access Control
+* ต้องบันทึก Audit Log การแก้ไขข้อมูลสำคัญ
+* ไฟล์แนบต้องจำกัดสิทธิ์ตามผู้ใช้งาน
+* ต้องป้องกันการลบข้อมูลโดยไม่ตั้งใจ
+* ต้องมี Validation ก่อนบันทึก
+* ต้องป้องกันการเข้าถึงข้อมูลข้ามสิทธิ์
+
+### 15.3 Audit Log
+
+ระบบต้องบันทึก
+
+* ผู้แก้ไขข้อมูล
+* วันที่แก้ไข
+* Field ที่เปลี่ยน
+* ค่าเดิม
+* ค่าใหม่
+* IP Address
+* Device Info ถ้ามี
+
+### 15.4 Backup
+
+* ฐานข้อมูลต้อง Backup รายวัน
+* ไฟล์แนบต้อง Backup แยก
+* ต้องมีวิธี Restore ข้อมูลย้อนหลัง
+
+### 15.5 Usability
+
+* รองรับภาษาไทย
+* ใช้งานง่ายสำหรับทีมธุรการ
+* ใช้งานง่ายสำหรับทีมติดตั้งภาคสนาม
+* ลดการพิมพ์ด้วย Dropdown และ Master Data
+* รองรับการถ่ายรูปจากมือถือ
+* รองรับการ Export กลับเป็น Excel
+* หน้าจอ Mobile ต้องไม่ต้องซูมเข้าออกเพื่อใช้งานหลัก
+
+---
+
+## 16. Suggested Technology Stack
+
+### 16.1 Frontend
+
+* React / Vue / Angular
+* Responsive Web Design
+* รองรับ Desktop, Tablet, Mobile
+* รองรับ PWA ในอนาคต
+
+### 16.2 Backend
+
+* Node.js / NestJS
+* หรือ Python FastAPI
+* REST API
+* JWT Authentication
+
+### 16.3 Database
+
+* PostgreSQL
+* รองรับข้อมูลเชิงสัมพันธ์
+* รองรับ Report และ Dashboard
+
+### 16.4 File Storage
+
+* Local Storage ระยะแรก
+* Object Storage ระยะถัดไป เช่น MinIO / S3 Compatible
+
+### 16.5 Deployment
+
+* Docker
+* Nginx Reverse Proxy
+* Ubuntu Server
+* HTTPS
+
+---
+
+## 17. Development Phase
+
+### Phase 1: Foundation & Excel Import
+
+Scope
+
+* Login
+* User / Role
+* Import Excel
+* Job List
+* Job Detail
+* Hospital
+* Contact
+* Contract
+* Basic Status
+* Basic Dashboard
+* Responsive Web พื้นฐาน
+
+Deliverable
+
+* สามารถนำเข้า Excel เดิมได้
+* ธุรการเริ่มใช้งานข้อมูลตั้งต้นได้
+* ดูรายการงานผ่าน Desktop และ Tablet ได้
+
+---
+
+### Phase 2: Product, Serial Number & QC
+
+Scope
+
+* Product Management
+* Serial Number
+* QC Checklist
+* Upload Product Image
+* Product Status
+* Ready to Ship
+* Mobile / Tablet สำหรับทีมช่าง
+
+Deliverable
+
+* ทีมช่างสามารถบันทึกสินค้าและ Serial Number ได้
+* สามารถถ่ายรูปสินค้าและ Serial Number ผ่านมือถือได้
+* ตรวจสอบสินค้าและ QC ก่อนส่งได้
+
+---
+
+### Phase 3: Delivery, Installation & Training
+
+Scope
+
+* Delivery Management
+* Remote Schedule
+* Installation Result
+* Training Record
+* Issue Log
+* Upload Onsite Image
+* Upload Checklist
+* Mobile My Task
+
+Deliverable
+
+* ทีมติดตั้งสามารถดูงานของตนเองผ่านมือถือได้
+* บันทึกส่งของ ติดตั้ง และอบรมจากหน้างานได้
+* ถ่ายรูปหน้างานและแนบ Checklist ได้
+
+---
+
+### Phase 4: Weekly Dashboard & Reports
+
+Scope
+
+* Weekly Operation Dashboard
+* Calendar View
+* Table View
+* Map View
+* Overdue Jobs
+* Problem Jobs
+* Report Export
+* Executive Mobile Dashboard
+
+Deliverable
+
+* ผู้บริหารดูแผนงานรายสัปดาห์ได้
+* ทีมเห็นว่าสัปดาห์นี้ต้องทำอะไร ที่ไหน ใครรับผิดชอบ
+* Export รายงานได้
+
+---
+
+### Phase 5: Notification & Automation
+
+Scope
+
+* Alert Rules
+* Notification Center
+* Email / LINE Integration
+* Auto Reminder
+* KPI Dashboard
+* PWA Enhancement
+
+Deliverable
+
+* ระบบแจ้งเตือนงานค้าง
+* ลดงานตกหล่น
+* รองรับ Push Notification ในอนาคต
+* ใช้ข้อมูลประเมิน KPI ทีมได้
+
+---
+
+## 18. Acceptance Criteria
+
+### 18.1 Excel Import
+
+* ระบบสามารถ Import Excel เดิมได้
+* ระบบแสดง Preview ก่อนนำเข้า
+* ระบบแจ้งข้อมูลผิดพลาดก่อน Import
+* ระบบป้องกันข้อมูลซ้ำ
+* ระบบเก็บประวัติการ Import ได้
+
+### 18.2 Job Management
+
+* ผู้ใช้สามารถเพิ่ม แก้ไข และค้นหางานติดตั้งได้
+* งานติดตั้งแสดงข้อมูลครบทุกส่วน
+* ระบบแสดงสถานะล่าสุดของงานได้
+* ระบบแสดง Timeline การทำงานได้
+
+### 18.3 Product & QC
+
+* ทีมช่างสามารถบันทึกสินค้าและ Serial Number ได้
+* ระบบตรวจสอบ Serial Number ซ้ำได้
+* ระบบบันทึก QC ได้
+* ระบบแนบรูปสินค้าได้
+* ระบบเปลี่ยนสถานะเป็นพร้อมจัดส่งได้
+
+### 18.4 Delivery & Installation
+
+* ทีมติดตั้งบันทึกการจัดส่งได้
+* ทีมติดตั้งบันทึกกำหนด Remote ได้
+* ทีมติดตั้งบันทึกผลติดตั้งได้
+* ทีมติดตั้งบันทึกผลอบรมได้
+* ระบบแนบรูปและ Checklist ได้
+
+### 18.5 Dashboard
+
+* Dashboard แสดงงานประจำสัปดาห์ได้
+* Dashboard แสดงงานส่งของ ติดตั้ง อบรม ได้แยกชัดเจน
+* Dashboard Filter ตามสัปดาห์ จังหวัด สินค้า และผู้รับผิดชอบได้
+* Dashboard แสดงงานค้างและงานเลยกำหนดได้
+* Dashboard ใช้งานได้บน Desktop, Tablet และ Mobile
+
+### 18.6 Mobile & Tablet
+
+* ผู้ใช้งานสามารถเปิดระบบผ่าน Browser บนมือถือได้
+* ทีมติดตั้งสามารถดู My Task บนมือถือได้
+* ทีมติดตั้งสามารถอัปเดตสถานะงานจากมือถือได้
+* ทีมช่างสามารถบันทึก Serial Number ผ่าน Tablet หรือ Mobile ได้
+* ระบบสามารถถ่ายรูปและแนบรูปจากกล้องมือถือได้
+* ระบบสามารถแนบ Checklist จากมือถือได้
+* หน้าจอไม่ล้นและไม่ต้องซูมเข้าออก
+* ผู้บริหารสามารถดู Summary Dashboard ผ่านมือถือได้
+* ระบบสามารถเปิดแผนที่นำทางจากข้อมูลโรงพยาบาลได้
+* ระบบสามารถกดโทรหาผู้ติดต่อจากมือถือได้
+
+### 18.7 Report
+
+* ระบบ Export Excel ได้
+* ระบบ Export PDF ได้
+* รายงานแสดงข้อมูลตาม Filter ได้ถูกต้อง
+
+---
+
+## 19. Success Metrics
+
+ตัวชี้วัดความสำเร็จของระบบ
+
+* ลดการใช้ Excel หลายชีตลงอย่างน้อย 80%
+* งานติดตั้งทุกงานมีผู้รับผิดชอบชัดเจน 100%
+* งานที่มี Serial Number ครบถ้วนมากกว่า 95%
+* งานติดตั้งแล้วแต่ยังไม่ส่งมอบลดลงอย่างน้อย 50%
+* งานส่งมอบแล้วแต่ยังไม่เปิดใบแจ้งหนี้ลดลงอย่างน้อย 50%
+* ผู้บริหารสามารถดูแผนงานสัปดาห์ได้ภายใน 1 หน้าจอ
+* ทีมสามารถค้นหาสถานะงานได้ภายใน 1 นาที
+* ทีมติดตั้งสามารถอัปเดตงานผ่านมือถือได้
+* ลดงานตกหล่นจากการประสานงานระหว่างทีม
+
+---
+
+## 20. Summary
+
+ระบบบันทึกและติดตามงานติดตั้ง KIOSK เป็นระบบกลางสำหรับบริหารจัดการงาน KIOSK ตั้งแต่การนำเข้าข้อมูลจาก Excel เดิม ไปจนถึงการเตรียมสินค้า จัดส่ง ติดตั้ง อบรม ส่งมอบงาน และเปิดใบแจ้งหนี้
+
+หัวใจสำคัญของระบบคือการใช้ “งานติดตั้ง” เป็นแกนกลาง และใช้ “กิจกรรมรายสัปดาห์” เป็นกลไกสำหรับสร้าง Dashboard ที่ตอบโจทย์การทำงานจริง
+
+ระบบต้องรองรับการใช้งานทั้ง Desktop, Tablet และ Mobile โดยเฉพาะทีมช่างและทีมติดตั้งที่ต้องใช้งานภาคสนาม เช่น ถ่ายรูปสินค้า บันทึก Serial Number บันทึกผลติดตั้ง แนบ Checklist และอัปเดตสถานะงานทันที
+
+Dashboard ของระบบต้องทำให้ผู้บริหารและทีมปฏิบัติงานเห็นชัดเจนว่า
+
+* สัปดาห์นี้ต้องส่งของที่ไหน
+* ต้อง Remote ที่ไหน
+* ต้องติดตั้งที่ไหน
+* ต้องอบรมที่ไหน
+* ใครเป็นผู้รับผิดชอบ
+* งานไหนล่าช้า
+* งานไหนมีปัญหา
+* งานไหนต้องเร่งติดตามเพื่อส่งมอบและเปิดใบแจ้งหนี้
+
+ระบบนี้จะช่วยยกระดับการทำงานจาก Excel Tracking ไปสู่ Operation Management System ที่สามารถติดตามงานได้ครบวงจร ใช้งานได้จริงในสำนักงานและหน้างาน และต่อยอดเป็น KPI ของทีมได้ในอนาคต
