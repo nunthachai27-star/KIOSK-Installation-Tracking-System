@@ -6,12 +6,13 @@
 
 **Architecture:** Next.js (App Router) เป็น full-stack เดียว — React + Tailwind สำหรับ UI, Route Handlers เป็น REST API, Prisma → PostgreSQL. Auth ด้วย Auth.js (NextAuth v5) Credentials + JWT session ฝัง role. ไฟล์แนบเก็บ local disk. Data model ตั้งชื่อตาม TLS เพื่อขยายภายหลัง.
 
-**Tech Stack:** Next.js 15, React 19, TypeScript 5, Tailwind CSS 3.4, Prisma 6, PostgreSQL 16, Auth.js (next-auth@5 beta), bcryptjs, Vitest, Zod
+**Tech Stack:** Next.js 16, React 19, TypeScript 5, Tailwind CSS v4 (CSS-first, no `tailwind.config`), Prisma 6, PostgreSQL 16, Auth.js (next-auth@5 beta), bcryptjs, Vitest 4, Zod 4
 
 ## Global Constraints
 
 - Node.js ≥ 20
-- Next.js 15 (App Router เท่านั้น, ไม่ใช้ Pages Router)
+- Next.js 16 (App Router เท่านั้น, ไม่ใช้ Pages Router; route params เป็น `Promise` และต้อง `await`)
+- Tailwind CSS v4 (CSS-first config: `@import "tailwindcss"` ใน globals.css, ไม่มีไฟล์ `tailwind.config.*`)
 - TypeScript strict mode = true
 - ทุก UI เป็นภาษาไทย; ฟอนต์ `IBM Plex Sans Thai`, สีแบรนด์ `#2F6BED`, พื้นหลัง `#F6F9FC`
 - Database provider = `postgresql`; connection ผ่าน env `DATABASE_URL`
@@ -26,7 +27,7 @@
 ### Task 1: Project scaffold + tooling
 
 **Files:**
-- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `tailwind.config.ts`, `postcss.config.mjs`, `vitest.config.ts`, `.env.example`, `.env`
+- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs` (Tailwind v4 uses `@tailwindcss/postcss`, no `tailwind.config`), `vitest.config.ts`, `.env.example`, `.env`
 - Create: `src/app/layout.tsx`, `src/app/globals.css`, `src/app/page.tsx`
 - Create: `src/lib/format.ts`
 - Test: `src/lib/format.test.ts`
