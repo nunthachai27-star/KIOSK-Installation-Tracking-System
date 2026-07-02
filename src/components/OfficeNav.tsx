@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 const ITEMS = [
   { href: '/', label: 'งานทั้งหมด' },
   { href: '/calendar', label: 'ปฏิทิน' },
+  { href: '/schedule', label: 'จัดคิว' },
+  { href: '/monitor', label: 'Monitor' },
   { href: '/settings', label: 'ตั้งค่า' },
 ]
 

@@ -7,6 +7,8 @@ const ACTIVITY_LABEL: Record<ActivityType, string> = {
   REMOTE: 'ติดตั้งทางไกล',
   ONSITE: 'ติดตั้งหน้างาน',
   TRAINING: 'อบรมการใช้งาน',
+  QC: 'ตรวจสอบ/QC',
+  HANDOVER: 'อบรม/ส่งมอบ',
 }
 
 const ACTIVITY_COLOR: Record<ActivityType, { color: string; bg: string }> = {
@@ -14,6 +16,8 @@ const ACTIVITY_COLOR: Record<ActivityType, { color: string; bg: string }> = {
   REMOTE: { color: '#9A6B10', bg: '#FAF0D8' },
   ONSITE: { color: '#9A6B10', bg: '#FAF0D8' },
   TRAINING: { color: '#157F4C', bg: '#E2F3EA' },
+  QC: { color: '#9A6B10', bg: '#FAF0D8' },
+  HANDOVER: { color: '#B0329A', bg: '#F7E3F3' },
 }
 
 function formatTime(d: Date | string): string {

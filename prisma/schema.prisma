@@ -85,6 +85,8 @@ enum ActivityType {
   REMOTE
   ONSITE
   TRAINING
+  QC
+  HANDOVER
 }
 
 enum ActivityStatus {
