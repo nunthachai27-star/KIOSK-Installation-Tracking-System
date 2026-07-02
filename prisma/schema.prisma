@@ -254,3 +254,16 @@ model Attachment {
 
   @@index([refTable, refId])
 }
+
+model MasterOption {
+  id        String   @id @default(cuid())
+  category  String
+  value     String
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, value])
+  @@index([category])
+}

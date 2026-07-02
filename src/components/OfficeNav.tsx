@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 const ITEMS = [
   { href: '/', label: 'งานทั้งหมด' },
   { href: '/calendar', label: 'ปฏิทิน' },
+  { href: '/settings', label: 'ตั้งค่า' },
 ]
 
 export function OfficeNav() {

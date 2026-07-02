@@ -1,13 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { JobForm } from '@/components/JobForm'
-import { getProductTypes } from '@/lib/dashboard'
+import { getJobFormOptions } from '@/lib/master'
 
 export default async function NewJobPage() {
-  const [hospitals, users, productTypes] = await Promise.all([
+  const [hospitals, users, options] = await Promise.all([
     prisma.hospital.findMany({ orderBy: { name: 'asc' } }),
     prisma.user.findMany({ where: { active: true }, select: { id: true, name: true, role: true }, orderBy: { name: 'asc' } }),
-    getProductTypes(),
+    getJobFormOptions(),
   ])
 
-  return <JobForm hospitals={hospitals} users={users} productTypes={productTypes} />
+  return <JobForm hospitals={hospitals} users={users} productTypes={options.productTypes} provinces={options.provinces} />
 }
