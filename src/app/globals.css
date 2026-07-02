@@ -2,12 +2,81 @@
 
 :root {
   --brand: #2F6BED;
-  --bg: #F6F9FC;
+  --brand-strong: #1E51D0;
+  --brand-soft: #EAF1FF;
+  --accent-2: #6D5DF6;
   --ink: #12233B;
+  --body: #3C4A5E;
+  --muted: #6B7A90;
+  --bg: #F4F6FB;
+  --surface: #FFFFFF;
+  --border: #E7EDF4;
+  --shadow-card: 0 1px 2px rgba(18, 45, 90, 0.05), 0 10px 30px -18px rgba(18, 45, 90, 0.22);
+  --shadow-hover: 0 1px 2px rgba(18, 45, 90, 0.06), 0 16px 40px -18px rgba(18, 45, 90, 0.30);
+  --brand-gradient: linear-gradient(135deg, #2F6BED 0%, #6D5DF6 100%);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+/* Reusable design-system primitives (see DESIGN.md) */
+.ds-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.ds-logo {
+  background: var(--brand-gradient);
+  box-shadow: 0 6px 16px -6px rgba(47, 107, 237, 0.55);
+}
+
+/* row / interactive lift */
+.ds-hover {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ds-lift:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* thin, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #C7D2E0 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #C7D2E0;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-hover,
+  .ds-lift:hover {
+    transition: none;
+    transform: none;
+  }
 }

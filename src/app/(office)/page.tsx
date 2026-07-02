@@ -33,7 +33,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
 
       {featured && <FeaturedJobCard job={featured} />}
 
-      <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
+      <div className="ds-card overflow-hidden">
         <div className="flex items-center justify-between px-5 pt-4 pb-2 gap-3 flex-wrap">
           <div className="text-[15px] font-bold">
             งานอื่น ๆ

@@ -10,7 +10,7 @@ export function JobRow({ job }: { job: Job & { hospital: Hospital } }) {
   return (
     <Link
       href={`/jobs/${job.id}`}
-      className="grid grid-cols-[1.4fr_1fr_150px_84px_112px_70px] items-center gap-2 px-5 py-3.5 border-t border-[#F1F5F9] hover:bg-[#FBFCFE]"
+      className="ds-hover grid grid-cols-[1.4fr_1fr_150px_84px_112px_70px] items-center gap-2 px-5 py-3.5 border-t border-[#EEF2F8] hover:bg-[#F8FAFD]"
     >
       <div>
         <div className="text-sm font-semibold">{job.hospital.name}</div>
