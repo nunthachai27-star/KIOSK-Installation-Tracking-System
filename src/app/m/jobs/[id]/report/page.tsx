@@ -21,7 +21,7 @@ export default async function MobileJobReportPage({ params }: { params: Promise<
   return (
     <div>
       <div className="px-5 pt-5">
-        <div className="text-sm font-bold text-[#12233B]">{job.hospital.name}</div>
+        <div className="text-sm font-bold text-[#1C1917]">{job.hospital.name}</div>
         <div className="text-xs text-[#8492A6]">{job.jobCode} · {job.province}</div>
       </div>
       <QuickReportForm jobId={job.id} />

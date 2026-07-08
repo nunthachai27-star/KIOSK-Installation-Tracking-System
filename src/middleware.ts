@@ -10,14 +10,16 @@ import { auth } from '@/lib/auth'
 // - API routes enforce their own per-endpoint role checks in the handlers.
 export default auth((req) => {
   const { pathname } = req.nextUrl
-  const origin = req.nextUrl.origin
+  // Behind a reverse proxy the request host may be the internal IP, so build
+  // redirect targets from the public AUTH_URL when it is configured.
+  const base = process.env.AUTH_URL || req.nextUrl.origin
 
   const isPublic = pathname.startsWith('/api/auth') || pathname.startsWith('/login')
   if (isPublic) return
 
   const session = req.auth
   if (!session?.user) {
-    return Response.redirect(new URL('/login', origin))
+    return Response.redirect(new URL('/login', base))
   }
 
   const isApi = pathname.startsWith('/api')
@@ -26,7 +28,7 @@ export default auth((req) => {
 
   if (isOfficePage && session.user.role !== 'OFFICE') {
     // FIELD (and any non-OFFICE role) uses the mobile app, not the desktop office UI.
-    return Response.redirect(new URL('/m', origin))
+    return Response.redirect(new URL('/m', base))
   }
 })
 

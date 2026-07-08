@@ -39,6 +39,6 @@ export async function POST(req: Request) {
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const parsed = jobInput.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-  const job = await prisma.job.create({ data: parsed.data })
+  const job = await prisma.job.create({ data: { ...parsed.data, createdById: session.user.id ?? null } })
   return NextResponse.json(job, { status: 201 })
 }

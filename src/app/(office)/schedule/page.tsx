@@ -5,6 +5,12 @@ import { ACTIVITY_TYPES, ACTIVITY_LABEL, getQueueForDate, dayRangeLocal } from '
 
 const timeFmt = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })
 
+/** วันตั้งต้นของคิว: กำหนดส่ง → วันเริ่มสัญญา → วันสิ้นสุดสัญญา (คืน YYYY-MM-DD หรือ '') */
+function defaultDateOf(j: { deliveryDueDate: Date | null; contractStartDate: Date | null; contractEndDate: Date | null }): string {
+  const d = j.deliveryDueDate ?? j.contractStartDate ?? j.contractEndDate
+  return d ? d.toISOString().slice(0, 10) : ''
+}
+
 export default async function SchedulePage() {
   const today = new Date()
   const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -16,7 +22,11 @@ export default async function SchedulePage() {
     getQueueForDate(from, to),
   ])
 
-  const jobOpts = jobs.map((j) => ({ id: j.id, label: `${j.jobCode} · ${j.hospital.name} · ${j.productType}` }))
+  const jobOpts = jobs.map((j) => ({
+    id: j.id,
+    label: `${j.jobCode} · ${j.hospital.name} · ${j.productType}`,
+    date: defaultDateOf(j),
+  }))
   const initial = queue.map((q) => ({
     id: q.id,
     time: timeFmt.format(q.activityDate),
@@ -29,8 +39,8 @@ export default async function SchedulePage() {
   return (
     <div className="p-6 max-w-[900px] mx-auto flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-xl font-bold text-[#12233B]">จัดคิวงาน</h1>
-        <Link href="/monitor" target="_blank" className="ds-hover text-sm font-semibold text-[#2F6BED] hover:underline">
+        <h1 className="text-xl font-bold text-[#1C1917]">จัดคิวงาน</h1>
+        <Link href="/monitor" target="_blank" className="ds-hover text-sm font-semibold text-[#EA580C] hover:underline">
           เปิดหน้า Monitor ↗
         </Link>
       </div>

@@ -34,7 +34,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const parsed = installationInput.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-  const data = parsed.data
+  const data = { ...parsed.data, recordedById: session.user.id }
 
   const installation = await prisma.installationRecord.upsert({
     where: { jobId: id },

@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { isOverdue, stepForStatus, statusLabel } from './status'
 
 describe('stepForStatus', () => {
-  it('maps INSTALLING to step 3', () => {
-    expect(stepForStatus('INSTALLING')).toBe(3)
+  it('maps INSTALLING to step 5', () => {
+    expect(stepForStatus('INSTALLING')).toBe(5)
   })
   it('maps DATA_ENTRY to step 1', () => {
     expect(stepForStatus('DATA_ENTRY')).toBe(1)
   })
-  it('maps WAIT_INVOICE to step 4', () => {
-    expect(stepForStatus('WAIT_INVOICE')).toBe(4)
+  it('maps WAIT_INVOICE to step 6', () => {
+    expect(stepForStatus('WAIT_INVOICE')).toBe(6)
   })
 })
 

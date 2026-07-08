@@ -15,8 +15,8 @@ export default async function MobileHomePage() {
   return (
     <div className="px-5 pt-6">
       <div className="mb-1 text-[13px] text-[#8492A6]">{dateLabel}</div>
-      <h1 className="text-xl font-bold text-[#12233B]">สวัสดี, {name}</h1>
-      <p className="mt-1 text-sm font-semibold text-[#2F6BED]">งานวันนี้ {activities.length} งาน</p>
+      <h1 className="text-xl font-bold text-[#1C1917]">สวัสดี, {name}</h1>
+      <p className="mt-1 text-sm font-semibold text-[#EA580C]">งานวันนี้ {activities.length} งาน</p>
 
       <div className="mt-4 flex flex-col gap-3">
         {activities.length === 0 && (

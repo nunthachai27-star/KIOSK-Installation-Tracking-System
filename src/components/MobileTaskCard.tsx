@@ -43,7 +43,7 @@ export function MobileTaskCard({
   return (
     <div className="bg-white rounded-2xl border border-[#E7EDF4] p-4 shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold text-[#12233B]">{formatTime(activity.activityDate)}</span>
+        <span className="text-sm font-bold text-[#1C1917]">{formatTime(activity.activityDate)}</span>
         <span
           className="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold"
           style={{ background: badge.bg, color: badge.color }}
@@ -52,7 +52,7 @@ export function MobileTaskCard({
         </span>
       </div>
 
-      <div className="text-[15px] font-bold text-[#12233B]">{hospital.name}</div>
+      <div className="text-[15px] font-bold text-[#1C1917]">{hospital.name}</div>
       <div className="text-[13px] text-[#5A6B82] mt-0.5">
         {hospital.province} · {job.productType}
         {job.productModel ? ` · ${job.productModel}` : ''} ×{formatQty(job.quantity)}
@@ -64,7 +64,7 @@ export function MobileTaskCard({
           aria-disabled={!job.contactPhone}
           className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold ${
             job.contactPhone
-              ? 'bg-[#EAF1FF] text-[#2F6BED]'
+              ? 'bg-[#FFEDE1] text-[#EA580C]'
               : 'bg-[#F1F5F9] text-[#B7C1CE] pointer-events-none'
           }`}
         >
@@ -75,14 +75,14 @@ export function MobileTaskCard({
           href={mapsUrl(hospital)}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#EAF1FF] text-[#2F6BED]"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#FFEDE1] text-[#EA580C]"
         >
           <span className="text-base">🧭</span>
           นำทาง
         </a>
         <Link
           href={`/m/jobs/${job.id}/report`}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#2F6BED] text-white"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#EA580C] text-white"
         >
           <span className="text-base">📝</span>
           บันทึกงาน

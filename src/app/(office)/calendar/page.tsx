@@ -44,12 +44,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       {/* header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[#12233B]">ปฏิทินงาน</h1>
+          <h1 className="text-xl font-bold text-[#1C1917]">ปฏิทินงาน</h1>
           <span className="text-sm text-[#8492A6]">{events.length} เหตุการณ์เดือนนี้</span>
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/calendar?m=${prev}`} className="w-9 h-9 grid place-items-center rounded-lg border border-[#D6DFEA] text-[#5A6B82] hover:bg-[#F6F9FC]">‹</Link>
-          <span className="min-w-[150px] text-center font-semibold text-[#12233B]">{monthTitle.format(cur)}</span>
+          <span className="min-w-[150px] text-center font-semibold text-[#1C1917]">{monthTitle.format(cur)}</span>
           <Link href={`/calendar?m=${next}`} className="w-9 h-9 grid place-items-center rounded-lg border border-[#D6DFEA] text-[#5A6B82] hover:bg-[#F6F9FC]">›</Link>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               >
                 <div className="flex justify-end">
                   <span
-                    className={`text-[12px] w-6 h-6 grid place-items-center rounded-full ${isToday ? 'bg-[#2F6BED] text-white font-bold' : inMonth ? 'text-[#12233B]' : 'text-[#B7C1CE]'}`}
+                    className={`text-[12px] w-6 h-6 grid place-items-center rounded-full ${isToday ? 'bg-[#EA580C] text-white font-bold' : inMonth ? 'text-[#1C1917]' : 'text-[#B7C1CE]'}`}
                   >
                     {d.getUTCDate()}
                   </span>

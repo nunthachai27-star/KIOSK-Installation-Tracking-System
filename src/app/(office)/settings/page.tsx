@@ -9,18 +9,21 @@ export default async function SettingsPage() {
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold text-[#12233B]">ตั้งค่า · ข้อมูลพื้นฐาน</h1>
+        <h1 className="text-xl font-bold text-[#1C1917]">ตั้งค่า · ข้อมูลพื้นฐาน</h1>
         <p className="text-[13px] text-[#8492A6] mt-0.5">กำหนดรายการที่ใช้เป็นตัวเลือกในฟอร์มงาน</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {MASTER_CATEGORIES.map((c) => (
           <Link key={c.key} href={`/settings/${c.key}`} className="ds-card ds-hover ds-lift p-5">
-            <div className="font-bold text-[15px] text-[#12233B]">{c.label}</div>
+            <div className="font-bold text-[15px] text-[#1C1917]">{c.label}</div>
             <div className="text-[13px] text-[#8492A6] mt-1">{countMap.get(c.key) ?? 0} รายการที่เปิดใช้งาน</div>
-            <div className="text-[12.5px] font-semibold text-[#2F6BED] mt-3">จัดการ ›</div>
+            <div className="text-[12.5px] font-semibold text-[#EA580C] mt-3">จัดการ ›</div>
           </Link>
         ))}
       </div>
+      <p className="text-[12.5px] text-[#8492A6] -mt-1">
+        เปิดหมวด <span className="font-semibold text-[#5A6B82]">ประเภทสินค้า</span> เพื่อกำหนด Checklist และชนิด Serial ของสินค้าแต่ละรายการ
+      </p>
     </div>
   )
 }

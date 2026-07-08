@@ -1,10 +1,20 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 type Item = { id: string; value: string; active: boolean }
 
-export function MasterOptionManager({ category, initial }: { category: string; initial: Item[] }) {
+export function MasterOptionManager({
+  category,
+  initial,
+  configHrefBase,
+}: {
+  category: string
+  initial: Item[]
+  // When set, each row links to a per-value config page (used for product types).
+  configHrefBase?: string
+}) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   const [newValue, setNewValue] = useState('')
@@ -53,10 +63,10 @@ export function MasterOptionManager({ category, initial }: { category: string; i
           onChange={(e) => setNewValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
           placeholder="เพิ่มรายการใหม่…"
-          className="flex-1 border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2F6BED] focus:ring-2 focus:ring-[#2F6BED]/15 transition"
+          className="flex-1 border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
         />
         <button onClick={add} disabled={adding}
-          className="ds-hover bg-[#2F6BED] text-white font-semibold rounded-xl px-5 hover:bg-[#1E51D0] disabled:opacity-60">
+          className="ds-hover bg-[#EA580C] text-white font-semibold rounded-xl px-5 hover:bg-[#C2410C] disabled:opacity-60">
           {adding ? 'กำลังเพิ่ม…' : 'เพิ่ม'}
         </button>
       </div>
@@ -70,14 +80,19 @@ export function MasterOptionManager({ category, initial }: { category: string; i
             <>
               <input value={editValue} onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(it.id) }}
-                className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-1.5 outline-none focus:border-[#2F6BED]" autoFocus />
-              <button onClick={() => saveEdit(it.id)} className="text-[13px] font-semibold text-[#2F6BED]">บันทึก</button>
+                className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-1.5 outline-none focus:border-[#EA580C]" autoFocus />
+              <button onClick={() => saveEdit(it.id)} className="text-[13px] font-semibold text-[#EA580C]">บันทึก</button>
               <button onClick={() => setEditId(null)} className="text-[13px] text-[#8492A6]">ยกเลิก</button>
             </>
           ) : (
             <>
-              <span className={`flex-1 text-sm ${it.active ? 'text-[#12233B]' : 'text-[#A2AEC0] line-through'}`}>{it.value}</span>
-              <button onClick={() => { setEditId(it.id); setEditValue(it.value) }} className="text-[13px] text-[#5A6B82] hover:text-[#2F6BED]">แก้ไข</button>
+              <span className={`flex-1 text-sm ${it.active ? 'text-[#1C1917]' : 'text-[#A2AEC0] line-through'}`}>{it.value}</span>
+              {configHrefBase && (
+                <Link href={`${configHrefBase}/${encodeURIComponent(it.value)}`} className="text-[13px] font-semibold text-[#EA580C] hover:underline">
+                  Checklist/Serial ›
+                </Link>
+              )}
+              <button onClick={() => { setEditId(it.id); setEditValue(it.value) }} className="text-[13px] text-[#5A6B82] hover:text-[#EA580C]">แก้ไข</button>
               <button onClick={() => patch(it.id, { active: !it.active })}
                 className={`text-[12px] font-semibold px-2.5 py-1 rounded-full ${it.active ? 'bg-[#E2F3EA] text-[#157F4C]' : 'bg-[#EEF1F5] text-[#8492A6]'}`}>
                 {it.active ? 'เปิดใช้งาน' : 'ปิด'}

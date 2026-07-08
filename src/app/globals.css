@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --brand: #2F6BED;
-  --brand-strong: #1E51D0;
-  --brand-soft: #EAF1FF;
-  --accent-2: #6D5DF6;
-  --ink: #12233B;
+  --brand: #EA580C;
+  --brand-strong: #C2410C;
+  --brand-soft: #FFEDE1;
+  --accent-2: #F97316;
+  --ink: #1C1917;
   --body: #3C4A5E;
   --muted: #6B7A90;
-  --bg: #F4F6FB;
+  --bg: #F5F5F4;
   --surface: #FFFFFF;
   --border: #E7EDF4;
   --shadow-card: 0 1px 2px rgba(18, 45, 90, 0.05), 0 10px 30px -18px rgba(18, 45, 90, 0.22);
   --shadow-hover: 0 1px 2px rgba(18, 45, 90, 0.06), 0 16px 40px -18px rgba(18, 45, 90, 0.30);
-  --brand-gradient: linear-gradient(135deg, #2F6BED 0%, #6D5DF6 100%);
+  --brand-gradient: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
 }
 
 html {
@@ -24,7 +24,7 @@ html {
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+  font-family: 'Sarabun', system-ui, sans-serif;
 }
 
 ::selection {
@@ -41,7 +41,7 @@ body {
 
 .ds-logo {
   background: var(--brand-gradient);
-  box-shadow: 0 6px 16px -6px rgba(47, 107, 237, 0.55);
+  box-shadow: 0 6px 16px -6px rgba(234, 88, 12, 0.55);
 }
 
 /* row / interactive lift */

@@ -10,16 +10,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (session.user.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const body = (await req.json()) as { serialType?: SerialType; serialNo?: string }
-  const { serialType, serialNo } = body
+  const body = (await req.json()) as { serialType?: SerialType | null; label?: string | null; serialNo?: string; parentId?: string | null }
+  const { serialType, label, serialNo, parentId } = body
 
-  if (!serialType || !serialNo) {
-    return NextResponse.json({ error: 'serialType and serialNo are required' }, { status: 400 })
+  // A serial belongs to either a legacy type (BMS asset tag) or a named component.
+  if (!serialNo || (!serialType && !label)) {
+    return NextResponse.json({ error: 'serialNo and (serialType or label) are required' }, { status: 400 })
   }
 
   // Ensure the target job exists before writing a child record.
   const job = await prisma.job.findUnique({ where: { id }, select: { id: true } })
   if (!job) return NextResponse.json({ error: 'not found' }, { status: 404 })
+
+  // A component serial may attach to a BMS unit (parentId) of the same job.
+  if (parentId) {
+    const parent = await prisma.serialNumber.findFirst({ where: { id: parentId, jobId: id }, select: { id: true } })
+    if (!parent) return NextResponse.json({ error: 'bad parent' }, { status: 400 })
+  }
 
   // Duplicate = same serial already recorded on a DIFFERENT job (allow re-saving
   // within the same job, e.g. correcting an entry).
@@ -28,7 +35,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const created = await prisma.serialNumber.create({
-    data: { jobId: id, serialType, serialNo: normalizeSerial(serialNo) },
+    data: { jobId: id, serialType: serialType ?? null, label: label ?? null, parentId: parentId ?? null, serialNo: normalizeSerial(serialNo) },
   })
 
   return NextResponse.json(created, { status: 201 })

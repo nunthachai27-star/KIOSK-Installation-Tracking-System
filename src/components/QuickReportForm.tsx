@@ -70,11 +70,11 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
     return (
       <div className="px-5 pt-10 text-center">
         <div className="text-5xl mb-3">🎉</div>
-        <div className="text-lg font-bold text-[#12233B]">บันทึกงานสำเร็จ</div>
+        <div className="text-lg font-bold text-[#1C1917]">บันทึกงานสำเร็จ</div>
         <p className="mt-1 text-sm text-[#5A6B82]">ส่งข้อมูลให้ธุรการเรียบร้อยแล้ว</p>
         <button
           onClick={() => router.push('/m')}
-          className="mt-6 w-full rounded-xl bg-[#2F6BED] text-white font-semibold py-3.5"
+          className="mt-6 w-full rounded-xl bg-[#EA580C] text-white font-semibold py-3.5"
         >
           กลับหน้างานวันนี้
         </button>
@@ -84,7 +84,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
 
   return (
     <div className="px-5 pt-6 pb-6">
-      <h1 className="text-lg font-bold text-[#12233B] mb-4">บันทึกงาน</h1>
+      <h1 className="text-lg font-bold text-[#1C1917] mb-4">บันทึกงาน</h1>
 
       <div className="flex flex-col gap-3">
         {STATUS_OPTIONS.map((opt) => {
@@ -101,7 +101,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
               }}
             >
               <span className="text-2xl">{opt.icon}</span>
-              <span className="text-[15px] font-semibold" style={{ color: active ? opt.color : '#12233B' }}>
+              <span className="text-[15px] font-semibold" style={{ color: active ? opt.color : '#1C1917' }}>
                 {opt.label}
               </span>
             </button>
@@ -110,7 +110,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
       </div>
 
       <div className="mt-6">
-        <label className="block text-sm font-semibold text-[#12233B] mb-2">ถ่ายรูปหน้างาน</label>
+        <label className="block text-sm font-semibold text-[#1C1917] mb-2">ถ่ายรูปหน้างาน</label>
         <input
           ref={fileInputRef}
           type="file"
@@ -130,13 +130,13 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
       </div>
 
       <div className="mt-6">
-        <label className="block text-sm font-semibold text-[#12233B] mb-2">หมายเหตุ</label>
+        <label className="block text-sm font-semibold text-[#1C1917] mb-2">หมายเหตุ</label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={4}
           placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
-          className="w-full rounded-xl border border-[#E7EDF4] px-4 py-3 text-sm text-[#12233B] focus:outline-none focus:border-[#2F6BED]"
+          className="w-full rounded-xl border border-[#E7EDF4] px-4 py-3 text-sm text-[#1C1917] focus:outline-none focus:border-[#EA580C]"
         />
       </div>
 
@@ -146,7 +146,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
         type="button"
         onClick={handleSubmit}
         disabled={saving}
-        className="mt-6 w-full rounded-xl bg-[#2F6BED] text-white font-bold py-4 text-[15px] disabled:opacity-60"
+        className="mt-6 w-full rounded-xl bg-[#EA580C] text-white font-bold py-4 text-[15px] disabled:opacity-60"
       >
         {saving ? 'กำลังบันทึก...' : 'บันทึก & ส่งให้ธุรการ'}
       </button>

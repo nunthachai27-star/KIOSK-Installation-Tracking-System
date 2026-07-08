@@ -7,7 +7,7 @@ export function StatStrip({ items }: { items: { label: string; value: string; wa
           <div className="text-[12px] font-semibold tracking-wide text-[#8492A6]">{s.label}</div>
           <div
             className="text-[32px] leading-none font-bold mt-2 tracking-tight tnum"
-            style={{ color: s.warn ? '#C13540' : '#12233B' }}
+            style={{ color: s.warn ? '#C13540' : '#1C1917' }}
           >
             {s.value}
           </div>

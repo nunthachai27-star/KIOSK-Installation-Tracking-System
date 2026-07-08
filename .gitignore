@@ -11,3 +11,5 @@ dist/
 devserver.log
 *.xlsx
 *.xls
+
+tsconfig.tsbuildinfo

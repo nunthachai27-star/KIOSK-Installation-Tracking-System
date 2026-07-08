@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { JobForm } from '@/components/JobForm'
-import { JobStepNav } from '@/components/JobStepNav'
+import { JobDetailShell } from '@/components/JobDetailShell'
 import { serializeJob } from '@/lib/serialize'
 import { getJobFormOptions } from '@/lib/master'
 
@@ -17,9 +17,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   if (!job) notFound()
 
   return (
-    <>
-      <JobStepNav jobId={id} active={1} />
+    <JobDetailShell jobId={id} active={1}>
       <JobForm job={serializeJob(job)} hospitals={hospitals} users={users} productTypes={options.productTypes} provinces={options.provinces} />
-    </>
+    </JobDetailShell>
   )
 }

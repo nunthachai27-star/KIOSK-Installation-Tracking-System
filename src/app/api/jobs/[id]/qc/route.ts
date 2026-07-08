@@ -10,8 +10,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const body = (await req.json()) as { status?: string; checklist?: unknown; remark?: string }
+  const body = (await req.json()) as { status?: string; checklist?: unknown; remark?: string; staffId?: string | null }
   const { status, checklist, remark } = body
+  const staffId = body.staffId || null
 
   if (!status || !VALID_STATUSES.has(status)) {
     return NextResponse.json({ error: 'invalid status' }, { status: 400 })
@@ -19,8 +20,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const qc = await prisma.qcRecord.upsert({
     where: { jobId: id },
-    create: { jobId: id, status: status as QcStatus, checklist: checklist ?? [], remark },
-    update: { status: status as QcStatus, checklist: checklist ?? [], remark },
+    create: { jobId: id, status: status as QcStatus, checklist: checklist ?? [], remark, staffId },
+    update: { status: status as QcStatus, checklist: checklist ?? [], remark, staffId },
   })
 
   if (status === 'PASSED') {

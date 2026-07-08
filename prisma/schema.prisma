@@ -19,6 +19,7 @@ enum Role {
 enum JobStatus {
   DATA_ENTRY
   PREPARING
+  QC
   READY_TO_SHIP
   INSTALLING
   HANDED_OVER
@@ -69,6 +70,44 @@ enum QcStatus {
   FAILED
 }
 
+enum SerialStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  PROBLEM
+}
+
+enum IssueStatus {
+  RECEIVED
+  IN_PROGRESS
+  WAIT_CUSTOMER_RETURN
+  SENT_TO_SUPPLIER
+  SHIPPING_TO_CUSTOMER
+  WAIT_ONSITE
+  QUOTATION
+  DONE
+  REJECTED
+}
+
+enum IssueMethod {
+  REMOTE
+  ONSITE
+}
+
+enum IssueWarranty {
+  IN_WARRANTY
+  OUT_OF_WARRANTY
+  NOT_COVERED
+  UNKNOWN
+}
+
+enum IssueEventType {
+  CREATED
+  STATUS_CHANGED
+  SOLUTION_UPDATED
+  WARRANTY_SET
+}
+
 enum HandoverStatus {
   PENDING
   RECEIVED
@@ -78,6 +117,7 @@ enum HandoverStatus {
 enum InvoiceStatus {
   PENDING
   ISSUED
+  SENT_TO_ACCOUNTING
 }
 
 enum ActivityType {
@@ -108,9 +148,14 @@ model User {
   active        Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  adminJobs     Job[]         @relation("AdminOwner")
-  installerJobs Job[]         @relation("InstallerOwner")
+  adminJobs     Job[]          @relation("AdminOwner")
+  installerJobs Job[]          @relation("InstallerOwner")
+  createdJobs   Job[]          @relation("JobCreator")
   activities    JobActivity[]
+  serialRecords SerialRecord[] @relation("SerialStaff")
+  qcRecords     QcRecord[]     @relation("QcStaff")
+  unitQcs       UnitQc[]       @relation("UnitQcStaff")
+  issues        Issue[]        @relation("IssueReporter")
 }
 
 model Hospital {
@@ -139,18 +184,27 @@ model Job {
   salesAmount       Decimal             @default(0)
   contactName       String?
   contactPhone      String?
+  supplyContactName  String?
+  supplyContactPhone String?
   contractNo        String?
   contractStartDate DateTime?
   contractEndDate   DateTime?
   deliveryDueDate   DateTime?
+  // Planned job (no contract yet) vs signed contract. Planned jobs hide the
+  // contract fields and live in a separate registry for admin follow-up.
+  isPlanned         Boolean             @default(false)
   currentStatus     JobStatus           @default(DATA_ENTRY)
   adminOwner        User?               @relation("AdminOwner", fields: [adminOwnerId], references: [id])
   adminOwnerId      String?
   installerOwner    User?               @relation("InstallerOwner", fields: [installerOwnerId], references: [id])
   installerOwnerId  String?
+  createdBy         User?               @relation("JobCreator", fields: [createdById], references: [id])
+  createdById       String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   serials           SerialNumber[]
+  serialRecord      SerialRecord?
+  issues            Issue[]
   qc                QcRecord?
   delivery          DeliveryRecord?
   installation      InstallationRecord?
@@ -160,20 +214,123 @@ model Job {
 }
 
 model SerialNumber {
-  id         String     @id @default(cuid())
-  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  id         String      @id @default(cuid())
+  job        Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
   jobId      String
-  serialType SerialType
+  // Legacy enum classification (kept for existing data + the BMS asset tag).
+  serialType SerialType?
+  // Free-text component name (new model): which component this serial belongs to.
+  label      String?
   serialNo   String
   remark     String?
+  // Component serials link to their BMS unit (a serialType=BMS row = one unit).
+  parent     SerialNumber?  @relation("Unit", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId   String?
+  children   SerialNumber[] @relation("Unit")
+  // Per-unit QC (only set on BMS-unit rows).
+  unitQc     UnitQc?
+  issues     Issue[]
 
   @@index([jobId])
+  @@index([parentId])
+}
+
+// Hospital problem report tied to a BMS unit (equipment) of a job.
+model Issue {
+  id         String      @id @default(cuid())
+  job        Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId      String
+  serial     SerialNumber? @relation(fields: [serialId], references: [id], onDelete: SetNull)
+  serialId   String?
+  title      String
+  solution   String?
+  status     IssueStatus @default(RECEIVED)
+  // Claim/warranty tracking (ยึดตาม S/N BMS ของตู้).
+  warrantyState     IssueWarranty @default(UNKNOWN)
+  method            IssueMethod?
+  failedSerial      String?      // Serial อุปกรณ์ที่เสีย
+  replacementSerial String?      // Serial อุปกรณ์ที่ส่งเคลมให้ลูกค้า
+  cost              Decimal?     // ค่าใช้จ่าย (กรณีนอกประกัน/ใบเสนอราคา)
+  reporter   User?       @relation("IssueReporter", fields: [reporterId], references: [id])
+  reporterId String?
+  events     IssueEvent[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([status])
+}
+
+// Immutable audit trail for an issue — powers the tracking timeline. actorName is
+// denormalized so history survives user renames/removal.
+model IssueEvent {
+  id         String         @id @default(cuid())
+  issue      Issue          @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId    String
+  type       IssueEventType
+  fromStatus IssueStatus?
+  toStatus   IssueStatus?
+  note       String?
+  actorName  String?
+  createdAt  DateTime       @default(now())
+
+  @@index([issueId])
+}
+
+// Spare-parts inventory — stock on hand + sell price + service (ช่าง) fee, used to
+// quote out-of-warranty claims. Mirrors the "อุปกรณ์ Spare ใน Stock" sheet.
+model SparePart {
+  id             String   @id @default(cuid())
+  name           String
+  category       String?
+  stockQty       Int      @default(0)
+  sellPrice      Decimal?
+  serviceFee1    Decimal? // ค่าบริการช่าง 1 คน/วัน
+  serviceFee2    Decimal? // ค่าบริการช่าง 2 คน/วัน
+  requiresOnsite Boolean  @default(false)
+  imageUrl       String?
+  remark         String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// Per-unit QC: checklist + status + inspector, keyed to a BMS-unit SerialNumber.
+model UnitQc {
+  id        String   @id @default(cuid())
+  serial    SerialNumber @relation(fields: [serialId], references: [id], onDelete: Cascade)
+  serialId  String   @unique
+  staff     User?    @relation("UnitQcStaff", fields: [staffId], references: [id])
+  staffId   String?
+  status    QcStatus @default(PENDING)
+  checklist Json     @default("[]")
+  keyId     String?  // Key ID / MAC Address ของเครื่อง (บันทึกตอน QC)
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Step 2 — Serial recording: who did it + status (serials themselves are SerialNumber rows).
+model SerialRecord {
+  id        String       @id @default(cuid())
+  job       Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId     String       @unique
+  staff     User?        @relation("SerialStaff", fields: [staffId], references: [id])
+  staffId   String?
+  status    SerialStatus @default(PENDING)
+  // Auto-computed when status = DONE: +3 business days (skip Sat/Sun).
+  qcPlannedDate DateTime?
+  remark    String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model QcRecord {
   id        String   @id @default(cuid())
   job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
   jobId     String   @unique
+  staff     User?    @relation("QcStaff", fields: [staffId], references: [id])
+  staffId   String?
   status    QcStatus @default(PENDING)
   checklist Json     @default("[]")
   remark    String?
@@ -192,6 +349,8 @@ model DeliveryRecord {
   actualCost    Decimal?
   status        DeliveryStatus @default(PENDING)
   remark        String?
+  recordedById  String?
+  updatedAt     DateTime?      @updatedAt
 }
 
 model InstallationRecord {
@@ -205,6 +364,8 @@ model InstallationRecord {
   problem     String?
   solution    String?
   status      InstallStatus @default(PENDING)
+  recordedById String?
+  updatedAt   DateTime?     @updatedAt
 }
 
 model HandoverRecord {
@@ -216,6 +377,8 @@ model HandoverRecord {
   handoverStatus        HandoverStatus @default(PENDING)
   handoverDate          DateTime?
   remark                String?
+  recordedById          String?
+  updatedAt             DateTime?      @updatedAt
 }
 
 model InvoiceRecord {
@@ -224,9 +387,13 @@ model InvoiceRecord {
   jobId         String        @unique
   status        InvoiceStatus @default(PENDING)
   invoiceDate   DateTime?
+  // Warranty runs 1 year from the invoice open date; recomputed whenever invoiceDate changes.
+  warrantyEndDate DateTime?
   invoiceNo     String?
   invoiceAmount Decimal?
   remark        String?
+  recordedById  String?
+  updatedAt     DateTime?     @updatedAt
 }
 
 model JobActivity {
@@ -268,4 +435,60 @@ model MasterOption {
 
   @@unique([category, value])
   @@index([category])
+}
+
+// Per-product-type QC checklist item (free text). Falls back to a default set
+// when a product type has no rows configured.
+model ProductChecklistItem {
+  id          String   @id @default(cuid())
+  productType String
+  label       String
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([productType, label])
+  @@index([productType])
+}
+
+// A component (part) in a product type's bill of materials, e.g. "Tablet" ×1.
+// needsSerial = collect a serial number for it in the QC form.
+model ProductComponent {
+  id          String   @id @default(cuid())
+  productType String
+  name        String
+  quantity    Int      @default(1)
+  needsSerial Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([productType, name])
+  @@index([productType])
+}
+
+// BMS serial code per product type, e.g. "CIPD" → BMS-CIPD69-001. Used to
+// auto-generate the next S/N BMS.
+model ProductBmsCode {
+  id          String   @id @default(cuid())
+  productType String   @unique
+  code        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Which serial types a product type collects (chosen from the SerialType set).
+model ProductSerialSlot {
+  id          String     @id @default(cuid())
+  productType String
+  serialType  SerialType
+  sortOrder   Int        @default(0)
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([productType, serialType])
+  @@index([productType])
 }

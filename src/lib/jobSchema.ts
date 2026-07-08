@@ -11,11 +11,14 @@ export const jobInput = z.object({
   salesAmount: z.coerce.number().min(0).default(0),
   contactName: z.string().optional().nullable(),
   contactPhone: z.string().optional().nullable(),
+  supplyContactName: z.string().optional().nullable(),
+  supplyContactPhone: z.string().optional().nullable(),
   contractNo: z.string().optional().nullable(),
   contractStartDate: z.coerce.date().optional().nullable(),
   contractEndDate: z.coerce.date().optional().nullable(),
   deliveryDueDate: z.coerce.date().optional().nullable(),
   adminOwnerId: z.string().optional().nullable(),
   installerOwnerId: z.string().optional().nullable(),
+  isPlanned: z.coerce.boolean().optional().default(false),
 })
 export type JobInput = z.infer<typeof jobInput>
