@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { href: '/monitor', label: 'Monitor', icon: 'monitor' },
   { href: '/issues', label: 'แจ้งปัญหา', icon: 'issue' },
   { href: '/stock', label: 'คลังสินค้า', icon: 'stock' },
+  { href: '/loans', label: 'ยืม-คืน', icon: 'loan' },
   { href: '/report', label: 'สรุปงาน', icon: 'report' },
   { href: '/settings', label: 'ตั้งค่า', icon: 'settings' },
 ] as const
@@ -29,6 +30,7 @@ function NavIcon({ name }: { name: string }) {
     case 'monitor': return <svg {...common}><rect x="3" y="4" width="14" height="9" rx="1.5" /><path d="M7 17h6M10 13v4" /></svg>
     case 'issue': return <svg {...common}><circle cx="10" cy="10" r="7" /><path d="M10 6.5v4.5M10 14h.01" /></svg>
     case 'stock': return <svg {...common}><path d="M10 3l7 3.8v6.4L10 17l-7-3.8V6.8z" /><path d="M3 6.8l7 3.8 7-3.8M10 10.6V17" /></svg>
+    case 'loan': return <svg {...common}><path d="M3 11.5l3-3 3.5 1.5 4-1 3.5 3" /><path d="M6 8.5V5.5h8v3" /><path d="M3 14.5h14" /></svg>
     case 'report': return <svg {...common}><path d="M4 16V9M9 16V5M14 16v-6" /><path d="M3 17h14" /></svg>
     case 'settings': return <svg {...common}><circle cx="10" cy="10" r="2.4" /><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M15.3 4.7l-1.6 1.6M6.3 13.7l-1.6 1.6" /></svg>
     default: return null

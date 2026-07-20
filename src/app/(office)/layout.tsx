@@ -23,9 +23,10 @@ export default async function OfficeLayout({ children }: { children: React.React
 
   // Attention counts for the notification bell.
   const now = new Date()
-  const [pendingClaims, overdue] = await Promise.all([
+  const [pendingClaims, overdue, overdueLoans] = await Promise.all([
     prisma.issue.count({ where: { status: 'RECEIVED' } }),
     prisma.job.count({ where: { isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
+    prisma.loan.count({ where: { status: 'BORROWED', dueDate: { lt: now } } }),
   ])
 
   return (
@@ -49,7 +50,7 @@ export default async function OfficeLayout({ children }: { children: React.React
             >
               ＋ เพิ่มงาน
             </Link>
-            <NotificationBell pendingClaims={pendingClaims} overdue={overdue} />
+            <NotificationBell pendingClaims={pendingClaims} overdue={overdue} overdueLoans={overdueLoans} />
             <span className="w-px h-6 bg-[#ECEFF3]" />
             <UserMenu name={name} initial={initial} role={role} />
           </div>

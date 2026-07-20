@@ -5,18 +5,19 @@ import type { GroupSummary, ProductSummary, StockStatusLevel } from '@/lib/stock
 import { STOCK_LEVEL_META } from '@/lib/stock'
 
 const nf = new Intl.NumberFormat('th-TH')
-type Kpi = { received: number; issued: number; remaining: number; low: number; out: number; products: number }
+type Kpi = { received: number; issued: number; borrowed: number; remaining: number; low: number; out: number; products: number }
 
 // A unit matched by serial via /api/stock/search.
 type SerialHit = {
   id: string; serialBMS: string | null; serialNo: string | null; color: string | null
-  status: 'IN_STOCK' | 'ISSUED'; lotCode: string; productId: string; productName: string; group: string
+  status: 'IN_STOCK' | 'ISSUED' | 'BORROWED'; lotCode: string; productId: string; productName: string; group: string
   hospitalName: string | null; jobId: string | null; jobCode: string | null
 }
 
 const HIT_STATUS = {
   IN_STOCK: { label: 'ในคลัง', color: '#157F4C', bg: '#E2F3EA' },
   ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
+  BORROWED: { label: 'ถูกยืม', color: '#1B5FD9', bg: '#E4EEFF' },
 }
 
 export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary[] }) {
@@ -61,7 +62,7 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
   const cards = [
     { icon: '📥', bg: '#E4EEFF', label: 'รับเข้ารวม', value: kpi.received, sub: 'ชิ้น', color: '#1C1917' },
     { icon: '📤', bg: '#F3EEFF', label: 'จ่ายออกแล้ว', value: kpi.issued, sub: 'ชิ้น', color: '#1C1917' },
-    { icon: '📦', bg: '#E2F3EA', label: 'คงเหลือในคลัง', value: kpi.remaining, sub: 'ชิ้น', color: '#157F4C' },
+    { icon: '📦', bg: '#E2F3EA', label: 'คงเหลือในคลัง', value: kpi.remaining, sub: kpi.borrowed > 0 ? `ถูกยืมอยู่ ${nf.format(kpi.borrowed)} ชิ้น` : 'ชิ้น', color: '#157F4C' },
     { icon: '⚠️', bg: '#FBE4E4', label: 'ใกล้หมด / หมด', value: kpi.low + kpi.out, sub: `ใกล้หมด ${nf.format(kpi.low)} · หมด ${nf.format(kpi.out)}`, color: kpi.low + kpi.out > 0 ? '#C13540' : '#1C1917' },
   ]
 

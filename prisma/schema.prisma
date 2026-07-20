@@ -167,6 +167,7 @@ model User {
   issues        Issue[]        @relation("IssueReporter")
   assignedIssues Issue[]       @relation("IssueAssignee")
   ownedTasks    Task[]         @relation("TaskOwner")
+  loansRecorded Loan[]         @relation("LoanRecorder")
 }
 
 // Ad-hoc work reminder not tied to a job/ORDER (ประชุม / ติดตามงาน / อบรม / อื่นๆ).
@@ -563,6 +564,7 @@ model ProductSerialSlot {
 enum StockStatus {
   IN_STOCK
   ISSUED
+  BORROWED // ถูกยืมออกไป — ยังเป็นของคลัง รอคืน
 }
 
 // Catalog of trackable stock items (finished goods / equipment).
@@ -622,8 +624,41 @@ model StockItem {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  loans         Loan[]
+
   @@index([lotId])
   @@index([status])
   @@index([serialBMS])
   @@index([hospitalId])
+}
+
+enum LoanStatus {
+  BORROWED
+  RETURNED
+}
+
+// ทะเบียนยืม-คืน: one row per unit lent out of stock. The borrower's name and
+// phone are required so an item is never handed over anonymously; while a loan
+// is open its StockItem sits in BORROWED so the stock board shows it as unavailable.
+model Loan {
+  id            String     @id @default(cuid())
+  item          StockItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId        String
+  borrowerName  String     // ชื่อผู้ยืม (บังคับ)
+  borrowerPhone String     // เบอร์โทร (บังคับ)
+  borrowerOrg   String?    // หน่วยงาน/สังกัด
+  purpose       String?    // วัตถุประสงค์การยืม
+  borrowedAt    DateTime   @default(now())
+  dueDate       DateTime   // กำหนดคืน (บังคับ) — เกินแล้วขึ้นแจ้งเตือน
+  returnedAt    DateTime?
+  returnNote    String?    // สภาพของตอนรับคืน
+  status        LoanStatus @default(BORROWED)
+  recordedBy    User?      @relation("LoanRecorder", fields: [recordedById], references: [id])
+  recordedById  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([itemId])
+  @@index([status])
+  @@index([dueDate])
 }

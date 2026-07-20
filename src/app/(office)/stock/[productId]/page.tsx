@@ -46,7 +46,9 @@ export default async function StockProductPage({ params, searchParams }: {
   // Serial products count items; quantity-only products (spare parts) use receivedQty.
   const received = product.serialized ? items.length : product.lots.reduce((s, l) => s + l.receivedQty, 0)
   const issued = product.serialized ? items.filter((i) => i.status === 'ISSUED').length : 0
-  const remaining = received - issued
+  // Units out on loan are still owned but unavailable, so they don't count as remaining.
+  const borrowed = product.serialized ? items.filter((i) => i.status === 'BORROWED').length : 0
+  const remaining = received - issued - borrowed
   const unit = product.serialized ? 'เครื่อง' : product.unit
   const lotCodes = product.lots.map((l) => l.lotCode)
 
@@ -62,10 +64,11 @@ export default async function StockProductPage({ params, searchParams }: {
         <p className="text-[13px] text-[#8492A6] mt-0.5">{product.group} · {product.lots.length} Lot · {received} {unit}{product.serialized ? '' : ' · นับจำนวน (ไม่มี Serial)'}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${borrowed > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
         {[
           { label: 'รับเข้ารวม', value: received, color: '#1C1917' },
           { label: 'จ่ายออกแล้ว', value: issued, color: '#6D28D9' },
+          ...(borrowed > 0 ? [{ label: 'ถูกยืม', value: borrowed, color: '#1B5FD9' }] : []),
           { label: 'คงเหลือ', value: remaining, color: stockLevel(remaining, product.lowStockQty) === 'OUT' ? '#C13540' : stockLevel(remaining, product.lowStockQty) === 'LOW' ? '#B45309' : '#157F4C' },
         ].map((c) => (
           <div key={c.label} className="ds-card px-4 py-3">
