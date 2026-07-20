@@ -15,8 +15,9 @@ export default auth((req) => {
   const base = process.env.AUTH_URL || req.nextUrl.origin
 
   // Public: executive dashboard + hospital satisfaction rating (no login).
-  const isPublic = pathname.startsWith('/api/auth') || pathname.startsWith('/login')
-    || pathname.startsWith('/exec') || pathname.startsWith('/rate') || pathname.startsWith('/api/rate')
+  // Bounded matching (exact path or under it) so e.g. "/exec-secret" is NOT public.
+  const PUBLIC = ['/api/auth', '/login', '/exec', '/rate', '/api/rate']
+  const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 
   const session = req.auth

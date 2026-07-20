@@ -28,8 +28,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!(rating >= 1 && rating <= 5)) return NextResponse.json({ error: 'rating 1-5 required' }, { status: 400 })
   const comment = typeof b.comment === 'string' && b.comment.trim() ? b.comment.trim().slice(0, 1000) : null
 
-  // Layer 3: record the rater IP for audit (behind the reverse proxy).
-  const ip = (req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || '').trim() || null
+  // Layer 3: record the rater IP for audit. Prefer the proxy-set x-real-ip; the
+  // leftmost x-forwarded-for is client-controllable, so fall back to its LAST
+  // (proxy-appended) entry instead of the first.
+  const xff = req.headers.get('x-forwarded-for')
+  const ip = (req.headers.get('x-real-ip') || xff?.split(',').pop() || '').trim() || null
 
   await prisma.issue.update({
     where: { id },
