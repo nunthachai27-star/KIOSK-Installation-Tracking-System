@@ -8,6 +8,19 @@ const VALID = new Set<string>(Object.values(IssueStatus))
 const METHODS = new Set<string>(Object.values(IssueMethod))
 const WARRANTIES = new Set<string>(Object.values(IssueWarranty))
 
+// Timeline events for one issue — loaded on demand when the card's timeline is expanded,
+// so the list page doesn't ship every issue's full event history up front.
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  const { id } = await params
+  const events = await prisma.issueEvent.findMany({ where: { issueId: id }, orderBy: { createdAt: 'asc' } })
+  return NextResponse.json(events.map((e) => ({
+    id: e.id, type: e.type, fromStatus: e.fromStatus, toStatus: e.toStatus,
+    note: e.note, actorName: e.actorName, createdAt: e.createdAt.toISOString(),
+  })))
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -24,7 +37,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     title?: string; solution?: string | null; status?: IssueStatus
     warrantyState?: IssueWarranty; method?: IssueMethod | null
     failedSerial?: string | null; replacementSerial?: string | null; cost?: number | null
+    assignedToId?: string | null
   } = {}
+  if (body.assignedToId !== undefined) data.assignedToId = typeof body.assignedToId === 'string' && body.assignedToId ? body.assignedToId : null
   if (typeof body.title === 'string' && body.title.trim()) data.title = body.title.trim()
   if (typeof body.solution === 'string') data.solution = body.solution.trim() || null
   if (typeof body.status === 'string' && VALID.has(body.status)) data.status = body.status as IssueStatus

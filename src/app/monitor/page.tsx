@@ -99,11 +99,11 @@ export default async function MonitorPage({ searchParams }: { searchParams: Prom
                   </div>
                   <div className="px-3 py-4">
                     <span className="text-[26px] font-semibold leading-tight">{q.label}</span>
-                    <div className="text-[16px] text-white/50 mt-0.5">{q.productType} ×{q.quantity}</div>
+                    <div className="text-[16px] text-white/50 mt-0.5">{q.activityType === 'TASK' ? q.productType : `${q.productType} ×${q.quantity}`}</div>
                   </div>
                   <div className="px-3 py-4">
                     <div className="text-[24px] font-semibold leading-tight">{q.hospitalName}</div>
-                    <div className="text-[15px] text-white/50">{q.province} · {q.jobCode}</div>
+                    {(q.province || q.jobCode) && <div className="text-[15px] text-white/50">{[q.province, q.jobCode].filter(Boolean).join(' · ')}</div>}
                   </div>
                   <div className="px-3 py-4 text-[22px] font-medium">{q.responsibleName ?? '—'}</div>
                   <div className="px-3 py-4">

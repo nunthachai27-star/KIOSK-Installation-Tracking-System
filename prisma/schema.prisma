@@ -89,6 +89,11 @@ enum IssueStatus {
   REJECTED
 }
 
+enum IssueType {
+  CLAIM   // แจ้งเคลมอุปกรณ์ (ยึดตาม S/N)
+  GENERAL // แจ้งปัญหาทั่วไป
+}
+
 enum IssueMethod {
   REMOTE
   ONSITE
@@ -106,6 +111,8 @@ enum IssueEventType {
   STATUS_CHANGED
   SOLUTION_UPDATED
   WARRANTY_SET
+  PART_USED
+  RATED
 }
 
 enum HandoverStatus {
@@ -127,6 +134,7 @@ enum ActivityType {
   TRAINING
   QC
   HANDOVER
+  TASK
 }
 
 enum ActivityStatus {
@@ -143,6 +151,7 @@ model User {
   username      String        @unique
   passwordHash  String
   name          String
+  nickname      String?
   role          Role          @default(FIELD)
   avatarColor   String?
   active        Boolean       @default(true)
@@ -156,6 +165,26 @@ model User {
   qcRecords     QcRecord[]     @relation("QcStaff")
   unitQcs       UnitQc[]       @relation("UnitQcStaff")
   issues        Issue[]        @relation("IssueReporter")
+  assignedIssues Issue[]       @relation("IssueAssignee")
+  ownedTasks    Task[]         @relation("TaskOwner")
+}
+
+// Ad-hoc work reminder not tied to a job/ORDER (ประชุม / ติดตามงาน / อบรม / อื่นๆ).
+// Shows on the Monitor board across its date range.
+model Task {
+  id                String         @id @default(cuid())
+  title             String         // รายละเอียดงาน
+  kind              String         @default("อื่นๆ") // ประเภทงาน
+  hospitalName      String?        // ชื่อโรงพยาบาล (ถ้ามี)
+  responsibleUser   User?          @relation("TaskOwner", fields: [responsibleUserId], references: [id])
+  responsibleUserId String?
+  startDate         DateTime
+  endDate           DateTime?
+  status            ActivityStatus @default(SCHEDULED)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([startDate])
 }
 
 model Hospital {
@@ -168,6 +197,7 @@ model Hospital {
   longitude    Float?
   remark       String?
   jobs         Job[]
+  stockItems   StockItem[]
 }
 
 model Job {
@@ -211,6 +241,7 @@ model Job {
   handover          HandoverRecord?
   invoice           InvoiceRecord?
   activities        JobActivity[]
+  stockItems        StockItem[]
 }
 
 model SerialNumber {
@@ -235,13 +266,19 @@ model SerialNumber {
   @@index([parentId])
 }
 
-// Hospital problem report tied to a BMS unit (equipment) of a job.
+// Hospital warranty claim / problem report — tied to a BMS unit of a job when it
+// exists in this system, else standalone (imported history) via free-text hospital.
 model Issue {
   id         String      @id @default(cuid())
-  job        Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  jobId      String
+  job        Job?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId      String?
   serial     SerialNumber? @relation(fields: [serialId], references: [id], onDelete: SetNull)
   serialId   String?
+  // Fallbacks for claims whose unit/job is not tracked here (historical import).
+  hospitalName  String?  // free-text hospital when not linked to a job
+  machineSerial String?  // raw S/N BMS text when not linked to a SerialNumber
+  productType   String?  // product line for standalone claims (job-linked ones use job.productType)
+  issueType  IssueType   @default(CLAIM)
   title      String
   solution   String?
   status     IssueStatus @default(RECEIVED)
@@ -251,9 +288,18 @@ model Issue {
   failedSerial      String?      // Serial อุปกรณ์ที่เสีย
   replacementSerial String?      // Serial อุปกรณ์ที่ส่งเคลมให้ลูกค้า
   cost              Decimal?     // ค่าใช้จ่าย (กรณีนอกประกัน/ใบเสนอราคา)
+  // Satisfaction rating given by the hospital on the staff's resolution (1-5).
+  rating            Int?
+  ratingComment     String?
+  ratedAt           DateTime?
+  raterIp           String?   // IP ผู้ให้คะแนน (audit — ตรวจจับการปั่นคะแนน)
   reporter   User?       @relation("IssueReporter", fields: [reporterId], references: [id])
   reporterId String?
+  // Staff who actually resolved the issue — the rating is attributed to this person.
+  assignedTo   User?     @relation("IssueAssignee", fields: [assignedToId], references: [id])
+  assignedToId String?
   events     IssueEvent[]
+  parts      ClaimPart[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
@@ -291,8 +337,27 @@ model SparePart {
   imageUrl       String?
   remark         String?
   active         Boolean  @default(true)
+  claimParts     ClaimPart[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// Spare part(s) used on a claim/repair — links the claim to the inventory item.
+// name/unitPrice are snapshots so history survives part rename/removal.
+model ClaimPart {
+  id            String     @id @default(cuid())
+  issue         Issue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId       String
+  sparePart     SparePart? @relation(fields: [sparePartId], references: [id], onDelete: SetNull)
+  sparePartId   String?
+  stockProductId String?   // อะไหล่จากคลังสินค้า (กลุ่มอะไหล่) ที่ตัดออก
+  name          String
+  qty           Int        @default(1)
+  unitPrice     Decimal?
+  stockDeducted Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+
+  @@index([issueId])
 }
 
 // Per-unit QC: checklist + status + inspector, keyed to a BMS-unit SerialNumber.
@@ -491,4 +556,74 @@ model ProductSerialSlot {
 
   @@unique([productType, serialType])
   @@index([productType])
+}
+
+// ── Equipment stock (คลังสินค้า) ── serial-level finished-goods inventory:
+// received into stock by Lot, then issued out to hospitals (jobs).
+enum StockStatus {
+  IN_STOCK
+  ISSUED
+}
+
+// Catalog of trackable stock items (finished goods / equipment).
+model StockProduct {
+  id          String     @id @default(cuid())
+  group       String     // กลุ่มสินค้า: Smart Kiosk / Mini Kiosk / ชุดปิดสิทธิ / QR Code Payment / IPD Paperless / Kiosk เฉิงตู
+  name        String     // รายการอุปกรณ์: ตู้ Kiosk, Smart Card, Tablet Redmi Pad Pro, ...
+  unit        String     @default("เครื่อง")
+  serialized  Boolean    @default(true) // track individual serials vs quantity-only
+  sellPrice   Decimal?   // ราคาขาย (เช่น อะไหล่) — ใช้ทำใบเสนอราคา
+  lowStockQty Int        @default(3)    // แจ้งเตือนใกล้หมด เมื่อคงเหลือ <= ค่านี้
+  sortOrder   Int        @default(0)
+  active      Boolean    @default(true)
+  lots        StockLot[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([group, name])
+}
+
+// A receiving batch (Lot) of a product.
+model StockLot {
+  id           String       @id @default(cuid())
+  product      StockProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    String
+  lotCode      String       // "1/68", "2/68", "Start Smart Lot.1/68", ...
+  receivedQty  Int          @default(0)
+  receivedDate DateTime?
+  note         String?
+  items        StockItem[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([productId])
+}
+
+// Individual unit (serial-level ledger row).
+model StockItem {
+  id            String      @id @default(cuid())
+  lot           StockLot    @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  lotId         String
+  seq           Int?        // ลำดับในเอกสาร
+  serialBMS     String?     // BMS-KI68-049
+  serialNo      String?     // manufacturer serial number
+  color         String?     // สี (สำหรับตู้)
+  status        StockStatus @default(IN_STOCK)
+  receivedDate  DateTime?   // รับสินค้าเข้า
+  issuedDate    DateTime?   // วันจำหน่ายสินค้าออก
+  deliveredDate DateTime?   // วันจัดส่งถึงโรงพยาบาล
+  // Issued-to: free-text hospital, plus optional links to existing system records.
+  hospitalName  String?
+  hospital      Hospital?   @relation(fields: [hospitalId], references: [id])
+  hospitalId    String?
+  job           Job?        @relation(fields: [jobId], references: [id])
+  jobId         String?
+  note          String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([lotId])
+  @@index([status])
+  @@index([serialBMS])
+  @@index([hospitalId])
 }

@@ -11,6 +11,7 @@ export function Combobox({
   placeholder = 'พิมพ์เพื่อค้นหา…',
   onCreate,
   createLabel = (q) => `+ เพิ่ม "${q}"`,
+  limit = 50,
 }: {
   value: string
   options: ComboOption[]
@@ -20,6 +21,8 @@ export function Combobox({
   // Should perform the creation (incl. selecting it) and resolve — return value ignored.
   onCreate?: (query: string) => Promise<unknown>
   createLabel?: (q: string) => string
+  // Cap the number of rendered options so long lists stay fast — type to narrow.
+  limit?: number
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -34,6 +37,9 @@ export function Combobox({
     if (!q) return options
     return options.filter((o) => o.label.toLowerCase().includes(q) || (o.sub ?? '').toLowerCase().includes(q))
   }, [query, options])
+  // Only render the first `limit` matches; the rest are reachable by typing more.
+  const shown = filtered.slice(0, limit)
+  const hiddenCount = filtered.length - shown.length
 
   // Close when clicking outside.
   useEffect(() => {
@@ -71,10 +77,10 @@ export function Combobox({
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi((i) => Math.min(i + 1, filtered.length - 1)) }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi((i) => Math.min(i + 1, shown.length - 1)) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((i) => Math.max(i - 1, 0)) }
     else if (e.key === 'Enter') {
-      if (open && filtered[hi]) { e.preventDefault(); choose(filtered[hi].id) }
+      if (open && shown[hi]) { e.preventDefault(); choose(shown[hi].id) }
       else if (open && canCreate) { e.preventDefault(); create() }
     }
     else if (e.key === 'Escape') { setOpen(false); setQuery('') }
@@ -93,8 +99,8 @@ export function Combobox({
       />
       {open && (
         <div className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-xl border border-[#E1E8F2] bg-white shadow-[0_16px_40px_-12px_rgba(18,45,90,0.35)]">
-          {filtered.length === 0 && !canCreate && <div className="px-3 py-2.5 text-sm text-[#8492A6]">ไม่พบรายการ</div>}
-          {filtered.map((o, i) => (
+          {shown.length === 0 && !canCreate && <div className="px-3 py-2.5 text-sm text-[#8492A6]">ไม่พบรายการ</div>}
+          {shown.map((o, i) => (
             <button
               key={o.id}
               type="button"
@@ -109,6 +115,11 @@ export function Combobox({
               {o.sub && <span className="text-[12px] text-[#8492A6] shrink-0">{o.sub}</span>}
             </button>
           ))}
+          {hiddenCount > 0 && (
+            <div className="px-3 py-2 text-[12px] text-[#8492A6] border-t border-[#EEF2F8] bg-[#FBFCFE]">
+              แสดง {shown.length} จาก {filtered.length} รายการ · พิมพ์เพื่อค้นหาให้แคบลง
+            </div>
+          )}
           {canCreate && (
             <button
               type="button"

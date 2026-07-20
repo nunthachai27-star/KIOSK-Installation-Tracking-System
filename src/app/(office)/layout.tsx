@@ -1,13 +1,32 @@
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { SignOutButton } from '@/components/SignOutButton'
+import { prisma } from '@/lib/prisma'
 import { OfficeNav } from '@/components/OfficeNav'
 import { MobileMenu } from '@/components/MobileMenu'
+import { NotificationBell } from '@/components/NotificationBell'
+import { UserMenu } from '@/components/UserMenu'
+
+const ROLE_LABEL: Record<string, string> = {
+  OFFICE: 'เจ้าหน้าที่สำนักงาน',
+  FIELD: 'เจ้าหน้าที่ภาคสนาม',
+  TECHNICIAN: 'ช่างเทคนิค',
+  ADMIN: 'ผู้ดูแลระบบ',
+  EXECUTIVE: 'ผู้บริหาร',
+  SYSTEM_ADMIN: 'ผู้ดูแลระบบสูงสุด',
+}
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   const name = session?.user?.name ?? ''
   const initial = name.trim().charAt(0).toUpperCase() || '?'
+  const role = ROLE_LABEL[session?.user?.role ?? ''] ?? 'ผู้ใช้งาน'
+
+  // Attention counts for the notification bell.
+  const now = new Date()
+  const [pendingClaims, overdue] = await Promise.all([
+    prisma.issue.count({ where: { status: 'RECEIVED' } }),
+    prisma.job.count({ where: { isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
+  ])
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
@@ -23,19 +42,16 @@ export default async function OfficeLayout({ children }: { children: React.React
             </div>
           </div>
           {/* desktop actions */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2.5">
             <Link
               href="/jobs/new"
               className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-[10px] px-4 py-2 hover:bg-[#C2410C] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]"
             >
               ＋ เพิ่มงาน
             </Link>
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm ring-1 ring-[#FBD3B4]">
-                {initial}
-              </span>
-              <SignOutButton />
-            </div>
+            <NotificationBell pendingClaims={pendingClaims} overdue={overdue} />
+            <span className="w-px h-6 bg-[#ECEFF3]" />
+            <UserMenu name={name} initial={initial} role={role} />
           </div>
           {/* mobile menu */}
           <MobileMenu initial={initial} />

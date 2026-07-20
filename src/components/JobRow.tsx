@@ -70,7 +70,7 @@ export function JobRow({ job }: { job: JobRowData }) {
   return (
     <Link
       href={`/jobs/${job.id}${STEP_HREF[step - 1]}`}
-      className="ds-hover block px-5 py-3.5 border-t border-[#EEF2F8] border-l-4 hover:bg-[#F8FAFD]"
+      className="group ds-hover block px-5 py-3.5 border-t border-[#EEF2F8] border-l-4 hover:bg-[#F8FAFD]"
       style={{ borderLeftColor: warn ? warn.bar : 'transparent' }}
     >
       {/* mobile: stacked card */}
@@ -95,24 +95,24 @@ export function JobRow({ job }: { job: JobRowData }) {
         {warnChip && <div>{warnChip}</div>}
       </div>
 
-      {/* desktop: table row */}
-      <div className="hidden md:grid grid-cols-[1.4fr_1fr_150px_84px_112px_78px] items-center gap-2">
-        <div>
-          <div className="text-sm font-semibold">{job.hospital.name}</div>
-          <div className="text-xs text-[#8492A6]">{job.jobCode} · {job.province}</div>
+      {/* desktop: table row — grid template shared with the header in page.tsx (JOB_GRID) */}
+      <div className="hidden md:grid grid-cols-[1.7fr_1.2fr_150px_180px_96px_28px] items-center gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-8 h-8 shrink-0 rounded-lg bg-[#EEF3FA] text-[#5A6B82] grid place-items-center">🏢</span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate">{job.hospital.name}</div>
+            <div className="text-xs text-[#8492A6] truncate">{job.jobCode} · {job.province}</div>
+          </div>
         </div>
-        <div className="text-[13px] text-[#3C4A5E]">{job.productType} ×{formatQty(job.quantity)}</div>
+        <div className="text-[13px] text-[#3C4A5E] truncate">{job.productType} ×{formatQty(job.quantity)}</div>
         <div className="text-[11.5px] text-[#5A6B82] leading-tight">
-          <div>เริ่ม {formatThaiDate(job.contractStartDate)}</div>
-          <div>สิ้นสุด {formatThaiDate(job.contractEndDate)}</div>
+          <div>📅 {formatThaiDate(job.contractStartDate)}</div>
+          <div className="text-[#A8A29E]">เสร็จ {formatThaiDate(job.contractEndDate)}</div>
           {warnChip && <div className="mt-1">{warnChip}</div>}
         </div>
-        {dots}
-        <div><StatusBadge status={job.currentStatus} /></div>
-        <div className="text-right">
-          <div className="text-[12.5px] font-semibold text-[#EA580C]">อัปเดต ›</div>
-          <div className="text-[10.5px] text-[#A8A29E] mt-0.5 leading-tight">ล่าสุด<br />{formatThaiDate(job.updatedAt)}</div>
-        </div>
+        <div className="flex items-center gap-2.5">{dots}<StatusBadge status={job.currentStatus} /></div>
+        <div className="text-[10.5px] text-[#A8A29E] leading-tight">{formatThaiDate(job.updatedAt)}</div>
+        <div className="text-[#C4BFB9] text-lg leading-none text-center group-hover:text-[#EA580C]">⋮</div>
       </div>
 
       {/* milestone strip (both layouts) */}

@@ -9,6 +9,7 @@ const ACTIVITY_LABEL: Record<ActivityType, string> = {
   TRAINING: 'อบรมการใช้งาน',
   QC: 'ตรวจสอบ/QC',
   HANDOVER: 'อบรม/ส่งมอบ',
+  TASK: 'งานอื่นๆ',
 }
 
 const ACTIVITY_COLOR: Record<ActivityType, { color: string; bg: string }> = {
@@ -18,6 +19,7 @@ const ACTIVITY_COLOR: Record<ActivityType, { color: string; bg: string }> = {
   TRAINING: { color: '#157F4C', bg: '#E2F3EA' },
   QC: { color: '#9A6B10', bg: '#FAF0D8' },
   HANDOVER: { color: '#B0329A', bg: '#F7E3F3' },
+  TASK: { color: '#7C3AED', bg: '#F3EEFF' },
 }
 
 function formatTime(d: Date | string): string {

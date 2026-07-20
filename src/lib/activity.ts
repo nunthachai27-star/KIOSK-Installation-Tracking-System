@@ -23,6 +23,7 @@ export const ACTIVITY_ACCENT: Record<ActivityType, string> = {
   ONSITE: '#3B45C4',
   TRAINING: '#157F4C',
   HANDOVER: '#B0329A',
+  TASK: '#7C3AED',
 }
 
 // Emoji symbol shown on the Monitor board so each work type is recognisable at a glance.
@@ -33,7 +34,11 @@ export const ACTIVITY_ICON: Record<ActivityType, string> = {
   ONSITE: '🔧',
   TRAINING: '🎓',
   HANDOVER: '🤝',
+  TASK: '📌',
 }
+
+// Ad-hoc task categories for the schedule "งานอื่นๆ" form.
+export const TASK_KINDS = ['ประชุม', 'ติดตามงาน รพ.', 'อบรม', 'อื่นๆ'] as const
 
 export const ACTIVITY_STATUS: Record<ActivityStatus, { label: string; color: string; bg: string }> = {
   PENDING: { label: 'รอดำเนินการ', color: '#8492A6', bg: '#EEF1F5' },
@@ -115,7 +120,7 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
   // the ship-date scan by a few calendar days to catch reminders landing today.
   const callFrom = new Date(from); callFrom.setDate(from.getDate() - 5)
 
-  const [activities, deliveries, installs, qcPlans, handovers, shippedDeliveries] = await Promise.all([
+  const [activities, deliveries, installs, qcPlans, handovers, shippedDeliveries, tasks] = await Promise.all([
     prisma.jobActivity.findMany({
       where: { activityDate: { gte: from, lte: to } },
       include: { job: { include: { hospital: true } }, responsibleUser: true },
@@ -142,6 +147,14 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
     prisma.deliveryRecord.findMany({
       where: { shippedDate: { gte: callFrom, lte: to } },
       include: { job: { include: { ...jobInclude, installation: { select: { remoteDate: true, onsiteDate: true } } } } },
+    }),
+    // Ad-hoc tasks (งานอื่นๆ) overlapping the window.
+    prisma.task.findMany({
+      where: {
+        startDate: { lte: to },
+        OR: [{ endDate: { gte: from } }, { AND: [{ endDate: null }, { startDate: { gte: from } }] }],
+      },
+      include: { responsibleUser: { select: { name: true } } },
     }),
   ])
 
@@ -201,6 +214,17 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
     if (d.job.installation?.remoteDate || d.job.installation?.onsiteDate) continue
     if (PROGRESS_RANK[d.job.currentStatus] >= PROGRESS_RANK.HANDED_OVER) continue
     pushRecord(`call-${d.id}`, 'DELIVERY', 'โทรนัดติดตั้ง', callDue, 'PENDING', d.job, '📞')
+  }
+  // Ad-hoc tasks (ประชุม/ติดตามงาน/อบรม/อื่นๆ) — show within their date range.
+  for (const t of tasks) {
+    items.push({
+      id: `task-${t.id}`, activityType: 'TASK', icon: ACTIVITY_ICON.TASK,
+      label: t.title, activityDate: t.startDate >= from ? t.startDate : from,
+      status: t.status, allDay: true,
+      responsibleName: t.responsibleUser?.name ?? null,
+      productType: t.kind, quantity: 0, jobCode: '', province: '',
+      hospitalName: t.hospitalName || 'งานภายใน',
+    })
   }
 
   // Jobs where the office already scheduled a real QC activity — the auto-plan

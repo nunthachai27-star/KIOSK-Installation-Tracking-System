@@ -14,7 +14,9 @@ export default auth((req) => {
   // redirect targets from the public AUTH_URL when it is configured.
   const base = process.env.AUTH_URL || req.nextUrl.origin
 
+  // Public: executive dashboard + hospital satisfaction rating (no login).
   const isPublic = pathname.startsWith('/api/auth') || pathname.startsWith('/login')
+    || pathname.startsWith('/exec') || pathname.startsWith('/rate') || pathname.startsWith('/api/rate')
   if (isPublic) return
 
   const session = req.auth

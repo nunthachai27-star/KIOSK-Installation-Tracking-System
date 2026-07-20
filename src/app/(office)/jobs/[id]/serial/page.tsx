@@ -7,15 +7,41 @@ import { getProductSpec } from '@/lib/product-spec'
 
 export default async function JobSerialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [job, users, session] = await Promise.all([
+  const [job, users, session, stockItems] = await Promise.all([
     prisma.job.findUnique({ where: { id }, include: { serials: true, serialRecord: true } }),
     prisma.user.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     auth(),
+    // Available warehouse stock (IN_STOCK with a factory serial) — component serials
+    // must be picked from here so choosing one issues it out of the warehouse.
+    prisma.stockItem.findMany({
+      where: { status: 'IN_STOCK', serialNo: { not: null } },
+      select: { id: true, serialNo: true, color: true, lot: { select: { lotCode: true, product: { select: { group: true, name: true } } } } },
+      orderBy: { serialNo: 'asc' },
+    }),
   ])
   if (!job) notFound()
 
   const spec = await getProductSpec(job.productType)
   const currentUser = { id: session?.user?.id ?? '', name: session?.user?.name ?? '' }
+  const stockOptions = stockItems.map((s) => ({
+    id: s.id, serialNo: s.serialNo as string, color: s.color,
+    group: s.lot.product.group, product: s.lot.product.name, lotCode: s.lot.lotCode,
+  }))
+
+  // Report whether each already-assigned component serial matches warehouse stock:
+  // DEDUCTED = issued to this job · ISSUED_OTHER = issued elsewhere · IN_STOCK = still in stock · (missing = not in stock).
+  const compSerials = [...new Set(job.serials.filter((s) => s.parentId).map((s) => s.serialNo.toUpperCase()))]
+  const stockMatches = compSerials.length
+    ? await prisma.stockItem.findMany({
+        where: { OR: compSerials.map((sn) => ({ serialNo: { equals: sn, mode: 'insensitive' as const } })) },
+        select: { serialNo: true, status: true, jobId: true },
+      })
+    : []
+  const stockStatus: Record<string, 'DEDUCTED' | 'ISSUED_OTHER' | 'IN_STOCK'> = {}
+  for (const m of stockMatches) {
+    if (!m.serialNo) continue
+    stockStatus[m.serialNo.toUpperCase()] = m.status === 'ISSUED' ? (m.jobId === job.id ? 'DEDUCTED' : 'ISSUED_OTHER') : 'IN_STOCK'
+  }
 
   return (
     <JobDetailShell jobId={job.id} active={2}>
@@ -32,6 +58,8 @@ export default async function JobSerialPage({ params }: { params: Promise<{ id: 
           qcPlannedDate: job.serialRecord.qcPlannedDate ? job.serialRecord.qcPlannedDate.toISOString() : null,
         } : null}
         currentUser={currentUser}
+        stockOptions={stockOptions}
+        stockStatus={stockStatus}
       />
     </JobDetailShell>
   )

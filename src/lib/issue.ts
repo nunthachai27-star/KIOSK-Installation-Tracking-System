@@ -47,4 +47,6 @@ export const ISSUE_EVENT: Record<IssueEventType, { label: string; icon: string; 
   STATUS_CHANGED: { label: 'เปลี่ยนสถานะ', icon: '🔄', color: '#1B5FD9' },
   SOLUTION_UPDATED: { label: 'บันทึกวิธีแก้ไข', icon: '🛠️', color: '#157F4C' },
   WARRANTY_SET: { label: 'ระบุการรับประกัน', icon: '🛡️', color: '#6D28D9' },
+  PART_USED: { label: 'ใช้อะไหล่', icon: '📦', color: '#C2410C' },
+  RATED: { label: 'โรงพยาบาลให้คะแนน', icon: '⭐', color: '#D97706' },
 }

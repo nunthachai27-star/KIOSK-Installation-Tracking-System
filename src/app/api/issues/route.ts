@@ -1,25 +1,27 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { IssueStatus, IssueMethod, IssueWarranty } from '@prisma/client'
+import { IssueStatus, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { warrantyStateFrom, ISSUE_WARRANTY } from '@/lib/issue'
 
 const VALID = new Set<string>(Object.values(IssueStatus))
 const METHODS = new Set<string>(Object.values(IssueMethod))
 const WARRANTIES = new Set<string>(Object.values(IssueWarranty))
 
-// Log a hospital warranty claim / problem report against a BMS unit (serialId identifies the job).
+// Log an equipment claim (เคลม) or general problem report. May be tied to a unit
+// (serialId → job) or standalone with free-text serial/hospital when the unit isn't in the system.
 export async function POST(req: Request) {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const body = await req.json()
-  const { serialId, jobId: rawJobId, title, solution, status, method, failedSerial, replacementSerial, cost, warrantyState } = body
+  const { serialId, title, solution, status, method, failedSerial, replacementSerial, cost, warrantyState, machineSerial, hospitalName } = body
   if (typeof title !== 'string' || !title.trim()) {
     return NextResponse.json({ error: 'title required' }, { status: 400 })
   }
+  const issueType: IssueType = body.issueType === 'GENERAL' ? 'GENERAL' : 'CLAIM'
 
-  let jobId: string | null = typeof rawJobId === 'string' ? rawJobId : null
+  let jobId: string | null = null
   let serial: string | null = null
   let autoWarranty: IssueWarranty = 'UNKNOWN'
   if (typeof serialId === 'string' && serialId) {
@@ -32,7 +34,9 @@ export async function POST(req: Request) {
     jobId = s.jobId
     autoWarranty = warrantyStateFrom(s.job.invoice?.warrantyEndDate?.toISOString() ?? null)
   }
-  if (!jobId) return NextResponse.json({ error: 'serialId or jobId required' }, { status: 400 })
+  // Standalone (no job) — keep the typed serial/hospital as free text.
+  const mSerial = !serial && typeof machineSerial === 'string' && machineSerial.trim() ? machineSerial.trim() : null
+  const hName = !jobId && typeof hospitalName === 'string' && hospitalName.trim() ? hospitalName.trim() : null
 
   const initialStatus = status && VALID.has(status) ? (status as IssueStatus) : 'RECEIVED'
   const initialSolution = typeof solution === 'string' && solution.trim() ? solution.trim() : null
@@ -46,6 +50,9 @@ export async function POST(req: Request) {
     data: {
       jobId,
       serialId: serial,
+      issueType,
+      machineSerial: mSerial,
+      hospitalName: hName,
       title: title.trim(),
       solution: initialSolution,
       status: initialStatus,
@@ -55,6 +62,7 @@ export async function POST(req: Request) {
       replacementSerial: typeof replacementSerial === 'string' && replacementSerial.trim() ? replacementSerial.trim() : null,
       cost: costNum,
       reporterId: session.user.id ?? null,
+      assignedToId: typeof body.assignedToId === 'string' && body.assignedToId ? body.assignedToId : (session.user.id ?? null),
       events: {
         create: [
           { type: 'CREATED', toStatus: initialStatus, note: title.trim(), actorName },

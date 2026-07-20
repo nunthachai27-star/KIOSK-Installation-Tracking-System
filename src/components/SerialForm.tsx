@@ -1,14 +1,25 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { SerialNumber, SerialType, SerialStatus } from '@prisma/client'
 import { SERIAL_TYPE_LABELS } from '@/lib/serial-types'
 import { addBusinessDays } from '@/lib/workdays'
+import { Combobox } from './Combobox'
 
 const planFmt = new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
 type Comp = { name: string; quantity: number; needsSerial: boolean }
 type UserOpt = { id: string; name: string }
+type StockOpt = { id: string; serialNo: string; color: string | null; group: string; product: string; lotCode: string }
+type StockState = 'DEDUCTED' | 'ISSUED_OTHER' | 'IN_STOCK' | 'NONE'
+
+// Stock-deduction report badge for an assigned component serial.
+const STOCK_BADGE: Record<StockState, { label: string; color: string; bg: string }> = {
+  DEDUCTED: { label: '✓ ตัดสต็อกแล้ว', color: '#157F4C', bg: '#E2F3EA' },
+  IN_STOCK: { label: '📦 มีในคลัง (ยังไม่ตัด)', color: '#1B5FD9', bg: '#E4EEFF' },
+  ISSUED_OTHER: { label: '⚠ จ่ายให้งานอื่นแล้ว', color: '#B45309', bg: '#FBEBCB' },
+  NONE: { label: '⚠ ไม่มีในคลัง', color: '#8492A6', bg: '#EEF1F5' },
+}
 
 const REC_STATUS: { value: SerialStatus; label: string }[] = [
   { value: 'PENDING', label: 'รอลง Serial' },
@@ -24,7 +35,7 @@ function legacyLabel(s: SerialNumber): string {
 }
 
 export function SerialForm({
-  jobId, serials, components, bmsCode, quantity, users, record, currentUser,
+  jobId, serials, components, bmsCode, quantity, users, record, currentUser, stockOptions, stockStatus,
 }: {
   jobId: string
   serials: SerialNumber[]
@@ -34,9 +45,27 @@ export function SerialForm({
   users: UserOpt[]
   record: { staffId: string | null; status: SerialStatus; qcPlannedDate: string | null } | null
   currentUser: { id: string; name: string }
+  stockOptions: StockOpt[]
+  stockStatus: Record<string, 'DEDUCTED' | 'ISSUED_OTHER' | 'IN_STOCK'>
 }) {
+  const [stockState, setStockState] = useState<Record<string, StockState>>(stockStatus)
+  useEffect(() => { setStockState(stockStatus) }, [stockStatus])
+  const [deducting, setDeducting] = useState<Record<string, boolean>>({})
+  const stockOf = (serialNo: string): StockState => stockState[serialNo.toUpperCase()] ?? 'NONE'
+
+  // Deduct an assigned component serial that still shows IN_STOCK (issue it to this job).
+  async function deduct(serialId: string, serialNo: string) {
+    setDeducting(d => ({ ...d, [serialId]: true }))
+    try {
+      const res = await fetch('/api/stock/deduct', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serialId }),
+      })
+      if (res.ok) { setStockState(s => ({ ...s, [serialNo.toUpperCase()]: 'DEDUCTED' })); router.refresh() }
+    } finally { setDeducting(d => ({ ...d, [serialId]: false })) }
+  }
   const router = useRouter()
   const [rows, setRows] = useState(serials)
+  const [stock, setStock] = useState<StockOpt[]>(stockOptions)
   const [inputs, setInputs] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<Record<string, boolean>>({})
@@ -86,12 +115,19 @@ export function SerialForm({
     if (created) { setRows(r => [...r, created]); setInput('newbms', ''); router.refresh() }
   }
 
-  async function addComponent(unitId: string, compName: string) {
+  // Keep the available-stock picker in sync with the server after a refresh
+  // (issued items removed, returned items re-added).
+  useEffect(() => { setStock(stockOptions) }, [stockOptions])
+
+  // Issue a component unit from warehouse stock and attach it to this BMS unit.
+  async function issueComponent(unitId: string, compName: string, stockItemId: string) {
     const key = `u:${unitId}:${compName}`
-    const serialNo = (inputs[key] ?? '').trim()
-    if (!serialNo) return
-    const created = await post(key, { label: compName, parentId: unitId, serialNo })
-    if (created) { setRows(r => [...r, created]); setInput(key, ''); router.refresh() }
+    const created = await post(key, { label: compName, parentId: unitId, stockItemId })
+    if (created) {
+      setRows(r => [...r, created])
+      setStock(s => s.filter(o => o.id !== stockItemId)) // optimistically remove from picker
+      router.refresh()
+    }
   }
 
   async function removeSerial(id: string) {
@@ -134,6 +170,12 @@ export function SerialForm({
   const infoComps = components.filter(c => !c.needsSerial)
   const legacy = rows.filter(s => s.serialType !== 'BMS' && !s.parentId)
   const inputCls = 'flex-1 border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm'
+  // Warehouse-stock picker options (label = factory serial, sub = product context).
+  const stockCombo = stock.map(o => ({
+    id: o.id,
+    label: o.serialNo,
+    sub: `${o.group} · ${o.product}${o.color ? ` · ${o.color}` : ''} · Lot ${o.lotCode}`,
+  }))
 
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
@@ -182,19 +224,40 @@ export function SerialForm({
       )}
 
       {/* per-unit component serials */}
-      {units.map((unit, idx) => (
+      {units.map((unit, idx) => {
+        const kids = rows.filter(s => s.parentId === unit.id)
+        const dedN = kids.filter(s => stockOf(s.serialNo) === 'DEDUCTED').length
+        const missN = kids.filter(s => stockOf(s.serialNo) === 'NONE').length
+        const inStockKids = kids.filter(s => stockOf(s.serialNo) === 'IN_STOCK')
+        return (
         <div key={unit.id} className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <div className="flex items-center gap-2.5">
               <span className="w-7 h-7 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm">{idx + 1}</span>
               <span className="text-[15px] font-bold tnum">{unit.serialNo}</span>
             </div>
-            <button type="button" onClick={() => removeSerial(unit.id)} className="text-[13px] text-[#C13540] hover:underline">ลบเครื่องนี้</button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {kids.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold"
+                  style={missN > 0 ? { background: '#FBEBCB', color: '#B45309' } : { background: '#E2F3EA', color: '#157F4C' }}>
+                  {missN > 0 ? `⚠ ตัดสต็อกได้ ${dedN}/${kids.length} · ไม่มีในคลัง ${missN}` : `✓ ตัดสต็อกครบ ${dedN}/${kids.length}`}
+                </span>
+              )}
+              {inStockKids.length > 0 && (
+                <button type="button" onClick={() => inStockKids.forEach(s => deduct(s.id, s.serialNo))}
+                  className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C]">
+                  ＋ ตัดสต็อกที่เหลือ ({inStockKids.length})
+                </button>
+              )}
+              <button type="button" onClick={() => removeSerial(unit.id)} className="text-[13px] text-[#C13540] hover:underline">ลบเครื่องนี้</button>
+            </div>
           </div>
 
           {serialComps.length === 0 ? (
             <div className="text-sm text-[#8492A6]">ยังไม่ได้กำหนดอุปกรณ์ของสินค้านี้ — ตั้งค่า › ประเภทสินค้า</div>
           ) : (
+            <>
+            <div className="text-[12px] text-[#8492A6] mb-3">📦 เลือกอุปกรณ์จากคลังเท่านั้น — เมื่อเลือกแล้วระบบจะตัดออกจากคลัง (จ่ายออก) ให้อัตโนมัติ</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 items-start">
               {serialComps.map(c => {
                 const key = `u:${unit.id}:${c.name}`
@@ -206,32 +269,44 @@ export function SerialForm({
                     </label>
                     {list.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {list.map(s => (
-                          <span key={s.id} className="inline-flex items-center gap-1 bg-[#FFEDE1] text-[#1C1917] rounded-lg pl-2.5 pr-1 py-1 text-[12.5px] font-medium">
-                            <span className="break-all">{s.serialNo}</span>
+                        {list.map(s => {
+                          const st = stockOf(s.serialNo)
+                          const b = STOCK_BADGE[st]
+                          return (
+                          <span key={s.id} className="inline-flex items-center gap-1.5 bg-white border border-[#ECE8E3] rounded-lg pl-2.5 pr-1 py-1 text-[12.5px]">
+                            <span className="break-all font-medium text-[#1C1917] tnum">{s.serialNo}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold whitespace-nowrap" style={{ background: b.bg, color: b.color }}>{b.label}</span>
+                            {st === 'IN_STOCK' && (
+                              <button type="button" disabled={deducting[s.id]} onClick={() => deduct(s.id, s.serialNo)}
+                                className="px-2 py-0.5 rounded text-[10.5px] font-bold whitespace-nowrap bg-[#EA580C] text-white hover:bg-[#C2410C] disabled:opacity-60">
+                                {deducting[s.id] ? '…' : 'ตัดสต็อก'}
+                              </button>
+                            )}
                             <button type="button" onClick={() => removeSerial(s.id)} aria-label="ลบ"
-                              className="w-5 h-5 grid place-items-center rounded text-[#7C8AA0] hover:text-[#C13540] hover:bg-white text-xs">✕</button>
+                              className="w-5 h-5 grid place-items-center rounded text-[#7C8AA0] hover:text-[#C13540] hover:bg-[#FBE4E4] text-xs">✕</button>
                           </span>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
-                    <div className="flex gap-2">
-                      <input value={inputs[key] ?? ''} onChange={e => setInput(key, e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addComponent(unit.id, c.name) } }}
-                        placeholder="เพิ่มหมายเลข Serial" className={inputCls} />
-                      <button type="button" disabled={saving[key]} onClick={() => addComponent(unit.id, c.name)}
-                        className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
-                        {saving[key] ? '…' : 'เพิ่ม'}
-                      </button>
-                    </div>
+                    <Combobox
+                      key={`${key}-${list.length}`}
+                      value=""
+                      options={stockCombo}
+                      onChange={(sid) => { if (sid) issueComponent(unit.id, c.name, sid) }}
+                      placeholder={stockCombo.length ? 'เลือกจากคลัง (ค้นหา Serial / รุ่น)…' : 'ไม่มีของในคลัง'}
+                    />
+                    {saving[key] && <p className="text-xs text-[#8492A6] mt-1">กำลังจ่ายออกจากคลัง…</p>}
                     {errors[key] && <p className="text-xs text-[#C13540] mt-1">{errors[key]}</p>}
                   </div>
                 )
               })}
             </div>
+            </>
           )}
         </div>
-      ))}
+        )
+      })}
 
       {/* info components + legacy serials */}
       {(infoComps.length > 0 || legacy.length > 0) && (

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { IssueStatus, IssueEventType, IssueMethod, IssueWarranty } from '@prisma/client'
+import type { IssueStatus, IssueEventType, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { Combobox } from './Combobox'
 import {
   ISSUE_STATUS, ISSUE_STATUS_ORDER, ISSUE_OPEN_STATUSES, ISSUE_EVENT,
@@ -9,20 +9,27 @@ import {
 } from '@/lib/issue'
 
 type SerialOpt = { id: string; serialNo: string; hospital: string; jobCode: string; productType: string; warrantyEndDate: string | null }
+type SpareOpt = { id: string; name: string; stockQty: number; sellPrice: number | null }
+type UserOpt = { id: string; name: string }
+type ClaimPartItem = { id: string; name: string; qty: number; unitPrice: number | null; stockDeducted: boolean }
 type IssueEvt = {
   id: string; type: IssueEventType; fromStatus: IssueStatus | null; toStatus: IssueStatus | null
   note: string | null; actorName: string | null; createdAt: string
 }
 type Item = {
-  id: string; serialNo: string | null; hospital: string; jobCode: string; productType: string
+  id: string; issueType: IssueType; serialNo: string | null; hospital: string; jobCode: string | null; productType: string | null
   title: string; solution: string | null; status: IssueStatus
   warrantyState: IssueWarranty; method: IssueMethod | null
   failedSerial: string | null; replacementSerial: string | null; cost: number | null
-  reporter: string | null; updatedAt: string; events: IssueEvt[]
+  rating: number | null; assignedToId: string | null; assignedToName: string | null
+  parts: ClaimPartItem[]
+  reporter: string | null; createdAt: string; updatedAt: string; eventCount: number
 }
+type ClaimStats = { total: number; received: number; inProgress: number; done: number }
 type PatchBody = {
   status?: IssueStatus; solution?: string | null; warrantyState?: IssueWarranty
   method?: IssueMethod | null; failedSerial?: string | null; replacementSerial?: string | null; cost?: number | null
+  assignedToId?: string | null
 }
 
 const dtFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -43,12 +50,28 @@ function WarrantyBadge({ w }: { w: IssueWarranty }) {
   return <span className="inline-block px-2.5 py-0.5 rounded-full text-[12px] font-bold" style={{ background: m.bg, color: m.color }}>🛡️ {m.label}</span>
 }
 
-export function IssueManager({ serials, initial }: { serials: SerialOpt[]; initial: Item[] }) {
+// A bordered stat-card used as a status filter — count on top (status colour), label below.
+function StatusCard({ active, label, n, color, onClick }: { active: boolean; label: string; n: number; color: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className={`rounded-xl border px-3 py-2 text-left min-w-[96px] transition-colors ${active ? '' : 'bg-white hover:bg-[#FBFAF8]'}`}
+      style={active ? { borderColor: color, background: `${color}12` } : { borderColor: '#ECE8E3' }}>
+      <div className="text-[17px] font-bold tnum leading-none" style={{ color }}>{n}</div>
+      <div className="text-[11px] font-medium text-[#5A6B82] mt-1 leading-tight">{label}</div>
+    </button>
+  )
+}
+
+export function IssueManager({ serials, initial, productTypes, spareParts, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; spareParts: SpareOpt[]; users: UserOpt[]; stats: ClaimStats }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   // Keep in sync with the server after router.refresh() so the timeline/claim data reflect updates.
   useEffect(() => { setItems(initial) }, [initial])
+  const [issueType, setIssueType] = useState<IssueType>('CLAIM')
   const [serialId, setSerialId] = useState('')
+  const [manualSerial, setManualSerial] = useState(false) // S/N ไม่พบในระบบ → พิมพ์เอง
+  const [manualSerialText, setManualSerialText] = useState('')
+  const [manualHospital, setManualHospital] = useState('')
   const [title, setTitle] = useState('')
   const [solution, setSolution] = useState('')
   const [status, setStatus] = useState<IssueStatus>('RECEIVED')
@@ -60,6 +83,20 @@ export function IssueManager({ serials, initial }: { serials: SerialOpt[]; initi
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const [filter, setFilter] = useState<IssueStatus | 'ALL' | 'OPEN'>('ALL')
+  const [typeFilter, setTypeFilter] = useState<IssueType | 'ALL'>('ALL')
+  const [productFilter, setProductFilter] = useState('')
+  const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [showFilters, setShowFilters] = useState(true)
+  const [limit, setLimit] = useState(40) // render cap — the full list (412+) is too heavy to mount at once
+  const isClaim = issueType === 'CLAIM'
+
+  function resetForm() {
+    setSerialId(''); setManualSerial(false); setManualSerialText(''); setManualHospital('')
+    setTitle(''); setSolution(''); setStatus('RECEIVED'); setWarranty('UNKNOWN')
+    setMethod(''); setFailedSerial(''); setReplacementSerial(''); setCost(''); setErr('')
+  }
 
   const comboOpts = serials.map((s) => ({ id: s.id, label: s.serialNo, sub: `${s.hospital} · ${s.jobCode}` }))
   const selectedSerial = serials.find((s) => s.id === serialId)
@@ -71,27 +108,35 @@ export function IssueManager({ serials, initial }: { serials: SerialOpt[]; initi
   }
 
   async function add() {
-    if (!serialId) { setErr('เลือก S/N BMS ก่อน'); return }
-    if (!title.trim()) { setErr('ระบุอาการ/ชื่อปัญหา'); return }
+    const usePicked = isClaim && !manualSerial
+    if (usePicked && !serialId) { setErr('เลือก S/N BMS หรือกด “S/N ไม่พบในระบบ”'); return }
+    if (isClaim && manualSerial && !manualSerialText.trim() && !manualHospital.trim()) { setErr('พิมพ์ S/N หรือชื่อโรงพยาบาล'); return }
+    if (!title.trim()) { setErr('ระบุอาการ/รายละเอียดปัญหา'); return }
     setSaving(true); setErr('')
     try {
+      const body = usePicked
+        ? { issueType, serialId, title, solution, status, warrantyState: warranty, method: method || null, failedSerial, replacementSerial, cost }
+        : { issueType, machineSerial: isClaim ? manualSerialText : null, hospitalName: manualHospital, title, solution, status,
+            warrantyState: isClaim ? warranty : 'UNKNOWN', method: isClaim ? (method || null) : null,
+            failedSerial: isClaim ? failedSerial : null, replacementSerial: isClaim ? replacementSerial : null, cost: isClaim ? cost : null }
       const res = await fetch('/api/issues', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serialId, title, solution, status, warrantyState: warranty, method: method || null, failedSerial, replacementSerial, cost }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       if (!res.ok) { setErr('บันทึกไม่สำเร็จ'); return }
-      const created = await res.json()
-      const s = serials.find((x) => x.id === serialId)!
+      const s = usePicked ? serials.find((x) => x.id === serialId) : undefined
       setItems((x) => [{
-        id: created.id, serialNo: s.serialNo, hospital: s.hospital, jobCode: s.jobCode, productType: s.productType,
+        id: crypto.randomUUID(), issueType,
+        serialNo: usePicked ? s!.serialNo : (isClaim ? manualSerialText.trim() || null : null),
+        hospital: usePicked ? s!.hospital : (manualHospital.trim() || '—'),
+        jobCode: usePicked ? s!.jobCode : null, productType: usePicked ? s!.productType : null,
         title: title.trim(), solution: solution.trim() || null, status,
-        warrantyState: warranty, method: method || null,
-        failedSerial: failedSerial.trim() || null, replacementSerial: replacementSerial.trim() || null,
-        cost: cost && !isNaN(Number(cost)) ? Number(cost) : null,
-        reporter: null, updatedAt: new Date().toISOString(), events: [],
+        warrantyState: isClaim ? warranty : 'UNKNOWN', method: isClaim ? (method || null) : null,
+        failedSerial: isClaim ? (failedSerial.trim() || null) : null, replacementSerial: isClaim ? (replacementSerial.trim() || null) : null,
+        cost: isClaim && cost && !isNaN(Number(cost)) ? Number(cost) : null,
+        rating: null, assignedToId: null, assignedToName: null, parts: [],
+        reporter: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), eventCount: 0,
       }, ...x])
-      setSerialId(''); setTitle(''); setSolution(''); setStatus('RECEIVED'); setWarranty('UNKNOWN')
-      setMethod(''); setFailedSerial(''); setReplacementSerial(''); setCost('')
+      resetForm()
       router.refresh()
     } finally { setSaving(false) }
   }
@@ -112,57 +157,152 @@ export function IssueManager({ serials, initial }: { serials: SerialOpt[]; initi
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
+  async function addPart(issueId: string, body: { stockProductId: string; qty: number; deductStock: boolean }) {
+    const res = await fetch(`/api/issues/${issueId}/parts`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })
+    if (res.ok) {
+      const p = await res.json() as ClaimPartItem
+      setItems((x) => x.map((it) => (it.id === issueId ? { ...it, parts: [...it.parts, p] } : it)))
+      router.refresh()
+    }
+  }
+
+  async function removePart(issueId: string, partId: string) {
+    const res = await fetch(`/api/issues/${issueId}/parts/${partId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setItems((x) => x.map((it) => (it.id === issueId ? { ...it, parts: it.parts.filter((p) => p.id !== partId) } : it)))
+      router.refresh()
+    }
+  }
+
   const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
-  const shown = filter === 'ALL' ? items
-    : filter === 'OPEN' ? items.filter((i) => (ISSUE_OPEN_STATUSES as IssueStatus[]).includes(i.status))
-    : items.filter((i) => i.status === filter)
-  const openCount = items.filter((i) => (ISSUE_OPEN_STATUSES as IssueStatus[]).includes(i.status)).length
+  const byProduct = productFilter
+    ? items.filter((i) => (productFilter === '__NONE__' ? !i.productType : i.productType === productFilter))
+    : items
+  const byType = typeFilter === 'ALL' ? byProduct : byProduct.filter((i) => i.issueType === typeFilter)
+  const byStatus = filter === 'ALL' ? byType
+    : filter === 'OPEN' ? byType.filter((i) => (ISSUE_OPEN_STATUSES as IssueStatus[]).includes(i.status))
+    : byType.filter((i) => i.status === filter)
+  const sq = search.trim().toLowerCase()
+  const bySearch = sq
+    ? byStatus.filter((i) => [i.serialNo, i.hospital, i.title, i.jobCode, i.failedSerial, i.replacementSerial]
+        .some((v) => (v ?? '').toLowerCase().includes(sq)))
+    : byStatus
+  // Date-range filter (by แจ้ง/created date). `to` is inclusive of the whole day.
+  const fromT = dateFrom ? new Date(dateFrom).getTime() : null
+  const toT = dateTo ? new Date(dateTo).getTime() + 86400000 - 1 : null
+  const shown = (fromT || toT)
+    ? bySearch.filter((i) => { const t = new Date(i.createdAt).getTime(); return (!fromT || t >= fromT) && (!toT || t <= toT) })
+    : bySearch
+  // Reset the render cap whenever the visible set changes (new filter/search).
+  useEffect(() => { setLimit(40) }, [filter, typeFilter, productFilter, search, dateFrom, dateTo])
+  const visible = shown.slice(0, limit)
+  const openCount = byType.filter((i) => (ISSUE_OPEN_STATUSES as IssueStatus[]).includes(i.status)).length
   // Only surface status chips that actually have records, to keep the filter compact.
-  const statusChips = ISSUE_STATUS_ORDER.map((st) => ({ st, n: items.filter((i) => i.status === st).length })).filter((c) => c.n > 0)
+  const statusChips = ISSUE_STATUS_ORDER.map((st) => ({ st, n: byType.filter((i) => i.status === st).length })).filter((c) => c.n > 0)
+  const claimCount = byProduct.filter((i) => i.issueType === 'CLAIM').length
+  const generalCount = byProduct.filter((i) => i.issueType === 'GENERAL').length
+  const noProductCount = items.filter((i) => !i.productType).length
+
+  // Repeat-failure count per equipment: how many reports share the same S/N.
+  // Keyed by the (trimmed) serial string; skip junk keys so a stray "." isn't grouped.
+  const serialKey = (sn: string | null) => { const k = (sn ?? '').trim(); return k.length >= 4 && /[A-Za-z0-9]/.test(k) ? k : null }
+  const repeatBySerial = new Map<string, number>()
+  for (const it of items) { const k = serialKey(it.serialNo); if (k) repeatBySerial.set(k, (repeatBySerial.get(k) ?? 0) + 1) }
+  const repeatOf = (it: Item) => { const k = serialKey(it.serialNo); return k ? (repeatBySerial.get(k) ?? 1) : 1 }
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_324px] gap-4 items-start">
       {/* add form */}
       <div className="ds-card p-5">
-        <div className="text-[15px] font-bold mb-4">แจ้งเคลมใหม่</div>
+        {/* type toggle: equipment claim vs general problem */}
+        <div className="inline-flex rounded-lg border border-[#D6DFEA] overflow-hidden mb-4">
+          <button type="button" onClick={() => setIssueType('CLAIM')}
+            className={`px-4 py-2 text-[13px] font-semibold ${isClaim ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+            🔧 แจ้งเคลมอุปกรณ์
+          </button>
+          <button type="button" onClick={() => setIssueType('GENERAL')}
+            className={`px-4 py-2 text-[13px] font-semibold ${!isClaim ? 'bg-[#1B5FD9] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+            📝 แจ้งปัญหาทั่วไป
+          </button>
+        </div>
+
         <div className="flex flex-col gap-3">
-          <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">S/N BMS (ตู้/เครื่อง)</label>
-            <Combobox value={serialId} onChange={onPickSerial} options={comboOpts} placeholder="พิมพ์ค้นหา S/N BMS หรือชื่อโรงพยาบาล…" />
-            {selectedSerial && (
-              <div className="mt-2 flex items-center gap-2 flex-wrap text-[12.5px] text-[#5A6B82]">
-                <span>{selectedSerial.hospital} · {selectedSerial.productType}</span>
-                <WarrantyBadge w={warrantyStateFrom(selectedSerial.warrantyEndDate)} />
-                <span className="text-[#A8A29E]">(อัตโนมัติจากวันเปิดบิล +1 ปี)</span>
+          {isClaim ? (
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-sm font-semibold text-[#5A6B82]">S/N BMS (ตู้/เครื่อง)</label>
+                <button type="button" onClick={() => { setManualSerial((v) => !v); setSerialId('') }}
+                  className="text-[12px] font-semibold text-[#EA580C] hover:underline">
+                  {manualSerial ? '↩ เลือกจากรายการในระบบ' : 'S/N ไม่พบในระบบ? พิมพ์เอง'}
+                </button>
               </div>
-            )}
+              {manualSerial ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input value={manualSerialText} onChange={(e) => setManualSerialText(e.target.value)} placeholder="พิมพ์ S/N BMS / เลขเครื่อง" className={`${field} tnum`} />
+                  <input value={manualHospital} onChange={(e) => setManualHospital(e.target.value)} placeholder="ชื่อโรงพยาบาล" className={field} />
+                </div>
+              ) : (
+                <>
+                  <Combobox value={serialId} onChange={onPickSerial} options={comboOpts} placeholder="พิมพ์ค้นหา S/N BMS หรือชื่อโรงพยาบาล…" />
+                  {selectedSerial && (
+                    <div className="mt-2 flex items-center gap-2 flex-wrap text-[12.5px] text-[#5A6B82]">
+                      <span>{selectedSerial.hospital} · {selectedSerial.productType}</span>
+                      <WarrantyBadge w={warrantyStateFrom(selectedSerial.warrantyEndDate)} />
+                      <span className="text-[#A8A29E]">(อัตโนมัติจากวันเปิดบิล +1 ปี)</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ชื่อโรงพยาบาล / หน่วยงาน (ถ้ามี)</label>
+              <input value={manualHospital} onChange={(e) => setManualHospital(e.target.value)} placeholder="เว้นว่างได้ถ้าเป็นปัญหาภายใน" className={field} />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">{isClaim ? 'อาการเสีย / ชื่อปัญหา' : 'รายละเอียดปัญหา'}</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={isClaim ? 'เช่น จอไม่ติด, Smartcard ใช้ไม่ได้' : 'เช่น ระบบล่ม, ขอคำแนะนำการใช้งาน'} className={field} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">อาการเสีย / ชื่อปัญหา</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="เช่น จอไม่ติด, Smartcard ใช้ไม่ได้" className={field} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">การรับประกัน</label>
-              <select value={warranty} onChange={(e) => setWarranty(e.target.value as IssueWarranty)} className={field}>
-                {(Object.keys(ISSUE_WARRANTY) as IssueWarranty[]).map((w) => <option key={w} value={w}>{ISSUE_WARRANTY[w].label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">Serial อุปกรณ์ที่เสีย</label>
-              <input value={failedSerial} onChange={(e) => setFailedSerial(e.target.value)} placeholder="Serial ชิ้นที่พัง" className={`${field} tnum`} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">Serial ที่ส่งเปลี่ยนให้ลูกค้า</label>
-              <input value={replacementSerial} onChange={(e) => setReplacementSerial(e.target.value)} placeholder="Serial ชิ้นทดแทน" className={`${field} tnum`} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ค่าใช้จ่าย (บาท)</label>
-              <input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="กรณีนอกประกัน" className={`${field} tnum`} />
-            </div>
-          </div>
+
+          {isClaim && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">การรับประกัน</label>
+                  <select value={warranty} onChange={(e) => setWarranty(e.target.value as IssueWarranty)} className={field}>
+                    {(Object.keys(ISSUE_WARRANTY) as IssueWarranty[]).map((w) => <option key={w} value={w}>{ISSUE_WARRANTY[w].label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">Serial อุปกรณ์ที่เสีย</label>
+                  <input value={failedSerial} onChange={(e) => setFailedSerial(e.target.value)} placeholder="Serial ชิ้นที่พัง" className={`${field} tnum`} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">Serial ที่ส่งเปลี่ยนให้ลูกค้า</label>
+                  <input value={replacementSerial} onChange={(e) => setReplacementSerial(e.target.value)} placeholder="Serial ชิ้นทดแทน" className={`${field} tnum`} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ค่าใช้จ่าย (บาท)</label>
+                  <input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="กรณีนอกประกัน" className={`${field} tnum`} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วิธีดำเนินการ</label>
+                  <select value={method} onChange={(e) => setMethod(e.target.value as IssueMethod | '')} className={field}>
+                    <option value="">— ไม่ระบุ —</option>
+                    {(Object.keys(ISSUE_METHOD) as IssueMethod[]).map((m) => <option key={m} value={m}>{ISSUE_METHOD[m]}</option>)}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วิธีการแก้ไข (ถ้ามี)</label>
             <textarea value={solution} onChange={(e) => setSolution(e.target.value)} rows={2} placeholder="บันทึกวิธีแก้ไข…" className={field} />
@@ -174,59 +314,175 @@ export function IssueManager({ serials, initial }: { serials: SerialOpt[]; initi
                 {ISSUE_STATUS_ORDER.map((st) => <option key={st} value={st}>{ISSUE_STATUS[st].label}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วิธีดำเนินการ</label>
-              <select value={method} onChange={(e) => setMethod(e.target.value as IssueMethod | '')} className={`${field} w-48`}>
-                <option value="">— ไม่ระบุ —</option>
-                {(Object.keys(ISSUE_METHOD) as IssueMethod[]).map((m) => <option key={m} value={m}>{ISSUE_METHOD[m]}</option>)}
-              </select>
-            </div>
-            <button onClick={add} disabled={saving}
-              className="ds-hover bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
-              {saving ? 'กำลังบันทึก…' : 'บันทึกเคลม'}
+            <button type="button" onClick={resetForm}
+              className="ml-auto border border-[#D6DFEA] text-[#5A6B82] font-semibold rounded-lg px-4 py-2.5 hover:bg-[#F4F3F1] flex items-center gap-1.5">
+              ⟳ รีเซ็ต
             </button>
-            {err && <span className="text-sm text-[#C13540]">{err}</span>}
+            <button onClick={add} disabled={saving}
+              className={`ds-hover text-white font-semibold rounded-lg px-5 py-2.5 disabled:opacity-60 flex items-center gap-1.5 ${isClaim ? 'bg-[#EA580C] hover:bg-[#C2410C]' : 'bg-[#1B5FD9] hover:bg-[#164FB3]'}`}>
+              {saving ? 'กำลังบันทึก…' : (isClaim ? '🗎 บันทึกเคลม' : '🗎 บันทึกปัญหา')}
+            </button>
+            {err && <span className="w-full text-sm text-[#C13540]">{err}</span>}
           </div>
         </div>
       </div>
 
-      {/* filter tabs */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <button onClick={() => setFilter('ALL')}
-          className={`px-3 py-1.5 rounded-full text-[12.5px] font-semibold ${filter === 'ALL' ? 'bg-[#FFEDE1] text-[#EA580C]' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
-          ทั้งหมด {items.length}
-        </button>
-        <button onClick={() => setFilter('OPEN')}
-          className={`px-3 py-1.5 rounded-full text-[12.5px] font-semibold ${filter === 'OPEN' ? 'bg-[#E4EEFF] text-[#1B5FD9]' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
-          กำลังดำเนินการ {openCount}
-        </button>
-        {statusChips.map(({ st, n }) => (
-          <button key={st} onClick={() => setFilter(st)}
-            className="px-3 py-1.5 rounded-full text-[12.5px] font-semibold"
-            style={filter === st ? { background: ISSUE_STATUS[st].bg, color: ISSUE_STATUS[st].color } : { color: '#5A6B82' }}>
-            {ISSUE_STATUS[st].label} {n}
+      {/* helper sidebar — warranty rule, 30-day claim activity, workflow steps */}
+      <aside className="ds-card p-5 flex flex-col gap-5">
+        <div className="flex items-center gap-2 pb-3 border-b border-[#F1F3F6]">
+          <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">🛟</span>
+          <span className="font-bold text-[15px] text-[#1C1917]">ข้อมูลช่วยเหลือ</span>
+        </div>
+
+        <div className="flex gap-2.5">
+          <span className="text-[#157F4C] text-[17px] leading-none mt-0.5">🛡️</span>
+          <div>
+            <div className="text-[13px] font-bold text-[#1C1917]">สิทธิประกัน</div>
+            <div className="text-[12px] text-[#8492A6] mt-0.5 leading-relaxed">ระบบตรวจสอบสิทธิประกันอัตโนมัติจากวันที่เปิดบิล (+1 ปี)</div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[12.5px] font-bold text-[#57534E] mb-2">📊 สถิติการแจ้งเคลม <span className="text-[#A8A29E] font-medium">(30 วันล่าสุด)</span></div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'แจ้งทั้งหมด', value: stats.total, color: '#1C1917' },
+              { label: 'รออนุมัติ', value: stats.received, color: '#B45309' },
+              { label: 'กำลังดำเนินการ', value: stats.inProgress, color: '#1B5FD9' },
+              { label: 'ปิดงานแล้ว', value: stats.done, color: '#157F4C' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl border border-[#EEEAE6] bg-[#FBFAF8] px-3 py-2.5">
+                <div className="text-[20px] font-bold tnum leading-none" style={{ color: s.color }}>{s.value}</div>
+                <div className="text-[11px] text-[#8492A6] mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[12.5px] font-bold text-[#57534E] mb-2">🧭 ขั้นตอนการทำงาน</div>
+          <ol className="flex flex-col gap-2.5">
+            {['กรอกข้อมูลและบันทึกเคลม', 'รอเจ้าหน้าที่ตรวจสอบ/อนุมัติ', 'ดำเนินการและปิดงาน'].map((t, i) => (
+              <li key={i} className="flex items-center gap-2.5">
+                <span className="w-5 h-5 shrink-0 rounded-full bg-[#EA580C] text-white grid place-items-center text-[11px] font-bold tnum">{i + 1}</span>
+                <span className="text-[12.5px] text-[#3C4A5E]">{t}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </aside>
+      </div>
+
+      {/* type filter + product-type filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {([['ALL', `ทั้งหมด (${byProduct.length})`], ['CLAIM', `🔧 เคลมอุปกรณ์ (${claimCount})`], ['GENERAL', `📝 ปัญหาทั่วไป (${generalCount})`]] as const).map(([v, label]) => (
+          <button key={v} onClick={() => { setTypeFilter(v); setFilter('ALL') }}
+            className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border ${typeFilter === v ? 'bg-[#1C1917] text-white border-[#1C1917]' : 'bg-white text-[#5A6B82] border-[#E1E8F2] hover:bg-[#F6F9FC]'}`}>
+            {label}
           </button>
         ))}
+        <select value={productFilter} onChange={(e) => { setProductFilter(e.target.value); setFilter('ALL') }}
+          className="ml-auto border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C]"
+          aria-label="กรองตามประเภทสินค้า">
+          <option value="">ทุกประเภทสินค้า</option>
+          {productTypes.map((p) => <option key={p} value={p}>{p}</option>)}
+          {noProductCount > 0 && <option value="__NONE__">— ไม่ระบุประเภท ({noProductCount}) —</option>}
+        </select>
       </div>
+
+      {/* search + filter toggle + date range */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[220px]">
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="ค้นหา S/N BMS, โรงพยาบาล, อาการ/ปัญหา…"
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E]">🔍</span>
+          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
+        </div>
+        <button onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-1.5 border rounded-lg px-3.5 py-2.5 text-[13px] font-semibold ${showFilters ? 'border-[#EA580C] text-[#EA580C] bg-[#FFF7F2]' : 'border-[#D6DFEA] text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+          ⛃ ตัวกรอง
+        </button>
+        <div className="flex items-center gap-1.5 border border-[#D6DFEA] rounded-lg px-2.5 py-1.5">
+          <span className="text-[#A8A29E] text-[13px]">🗓</span>
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="ตั้งแต่วันที่"
+            className="text-[12.5px] tnum text-[#3C4A5E] outline-none bg-transparent w-[112px]" />
+          <span className="text-[#C4BFB9]">–</span>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="ถึงวันที่"
+            className="text-[12.5px] tnum text-[#3C4A5E] outline-none bg-transparent w-[112px]" />
+          {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo('') }} className="text-[#A8A29E] hover:text-[#C13540] text-[13px]">✕</button>}
+        </div>
+      </div>
+
+      {/* status filter cards */}
+      {showFilters && (
+        <div className="flex items-stretch gap-2 flex-wrap">
+          <StatusCard active={filter === 'ALL'} label="ทั้งหมด" n={byProduct.length} color="#EA580C" onClick={() => setFilter('ALL')} />
+          <StatusCard active={filter === 'OPEN'} label="กำลังดำเนินการ" n={openCount} color="#1B5FD9" onClick={() => setFilter('OPEN')} />
+          {statusChips.map(({ st, n }) => (
+            <StatusCard key={st} active={filter === st} label={ISSUE_STATUS[st].label} n={n} color={ISSUE_STATUS[st].color} onClick={() => setFilter(st)} />
+          ))}
+        </div>
+      )}
 
       {/* list */}
       <div className="flex flex-col gap-3">
-        {shown.length === 0 && <div className="ds-card p-6 text-sm text-[#8492A6]">ไม่มีรายการ</div>}
-        {shown.map((it) => (
-          <IssueCard key={it.id} item={it} onPatch={(b) => patch(it.id, b)} onDelete={() => remove(it.id)} />
+        {sq && <div className="text-[12.5px] text-[#8492A6]">พบ {shown.length} รายการที่ตรงกับ “{search.trim()}”</div>}
+        {shown.length === 0 && <div className="ds-card p-6 text-sm text-[#8492A6]">{sq ? 'ไม่พบรายการที่ค้นหา' : 'ไม่มีรายการ'}</div>}
+        {visible.map((it) => (
+          <IssueCard key={it.id} item={it} spareParts={spareParts} users={users} repeatCount={repeatOf(it)}
+            onShowHistory={() => setSearch(it.serialNo ?? '')} onPatch={(b) => patch(it.id, b)} onDelete={() => remove(it.id)}
+            onAddPart={(b) => addPart(it.id, b)} onRemovePart={(pid) => removePart(it.id, pid)} />
         ))}
+        {shown.length > limit && (
+          <button onClick={() => setLimit((n) => n + 40)}
+            className="ds-card p-3.5 text-[13px] font-semibold text-[#EA580C] hover:bg-[#FFF7F2] text-center">
+            แสดงเพิ่มอีก 40 รายการ · เหลืออีก {shown.length - limit} รายการ (แสดงอยู่ {limit} จาก {shown.length})
+          </button>
+        )}
       </div>
     </div>
   )
 }
 
-function IssueCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: PatchBody) => void; onDelete: () => void }) {
+function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatch, onDelete, onAddPart, onRemovePart }: {
+  item: Item; spareParts: SpareOpt[]; users: UserOpt[]; repeatCount: number; onShowHistory: () => void
+  onPatch: (b: PatchBody) => void; onDelete: () => void
+  onAddPart: (b: { stockProductId: string; qty: number; deductStock: boolean }) => void
+  onRemovePart: (partId: string) => void
+}) {
   const [sol, setSol] = useState(item.solution ?? '')
   const [failed, setFailed] = useState(item.failedSerial ?? '')
   const [repl, setRepl] = useState(item.replacementSerial ?? '')
   const [cost, setCost] = useState(item.cost != null ? String(item.cost) : '')
   const [openTl, setOpenTl] = useState(false)
+  const [events, setEvents] = useState<IssueEvt[] | null>(null)
+  const [loadingTl, setLoadingTl] = useState(false)
+  const [partId, setPartId] = useState('')
+  const [partQty, setPartQty] = useState('1')
+  const [deductStock, setDeductStock] = useState(true)
+  const [copied, setCopied] = useState(false)
   const meta = ISSUE_STATUS[item.status]
+
+  // Timeline events are loaded on demand the first time the timeline is opened,
+  // and refetched if the event count changed (e.g. after a status update).
+  async function toggleTimeline() {
+    const next = !openTl
+    setOpenTl(next)
+    if (next && (events === null || events.length !== item.eventCount)) {
+      setLoadingTl(true)
+      try {
+        const r = await fetch(`/api/issues/${item.id}/events`)
+        if (r.ok) setEvents(await r.json() as IssueEvt[])
+      } finally { setLoadingTl(false) }
+    }
+  }
+
+  function copyRateLink() {
+    const url = `${window.location.origin}/rate/${item.id}`
+    navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
+  }
+  const partsTotal = item.parts.reduce((s, p) => s + (p.unitPrice ?? 0) * p.qty, 0)
 
   const solDirty = (item.solution ?? '') !== sol
   const claimDirty = (item.failedSerial ?? '') !== failed.trim()
@@ -238,9 +494,18 @@ function IssueCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: Patch
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
+            {item.issueType === 'CLAIM'
+              ? <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FFEDE1] text-[#EA580C]">🔧 เคลมอุปกรณ์</span>
+              : <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#E4EEFF] text-[#1B5FD9]">📝 ปัญหาทั่วไป</span>}
             {item.serialNo && <span className="tnum text-sm font-bold text-[#1C1917]">{item.serialNo}</span>}
-            <span className="text-[12.5px] text-[#8492A6]">{item.hospital} · {item.jobCode} · {item.productType}</span>
-            <WarrantyBadge w={item.warrantyState} />
+            <span className="text-[12.5px] text-[#8492A6]">{[item.hospital, item.jobCode, item.productType].filter(Boolean).join(' · ')}</span>
+            {item.issueType === 'CLAIM' && <WarrantyBadge w={item.warrantyState} />}
+            {repeatCount > 1 && (
+              <button type="button" onClick={onShowHistory} title="เครื่องนี้เคยแจ้งซ้ำ — คลิกดูประวัติทั้งหมด"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FBE4E4] text-[#C13540] hover:bg-[#F7CFCF]">
+                🔁 แจ้งซ้ำ {repeatCount} ครั้ง
+              </button>
+            )}
           </div>
           <div className="text-[15px] font-semibold text-[#1C1917] mt-1">{item.title}</div>
         </div>
@@ -254,7 +519,8 @@ function IssueCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: Patch
         </div>
       </div>
 
-      {/* claim detail: warranty / method / serials / cost */}
+      {/* claim detail: warranty / method / serials / cost — claims only */}
+      {item.issueType === 'CLAIM' && (<>
       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2.5">
         <div>
           <label className="block text-[11.5px] font-semibold text-[#5A6B82] mb-1">การรับประกัน</label>
@@ -295,6 +561,43 @@ function IssueCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: Patch
         )}
       </div>
 
+      {/* spare parts used on this claim */}
+      <div className="mt-3 rounded-xl bg-[#FBFAF8] border border-[#EEEAE6] px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="text-[12.5px] font-bold text-[#57534E]">📦 อะไหล่ที่ใช้ ({item.parts.length})</span>
+          {partsTotal > 0 && <span className="text-[12px] text-[#5A6B82]">รวมค่าอะไหล่ {baht.format(partsTotal)} บาท</span>}
+        </div>
+        {item.parts.length > 0 && (
+          <div className="flex flex-col gap-1 mb-2">
+            {item.parts.map((p) => (
+              <div key={p.id} className="flex items-center gap-2 text-[12.5px]">
+                <span className="flex-1 truncate text-[#1C1917]">{p.name} <span className="text-[#8492A6]">× {p.qty}</span>
+                  {p.stockDeducted && <span className="ml-1.5 text-[10.5px] text-[#157F4C]">ตัดสต็อกแล้ว</span>}
+                  {p.unitPrice != null && <span className="ml-1.5 text-[#8492A6]">({baht.format(p.unitPrice * p.qty)} ฿)</span>}
+                </span>
+                <button onClick={() => onRemovePart(p.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1.5">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex items-end gap-2 flex-wrap">
+          <select value={partId} onChange={(e) => setPartId(e.target.value)}
+            className="flex-1 min-w-[180px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[#EA580C]">
+            <option value="">— เลือกอะไหล่จากคลัง —</option>
+            {spareParts.map((s) => <option key={s.id} value={s.id}>{s.name} (คงเหลือ {s.stockQty})</option>)}
+          </select>
+          <input type="number" min={1} value={partQty} onChange={(e) => setPartQty(e.target.value)}
+            className="w-16 border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+          <label className="flex items-center gap-1 text-[11.5px] text-[#5A6B82]">
+            <input type="checkbox" checked={deductStock} onChange={(e) => setDeductStock(e.target.checked)} className="w-3.5 h-3.5 accent-[#EA580C]" />
+            ตัดสต็อก
+          </label>
+          <button disabled={!partId} onClick={() => { onAddPart({ stockProductId: partId, qty: Math.max(1, Number(partQty) || 1), deductStock }); setPartId(''); setPartQty('1') }}
+            className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">＋ เพิ่ม</button>
+        </div>
+      </div>
+      </>)}
+
       <div className="mt-3">
         <label className="block text-[12.5px] font-semibold text-[#5A6B82] mb-1">วิธีการแก้ไข</label>
         <div className="flex gap-2 items-start">
@@ -307,23 +610,52 @@ function IssueCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: Patch
         </div>
       </div>
 
+      {/* responsible resolver — the satisfaction rating is attributed to this staff */}
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
+        <label className="text-[12.5px] font-semibold text-[#5A6B82]">ผู้รับผิดชอบแก้ไข</label>
+        <select value={item.assignedToId ?? ''} onChange={(e) => onPatch({ assignedToId: e.target.value || null })}
+          className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[#EA580C]">
+          <option value="">— ยังไม่ระบุ —</option>
+          {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+        <span className="text-[11px] text-[#A8A29E]">คะแนนความพึงพอใจจะนับให้เจ้าหน้าที่คนนี้</span>
+      </div>
+
+      {/* satisfaction rating (hospital) */}
+      <div className="mt-3 flex items-center gap-3 flex-wrap">
+        {item.rating != null ? (
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#B45309] bg-[#FBEBCB] rounded-lg px-2.5 py-1">
+            <span className="tracking-tight">{'★'.repeat(item.rating)}<span className="text-[#E0D3B8]">{'★'.repeat(5 - item.rating)}</span></span>
+            คะแนนจาก รพ. {item.rating}/5
+          </span>
+        ) : (
+          <span className="text-[12px] text-[#8492A6]">ยังไม่มีคะแนนประเมิน</span>
+        )}
+        <button onClick={copyRateLink} className="text-[12px] font-semibold text-[#EA580C] hover:underline">
+          {copied ? '✓ คัดลอกลิงก์แล้ว' : '🔗 คัดลอกลิงก์ให้ รพ. ประเมิน'}
+        </button>
+      </div>
+
       <div className="flex items-center justify-between gap-3 flex-wrap mt-2">
         <div className="text-[11px] text-[#A8A29E]">
           {item.reporter ? `แจ้งโดย ${item.reporter} · ` : ''}อัปเดต {fmt(item.updatedAt)}
         </div>
-        {item.events.length > 0 && (
-          <button onClick={() => setOpenTl((o) => !o)}
+        {item.eventCount > 0 && (
+          <button onClick={toggleTimeline}
             className="text-[12px] font-semibold text-[#EA580C] hover:underline">
-            {openTl ? '▾' : '▸'} Timeline การติดตาม ({item.events.length})
+            {openTl ? '▾' : '▸'} Timeline การติดตาม ({item.eventCount})
           </button>
         )}
       </div>
 
-      {openTl && item.events.length > 0 && (
+      {openTl && loadingTl && !events && (
+        <div className="mt-3 pt-3 border-t border-[#F1F5F9] text-[12.5px] text-[#8492A6]">กำลังโหลด Timeline…</div>
+      )}
+      {openTl && events && events.length > 0 && (
         <ol className="mt-3 pt-3 border-t border-[#F1F5F9]">
-          {item.events.map((e, idx) => {
+          {events.map((e, idx) => {
             const ev = ISSUE_EVENT[e.type]
-            const last = idx === item.events.length - 1
+            const last = idx === events.length - 1
             return (
               <li key={e.id} className="flex gap-3">
                 <div className="flex flex-col items-center">
