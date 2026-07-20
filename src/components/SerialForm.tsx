@@ -113,7 +113,10 @@ export function SerialForm({
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       if (!res.ok) {
-        setErrors(e => ({ ...e, [key]: res.status === 409 ? 'หมายเลข Serial ซ้ำ' : 'บันทึกไม่สำเร็จ' }))
+        // Prefer the server's reason — a 409 can be a real duplicate or a unit that
+        // already left the shelf, and those need different fixes.
+        const d = await res.json().catch(() => null)
+        setErrors(e => ({ ...e, [key]: d?.message || (res.status === 409 ? 'หมายเลข Serial ซ้ำ' : 'บันทึกไม่สำเร็จ') }))
         return null
       }
       return (await res.json()) as SerialNumber

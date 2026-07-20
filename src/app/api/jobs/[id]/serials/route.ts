@@ -32,9 +32,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!label) return NextResponse.json({ error: 'label required' }, { status: 400 })
     const stock = await prisma.stockItem.findUnique({ where: { id: stockItemId }, select: { id: true, serialNo: true, status: true } })
     if (!stock || !stock.serialNo) return NextResponse.json({ error: 'stock item not found' }, { status: 404 })
-    if (stock.status !== 'IN_STOCK') return NextResponse.json({ error: 'already issued' }, { status: 409 })
-    if (await findDuplicateSerial(stock.serialNo, id)) {
-      return NextResponse.json({ error: 'duplicate serial' }, { status: 409 })
+    // The unit itself is the identity here, and it can only leave the shelf once — so this
+    // check is what prevents issuing the same device twice. Deliberately no serial-wide
+    // duplicate check: factory serials only run unique within a model (Kiosk Duo, Hi-End
+    // and Start Smart all carry USW2025110500x), so the same number on another job is a
+    // different physical device, not a duplicate.
+    if (stock.status !== 'IN_STOCK') {
+      const why = stock.status === 'BORROWED' ? 'อุปกรณ์ชิ้นนี้ถูกยืมออกไปอยู่' : 'อุปกรณ์ชิ้นนี้ถูกจ่ายออกไปแล้ว'
+      return NextResponse.json({ error: 'already issued', message: why }, { status: 409 })
     }
     const [created] = await prisma.$transaction([
       prisma.serialNumber.create({
