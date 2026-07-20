@@ -19,7 +19,12 @@ export default async function StockProductPage({ params, searchParams }: {
         include: {
           items: {
             orderBy: [{ seq: 'asc' }, { serialBMS: 'asc' }],
-            include: { hospital: { select: { name: true } }, job: { select: { id: true, jobCode: true } } },
+            include: {
+              hospital: { select: { name: true } },
+              job: { select: { id: true, jobCode: true } },
+              // The open loan, so a borrowed unit shows who has it.
+              loans: { where: { status: 'BORROWED' }, select: { borrowerName: true, borrowerPhone: true, dueDate: true }, take: 1 },
+            },
           },
         },
       },
@@ -41,6 +46,9 @@ export default async function StockProductPage({ params, searchParams }: {
     hospitalName: it.hospital?.name ?? it.hospitalName ?? null,
     jobId: it.job?.id ?? null,
     jobCode: it.job?.jobCode ?? null,
+    borrowerName: it.loans[0]?.borrowerName ?? null,
+    borrowerPhone: it.loans[0]?.borrowerPhone ?? null,
+    dueDate: it.loans[0]?.dueDate ? it.loans[0].dueDate.toISOString() : null,
   })))
 
   // Serial products count items; quantity-only products (spare parts) use receivedQty.

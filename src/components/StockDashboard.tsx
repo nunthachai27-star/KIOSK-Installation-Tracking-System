@@ -12,6 +12,7 @@ type SerialHit = {
   id: string; serialBMS: string | null; serialNo: string | null; color: string | null
   status: 'IN_STOCK' | 'ISSUED' | 'BORROWED'; lotCode: string; productId: string; productName: string; group: string
   hospitalName: string | null; jobId: string | null; jobCode: string | null
+  borrowerName: string | null; borrowerPhone: string | null
 }
 
 const HIT_STATUS = {
@@ -126,7 +127,7 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
                     <th className="px-3 py-2.5 font-semibold">รุ่น / อุปกรณ์</th>
                     <th className="px-3 py-2.5 font-semibold">Lot</th>
                     <th className="px-3 py-2.5 font-semibold">สถานะ</th>
-                    <th className="px-3 py-2.5 font-semibold">โรงพยาบาล</th>
+                    <th className="px-3 py-2.5 font-semibold">โรงพยาบาล / ผู้ยืม</th>
                     <th className="px-3 py-2.5 font-semibold" />
                   </tr>
                 </thead>
@@ -144,10 +145,12 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
                         <td className="px-3 py-2">
                           <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                         </td>
-                        <td className="px-3 py-2 max-w-[200px] truncate" title={h.hospitalName ?? ''}>
-                          {h.jobId
-                            ? <Link href={`/jobs/${h.jobId}`} className="text-[#EA580C] hover:underline">{h.hospitalName ?? h.jobCode}</Link>
-                            : <span className="text-[#5A6B82]">{h.hospitalName ?? '—'}</span>}
+                        <td className="px-3 py-2 max-w-[200px] truncate" title={h.borrowerName ?? h.hospitalName ?? ''}>
+                          {h.status === 'BORROWED' && h.borrowerName
+                            ? <Link href="/loans" className="text-[#1B5FD9] hover:underline">🤝 {h.borrowerName}</Link>
+                            : h.jobId
+                              ? <Link href={`/jobs/${h.jobId}`} className="text-[#EA580C] hover:underline">{h.hospitalName ?? h.jobCode}</Link>
+                              : <span className="text-[#5A6B82]">{h.hospitalName ?? '—'}</span>}
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           <Link href={`/stock/${h.productId}?lot=${encodeURIComponent(h.lotCode)}&q=${encodeURIComponent(h.serialNo ?? h.serialBMS ?? '')}`}

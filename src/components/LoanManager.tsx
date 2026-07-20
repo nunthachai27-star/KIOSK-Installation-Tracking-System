@@ -16,6 +16,7 @@ const dFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', 
 const fmt = (iso: string | null) => (iso ? dFmt.format(new Date(iso)) : '—')
 const serialOf = (o: { serialBMS: string | null; serialNo: string | null }) => o.serialBMS ?? o.serialNo ?? '(ไม่มี Serial)'
 const labelOf = (o: Option) => `${serialOf(o)} · ${o.productName} · Lot ${o.lotCode}${o.color ? ` · ${o.color}` : ''}`
+const uniqSorted = (xs: string[]) => [...new Set(xs)].sort((a, b) => a.localeCompare(b, 'th'))
 
 // Default the due date a week out — the common case for a short site loan.
 function defaultDue() {
@@ -171,6 +172,11 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
 function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: () => void; onDone: () => void }) {
   const [itemId, setItemId] = useState('')
   const [pick, setPick] = useState('')
+  // Narrow down group → product → lot before picking a serial, so the list of
+  // serials stays short enough to scan instead of dumping the whole warehouse.
+  const [group, setGroup] = useState('')
+  const [productName, setProductName] = useState('')
+  const [lotCode, setLotCode] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [org, setOrg] = useState('')
@@ -180,8 +186,27 @@ function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: 
   const [err, setErr] = useState('')
 
   const pl = pick.trim().toLowerCase()
-  const matches = useMemo(() => (pl ? options.filter((o) => labelOf(o).toLowerCase().includes(pl)) : options).slice(0, 30), [options, pl])
   const chosen = options.find((o) => o.id === itemId) ?? null
+
+  // Each level offers only what the level above it still allows.
+  const groups = useMemo(() => uniqSorted(options.map((o) => o.group)), [options])
+  const products = useMemo(
+    () => uniqSorted(options.filter((o) => o.group === group).map((o) => o.productName)),
+    [options, group],
+  )
+  const lots = useMemo(
+    () => uniqSorted(options.filter((o) => o.group === group && o.productName === productName).map((o) => o.lotCode)),
+    [options, group, productName],
+  )
+  const serials = useMemo(() => {
+    if (!group || !productName || !lotCode) return []
+    const inLot = options.filter((o) => o.group === group && o.productName === productName && o.lotCode === lotCode)
+    return (pl ? inLot.filter((o) => labelOf(o).toLowerCase().includes(pl)) : inLot).slice(0, 50)
+  }, [options, group, productName, lotCode, pl])
+
+  function pickGroup(g: string) { setGroup(g); setProductName(''); setLotCode(''); setItemId(''); setPick('') }
+  function pickProduct(p: string) { setProductName(p); setLotCode(''); setItemId(''); setPick('') }
+  function pickLot(l: string) { setLotCode(l); setItemId(''); setPick('') }
 
   // Mirrors the API's rules so the button only enables on input it will accept.
   const phoneOk = /^\d{9,10}$/.test(phone.replace(/[\s-]/g, ''))
@@ -223,19 +248,56 @@ function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: 
               <button onClick={() => { setItemId(''); setPick('') }} className="text-[12px] font-semibold text-[#EA580C] hover:underline shrink-0">เปลี่ยน</button>
             </div>
           ) : (
-            <>
-              <input value={pick} onChange={(e) => setPick(e.target.value)} placeholder="พิมพ์ค้นหา Serial หรือชื่อรุ่น…" className={field} />
-              <div className="mt-1.5 max-h-52 overflow-y-auto border border-[#EEF2F8] rounded-lg divide-y divide-[#F4F7FB]">
-                {matches.length === 0 && <div className="px-3 py-3 text-[13px] text-[#8492A6]">ไม่พบอุปกรณ์ว่างที่ตรงกับคำค้น</div>}
-                {matches.map((o) => (
-                  <button key={o.id} onClick={() => setItemId(o.id)} className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#FBFAF8]">
-                    <span className="font-bold tnum text-[#1C1917]">{serialOf(o)}</span>
-                    <span className="text-[#8492A6] ml-2">{o.productName} · Lot {o.lotCode}</span>
-                  </button>
-                ))}
+            <div className="border border-[#EEF2F8] rounded-xl p-3 bg-[#FBFCFE] flex flex-col gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">1 · กลุ่มสินค้า</div>
+                  <select value={group} onChange={(e) => pickGroup(e.target.value)} className={`${field} py-2`}>
+                    <option value="">— เลือก —</option>
+                    {groups.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">2 · รุ่น / อุปกรณ์</div>
+                  <select value={productName} onChange={(e) => pickProduct(e.target.value)} disabled={!group} className={`${field} py-2 disabled:bg-[#F4F6F9] disabled:text-[#A8A29E]`}>
+                    <option value="">{group ? '— เลือก —' : 'เลือกกลุ่มก่อน'}</option>
+                    {products.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">3 · Lot</div>
+                  <select value={lotCode} onChange={(e) => pickLot(e.target.value)} disabled={!productName} className={`${field} py-2 disabled:bg-[#F4F6F9] disabled:text-[#A8A29E]`}>
+                    <option value="">{productName ? '— เลือก —' : 'เลือกรุ่นก่อน'}</option>
+                    {lots.map((l) => <option key={l} value={l}>Lot {l}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="text-[11.5px] text-[#A8A29E] mt-1">แสดงเฉพาะของที่อยู่ในคลังจริง — ของที่จ่ายออกหรือถูกยืมอยู่จะไม่ขึ้นให้เลือก</div>
-            </>
+
+              <div>
+                <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">4 · Serial ที่อยู่ในคลัง</div>
+                {!lotCode ? (
+                  <div className="px-3 py-4 text-[13px] text-[#A8A29E] border border-dashed border-[#DDE5EF] rounded-lg text-center">
+                    เลือกกลุ่ม → รุ่น → Lot ให้ครบก่อน จึงจะเลือก Serial ได้
+                  </div>
+                ) : (
+                  <>
+                    <input value={pick} onChange={(e) => setPick(e.target.value)} placeholder="พิมพ์กรอง Serial ใน Lot นี้…" className={`${field} py-2`} />
+                    <div className="mt-1.5 max-h-48 overflow-y-auto border border-[#EEF2F8] rounded-lg divide-y divide-[#F4F7FB] bg-white">
+                      {serials.length === 0 && <div className="px-3 py-3 text-[13px] text-[#8492A6]">ไม่มี Serial ว่างใน Lot นี้</div>}
+                      {serials.map((o) => (
+                        <button key={o.id} onClick={() => setItemId(o.id)} className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#FBFAF8]">
+                          <span className="font-bold tnum text-[#1C1917]">{serialOf(o)}</span>
+                          {o.color && <span className="text-[#8492A6] ml-2">{o.color}</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="text-[11.5px] text-[#A8A29E] mt-1">
+                      ว่างให้ยืมใน Lot นี้ {serials.length} รายการ — ของที่จ่ายออกหรือถูกยืมอยู่จะไม่ขึ้นให้เลือก
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           )}
         </div>
 

@@ -7,6 +7,7 @@ type Item = {
   id: string; lotCode: string; seq: number | null; serialBMS: string | null; serialNo: string | null
   color: string | null; status: 'IN_STOCK' | 'ISSUED' | 'BORROWED'; receivedDate: string | null; issuedDate: string | null
   deliveredDate: string | null; hospitalName: string | null; jobId: string | null; jobCode: string | null
+  borrowerName: string | null; borrowerPhone: string | null; dueDate: string | null
 }
 type EditField = 'serialBMS' | 'serialNo' | 'color'
 
@@ -79,7 +80,7 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
               <th className="px-3 py-2.5 font-semibold">Serial NO.</th>
               <th className="px-3 py-2.5 font-semibold">สี</th>
               <th className="px-3 py-2.5 font-semibold">สถานะ</th>
-              <th className="px-3 py-2.5 font-semibold">โรงพยาบาล</th>
+              <th className="px-3 py-2.5 font-semibold">โรงพยาบาล / ผู้ยืม</th>
               <th className="px-3 py-2.5 font-semibold">รับเข้า</th>
               <th className="px-3 py-2.5 font-semibold">จ่ายออก</th>
               <th className="px-3 py-2.5 font-semibold">ส่งถึง รพ.</th>
@@ -130,9 +131,23 @@ function StockItemRow({ it, onPatched }: { it: Item; onPatched: (p: Partial<Reco
       </td>
       <td className="px-1.5 py-1"><EditCell value={it.serialNo} placeholder="เพิ่มเลขเครื่อง" tnum scan onSave={(v) => save('serialNo', v)} /></td>
       <td className="px-1.5 py-1"><EditCell value={it.color} placeholder="เพิ่มสี" onSave={(v) => save('color', v)} /></td>
-      <td className="px-3 py-1.5"><span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ background: st.bg, color: st.color }}>{st.label}</span></td>
-      <td className="px-3 py-1.5 text-[#1C1917] max-w-[200px] truncate" title={it.hospitalName ?? ''}>
-        {it.jobId ? <Link href={`/jobs/${it.jobId}`} className="text-[#EA580C] hover:underline">{it.hospitalName ?? it.jobCode}</Link> : (it.hospitalName ?? '—')}
+      <td className="px-3 py-1.5">
+        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+        {it.status === 'BORROWED' && it.dueDate && (
+          <div className={`text-[10.5px] mt-0.5 whitespace-nowrap ${new Date(it.dueDate) < new Date() ? 'text-[#C13540] font-bold' : 'text-[#A8A29E]'}`}>
+            คืน {fmt(it.dueDate)}
+          </div>
+        )}
+      </td>
+      <td className="px-3 py-1.5 text-[#1C1917] max-w-[200px] truncate" title={it.borrowerName ?? it.hospitalName ?? ''}>
+        {it.status === 'BORROWED' && it.borrowerName ? (
+          <Link href="/loans" className="text-[#1B5FD9] hover:underline">
+            🤝 {it.borrowerName}
+            {it.borrowerPhone && <span className="text-[#8492A6] ml-1.5 tnum text-[11.5px]">{it.borrowerPhone}</span>}
+          </Link>
+        ) : it.jobId ? (
+          <Link href={`/jobs/${it.jobId}`} className="text-[#EA580C] hover:underline">{it.hospitalName ?? it.jobCode}</Link>
+        ) : (it.hospitalName ?? '—')}
       </td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.receivedDate)}</td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.issuedDate)}</td>

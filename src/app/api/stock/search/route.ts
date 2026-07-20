@@ -31,6 +31,8 @@ export async function GET(req: Request) {
         lot: { select: { lotCode: true, product: { select: { id: true, name: true, group: true } } } },
         hospital: { select: { name: true } },
         job: { select: { id: true, jobCode: true } },
+        // The open loan, so a borrowed unit shows who has it.
+        loans: { where: { status: 'BORROWED' }, select: { borrowerName: true, borrowerPhone: true }, take: 1 },
       },
     }),
     prisma.stockItem.count({ where }),
@@ -51,6 +53,8 @@ export async function GET(req: Request) {
       hospitalName: it.hospital?.name ?? it.hospitalName ?? null,
       jobId: it.job?.id ?? null,
       jobCode: it.job?.jobCode ?? null,
+      borrowerName: it.loans[0]?.borrowerName ?? null,
+      borrowerPhone: it.loans[0]?.borrowerPhone ?? null,
     })),
   })
 }
