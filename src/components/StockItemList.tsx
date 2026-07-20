@@ -20,10 +20,10 @@ const STATUS = {
   ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
 }
 
-export function StockItemList({ items: initial, lotCodes, initialLot }: { items: Item[]; lotCodes: string[]; initialLot: string }) {
+export function StockItemList({ items: initial, lotCodes, initialLot, initialQ = '' }: { items: Item[]; lotCodes: string[]; initialLot: string; initialQ?: string }) {
   const [items, setItems] = useState<Item[]>(initial)
   useEffect(() => { setItems(initial) }, [initial])
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(initialQ)
   const [lot, setLot] = useState(initialLot)
   const [status, setStatus] = useState<'' | 'IN_STOCK' | 'ISSUED'>('')
   const [page, setPage] = useState(1)

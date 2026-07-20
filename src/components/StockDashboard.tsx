@@ -1,18 +1,54 @@
 'use client'
 import Link from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { GroupSummary, ProductSummary, StockStatusLevel } from '@/lib/stock'
 import { STOCK_LEVEL_META } from '@/lib/stock'
 
 const nf = new Intl.NumberFormat('th-TH')
 type Kpi = { received: number; issued: number; remaining: number; low: number; out: number; products: number }
 
+// A unit matched by serial via /api/stock/search.
+type SerialHit = {
+  id: string; serialBMS: string | null; serialNo: string | null; color: string | null
+  status: 'IN_STOCK' | 'ISSUED'; lotCode: string; productId: string; productName: string; group: string
+  hospitalName: string | null; jobId: string | null; jobCode: string | null
+}
+
+const HIT_STATUS = {
+  IN_STOCK: { label: 'ในคลัง', color: '#157F4C', bg: '#E2F3EA' },
+  ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
+}
+
 export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary[] }) {
   const [q, setQ] = useState('')
   const [level, setLevel] = useState<'' | StockStatusLevel>('')
   const [group, setGroup] = useState('')
+  const [hits, setHits] = useState<SerialHit[]>([])
+  const [hitTotal, setHitTotal] = useState(0)
+  const [searching, setSearching] = useState(false)
 
   const ql = q.trim().toLowerCase()
+
+  // Serials live per-unit in the DB, so they cannot be filtered from the summary
+  // the page was rendered with — look them up server-side as the user types.
+  useEffect(() => {
+    const term = q.trim()
+    const ctrl = new AbortController()
+    // All state updates happen inside the timer, never synchronously in the
+    // effect body (that would cascade a render on every keystroke).
+    const t = setTimeout(async () => {
+      if (term.length < 2) { setHits([]); setHitTotal(0); setSearching(false); return }
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/stock/search?q=${encodeURIComponent(term)}`, { signal: ctrl.signal })
+        if (!res.ok) { setHits([]); setHitTotal(0); return }
+        const d = await res.json()
+        setHits(d.items ?? []); setHitTotal(d.total ?? 0)
+      } catch { /* aborted by the next keystroke */ }
+      finally { setSearching(false) }
+    }, 250)
+    return () => { clearTimeout(t); ctrl.abort() }
+  }, [q])
   const filtered = useMemo(() => groups
     .filter((g) => !group || g.group === group)
     .map((g) => ({
@@ -48,7 +84,7 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
       {/* filters */}
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหารุ่น/อุปกรณ์…"
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหารุ่น/อุปกรณ์ หรือ Serial No. / S/N BMS…"
             className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
           {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
@@ -65,9 +101,72 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
         ))}
       </div>
 
+      {/* serial matches — units found by Serial NO. / S/N BMS across all products */}
+      {q.trim().length >= 2 && (searching || hits.length > 0) && (
+        <div className="ds-card overflow-hidden">
+          <div className="flex items-center justify-between gap-2 flex-wrap px-4 md:px-5 py-3 bg-[#FFF7ED] border-b border-[#FDE3C8]">
+            <div className="text-[14px] font-bold text-[#1C1917]">
+              🔎 ผลค้นหา Serial
+              {!searching && <span className="text-[12px] font-semibold text-[#8492A6] ml-2">พบ {nf.format(hitTotal)} เครื่อง</span>}
+            </div>
+            {hitTotal > hits.length && (
+              <span className="text-[11.5px] text-[#B45309]">แสดง {nf.format(hits.length)} รายการแรก · พิมพ์ให้เจาะจงขึ้นเพื่อผลที่แคบลง</span>
+            )}
+          </div>
+          {searching && hits.length === 0 ? (
+            <div className="px-5 py-6 text-[13px] text-[#8492A6]">กำลังค้นหา…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px] min-w-[760px]">
+                <thead>
+                  <tr className="text-[11px] font-semibold text-[#A8A29E] text-left border-b border-[#F1F3F6]">
+                    <th className="px-3 py-2.5 font-semibold">Serial BMS</th>
+                    <th className="px-3 py-2.5 font-semibold">Serial NO.</th>
+                    <th className="px-3 py-2.5 font-semibold">รุ่น / อุปกรณ์</th>
+                    <th className="px-3 py-2.5 font-semibold">Lot</th>
+                    <th className="px-3 py-2.5 font-semibold">สถานะ</th>
+                    <th className="px-3 py-2.5 font-semibold">โรงพยาบาล</th>
+                    <th className="px-3 py-2.5 font-semibold" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {hits.map((h) => {
+                    const st = HIT_STATUS[h.status]
+                    return (
+                      <tr key={h.id} className="border-b border-[#F7F8FA] last:border-0 hover:bg-[#FBFAF8]">
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {h.serialBMS ? <span className="font-bold tnum text-[#1C1917]">{h.serialBMS}</span> : <span className="text-[#C7CDD6] text-[12px]">— รอจ่ายออก</span>}
+                        </td>
+                        <td className="px-3 py-2 tnum text-[#3C4A5E] whitespace-nowrap">{h.serialNo ?? '—'}</td>
+                        <td className="px-3 py-2 text-[#1C1917] max-w-[220px] truncate" title={`${h.group} · ${h.productName}`}>{h.productName}</td>
+                        <td className="px-3 py-2 tnum text-[#5A6B82] whitespace-nowrap">{h.lotCode}</td>
+                        <td className="px-3 py-2">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                        </td>
+                        <td className="px-3 py-2 max-w-[200px] truncate" title={h.hospitalName ?? ''}>
+                          {h.jobId
+                            ? <Link href={`/jobs/${h.jobId}`} className="text-[#EA580C] hover:underline">{h.hospitalName ?? h.jobCode}</Link>
+                            : <span className="text-[#5A6B82]">{h.hospitalName ?? '—'}</span>}
+                        </td>
+                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                          <Link href={`/stock/${h.productId}?lot=${encodeURIComponent(h.lotCode)}&q=${encodeURIComponent(h.serialNo ?? h.serialBMS ?? '')}`}
+                            className="text-[12px] font-semibold text-[#EA580C] hover:underline">เปิดในคลัง →</Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* grouped list */}
       {filtered.length === 0 ? (
-        <div className="ds-card p-8 text-center text-[#8492A6] text-sm">ไม่พบรายการ</div>
+        <div className="ds-card p-8 text-center text-[#8492A6] text-sm">
+          {hits.length > 0 ? 'ไม่มีชื่อรุ่น/อุปกรณ์ที่ตรงกับคำค้น — ดูผลค้นหา Serial ด้านบน' : 'ไม่พบรายการ'}
+        </div>
       ) : filtered.map((g) => (
         <div key={g.group} className="ds-card overflow-hidden">
           <div className="flex items-center justify-between gap-2 flex-wrap px-4 md:px-5 py-3 bg-[#FBFAF8] border-b border-[#F1F3F6]">

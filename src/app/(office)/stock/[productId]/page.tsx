@@ -6,10 +6,10 @@ import { StockItemList } from '@/components/StockItemList'
 
 export default async function StockProductPage({ params, searchParams }: {
   params: Promise<{ productId: string }>
-  searchParams: Promise<{ lot?: string }>
+  searchParams: Promise<{ lot?: string; q?: string }>
 }) {
   const { productId } = await params
-  const { lot } = await searchParams
+  const { lot, q } = await searchParams
 
   const product = await prisma.stockProduct.findUnique({
     where: { id: productId },
@@ -76,7 +76,7 @@ export default async function StockProductPage({ params, searchParams }: {
       </div>
 
       {product.serialized ? (
-        <StockItemList items={items} lotCodes={lotCodes} initialLot={lot ?? ''} />
+        <StockItemList items={items} lotCodes={lotCodes} initialLot={lot ?? ''} initialQ={q ?? ''} />
       ) : (
         <div className="ds-card p-6 text-center text-[13px] text-[#8492A6]">
           สินค้านับจำนวน (อะไหล่) — คงเหลือ <span className="font-bold text-[#157F4C]">{remaining}</span> {unit} · ไม่มี Serial รายชิ้น
