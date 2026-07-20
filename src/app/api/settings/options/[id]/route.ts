@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isCategory } from '@/lib/master'
+import { applyRename, findCollisions } from '@/lib/master-rename'
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -23,6 +25,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (dup) return NextResponse.json({ error: 'มีรายการนี้อยู่แล้ว' }, { status: 409 })
   }
 
-  const updated = await prisma.masterOption.update({ where: { id }, data })
-  return NextResponse.json(updated)
+  // A rename has to reach the copies of this value stored on jobs and product specs,
+  // or those rows keep the old text and their spec lookups stop matching.
+  const renaming = !!data.value && data.value !== existing.value
+  if (!renaming || !isCategory(existing.category)) {
+    const updated = await prisma.masterOption.update({ where: { id }, data })
+    return NextResponse.json(updated)
+  }
+
+  const from = existing.value
+  const to = data.value as string
+
+  const collisions = await findCollisions(prisma, existing.category, to)
+  if (collisions.length) {
+    return NextResponse.json({
+      error: 'collision',
+      message: `มีการตั้งค่าของ "${to}" อยู่แล้ว (${collisions.join(', ')}) — เปลี่ยนชื่อทับไม่ได้ ต้องรวมหรือลบของเดิมก่อน`,
+    }, { status: 409 })
+  }
+
+  const [updated, moved] = await prisma.$transaction(async (tx) => {
+    const u = await tx.masterOption.update({ where: { id }, data })
+    const m = await applyRename(tx, existing.category as Parameters<typeof applyRename>[1], from, to)
+    return [u, m] as const
+  })
+
+  return NextResponse.json({ ...updated, renamedFrom: from, updatedRows: moved })
 }

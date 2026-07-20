@@ -20,6 +20,7 @@ export function MasterOptionManager({
   const [newValue, setNewValue] = useState('')
   const [adding, setAdding] = useState(false)
   const [err, setErr] = useState('')
+  const [note, setNote] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
@@ -41,11 +42,24 @@ export function MasterOptionManager({
   }
 
   async function patch(id: string, body: { value?: string; active?: boolean }) {
+    setErr(''); setNote('')
     const res = await fetch(`/api/settings/options/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
-    if (!res.ok) { setErr(res.status === 409 ? 'ชื่อซ้ำกับรายการอื่น' : 'บันทึกไม่สำเร็จ'); return false }
+    if (!res.ok) {
+      const d = await res.json().catch(() => null)
+      setErr(d?.message || (res.status === 409 ? 'ชื่อซ้ำกับรายการอื่น' : 'บันทึกไม่สำเร็จ'))
+      return false
+    }
     const upd = await res.json()
+    // A rename also rewrites the copies held on jobs and product specs — say what moved,
+    // so it is obvious the change reached existing data and nothing was left behind.
+    if (upd.renamedFrom && upd.updatedRows) {
+      const moved = Object.entries(upd.updatedRows as Record<string, number>).filter(([, n]) => n > 0)
+      setNote(moved.length
+        ? `เปลี่ยนชื่อแล้ว · อัปเดตตาม ${moved.map(([k, n]) => `${k} ${n}`).join(' · ')}`
+        : 'เปลี่ยนชื่อแล้ว · ยังไม่มีข้อมูลเดิมที่ใช้ชื่อนี้')
+    }
     setItems((x) => x.map((it) => (it.id === id ? { ...it, value: upd.value, active: upd.active } : it)))
     router.refresh()
     return true
@@ -71,6 +85,7 @@ export function MasterOptionManager({
         </button>
       </div>
       {err && <div className="px-4 py-2 text-sm text-[#C13540]">{err}</div>}
+      {note && <div className="px-4 py-2 text-sm text-[#157F4C] bg-[#F2FAF5] border-y border-[#DCF0E4]">✓ {note}</div>}
 
       <div className="text-[12.5px] text-[#8492A6] px-4 pt-3 pb-1">{items.length} รายการ · {items.filter((i) => i.active).length} เปิดใช้งาน</div>
       {items.length === 0 && <div className="px-4 py-6 text-sm text-[#8492A6]">ยังไม่มีรายการ</div>}
