@@ -11,6 +11,8 @@ const planFmt = new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeri
 type Comp = { name: string; quantity: number; needsSerial: boolean }
 type UserOpt = { id: string; name: string }
 type StockOpt = { id: string; serialNo: string; color: string | null; group: string; product: string; lotCode: string }
+// A stock unit the server offers when one serial matches more than one product.
+type Candidate = { stockItemId: string; group: string; product: string; lotCode: string; color: string | null; remaining: number }
 type StockState = 'DEDUCTED' | 'ISSUED_OTHER' | 'IN_STOCK' | 'NONE'
 
 // Stock-deduction report badge for an assigned component serial.
@@ -53,14 +55,28 @@ export function SerialForm({
   const [deducting, setDeducting] = useState<Record<string, boolean>>({})
   const stockOf = (serialNo: string): StockState => stockState[serialNo.toUpperCase()] ?? 'NONE'
 
+  // Which serial is waiting for the user to say *which product* to deduct from.
+  const [choice, setChoice] = useState<{ serialId: string; serialNo: string; candidates: Candidate[] } | null>(null)
+
   // Deduct an assigned component serial that still shows IN_STOCK (issue it to this job).
-  async function deduct(serialId: string, serialNo: string) {
+  // The same factory serial can exist in several products, so when the server reports the
+  // match is ambiguous we ask instead of letting it pick one for us.
+  async function deduct(serialId: string, serialNo: string, stockItemId?: string) {
     setDeducting(d => ({ ...d, [serialId]: true }))
     try {
       const res = await fetch('/api/stock/deduct', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serialId }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serialId, stockItemId }),
       })
-      if (res.ok) { setStockState(s => ({ ...s, [serialNo.toUpperCase()]: 'DEDUCTED' })); router.refresh() }
+      if (res.ok) {
+        setChoice(null)
+        setStockState(s => ({ ...s, [serialNo.toUpperCase()]: 'DEDUCTED' }))
+        router.refresh()
+        return
+      }
+      const d = await res.json().catch(() => null)
+      if (d?.error === 'ambiguous') { setChoice({ serialId, serialNo, candidates: d.candidates ?? [] }); return }
+      if (d?.message) window.alert(d.message)
     } finally { setDeducting(d => ({ ...d, [serialId]: false })) }
   }
   const router = useRouter()
@@ -179,6 +195,16 @@ export function SerialForm({
 
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
+
+      {choice && (
+        <DeductPicker
+          serialNo={choice.serialNo}
+          candidates={choice.candidates}
+          busy={!!deducting[choice.serialId]}
+          onCancel={() => setChoice(null)}
+          onPick={(stockItemId) => deduct(choice.serialId, choice.serialNo, stockItemId)}
+        />
+      )}
 
       {/* add BMS unit */}
       <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
@@ -376,6 +402,72 @@ export function SerialForm({
           {recSaved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
         </div>
       </div>
+    </div>
+  )
+}
+
+// Asks which product a serial should be deducted from, narrowing กลุ่มสินค้า → รุ่น the
+// same way the loan form does. Factory serials repeat across models, so this is the only
+// point where the ambiguity can be resolved correctly — by the person holding the device.
+function DeductPicker({ serialNo, candidates, busy, onCancel, onPick }: {
+  serialNo: string; candidates: Candidate[]; busy: boolean; onCancel: () => void; onPick: (stockItemId: string) => void
+}) {
+  const groups = [...new Set(candidates.map((c) => c.group))].sort((a, b) => a.localeCompare(b, 'th'))
+  const [group, setGroup] = useState(groups.length === 1 ? groups[0] : '')
+  const products = [...new Set(candidates.filter((c) => c.group === group).map((c) => c.product))]
+    .sort((a, b) => a.localeCompare(b, 'th'))
+  const [product, setProduct] = useState('')
+  const units = candidates.filter((c) => c.group === group && c.product === product)
+
+  const sel = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[#EA580C] disabled:bg-[#F4F6F9] disabled:text-[#A8A29E]'
+
+  return (
+    <div className="bg-white border-2 border-[#EA580C] rounded-2xl p-5 shadow-[0_12px_40px_-16px_rgba(234,88,12,0.5)]">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <div className="text-[15px] font-bold text-[#1C1917]">เลือกรายการที่จะตัดสต็อก</div>
+        <button type="button" onClick={onCancel} className="w-7 h-7 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
+      </div>
+      <p className="text-[12.5px] text-[#8492A6] mb-4">
+        เลข <span className="tnum font-bold text-[#1C1917]">{serialNo}</span> มีอยู่ใน {candidates.length} รายการ
+        — โรงงานรันเลขแยกตามรุ่น ระบบจึงเลือกแทนไม่ได้ ต้องระบุว่าเป็นของรุ่นไหน
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div>
+          <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">1 · กลุ่มสินค้า</div>
+          <select value={group} onChange={(e) => { setGroup(e.target.value); setProduct('') }} className={sel}>
+            <option value="">— เลือก —</option>
+            {groups.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </div>
+        <div>
+          <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">2 · รุ่น / อุปกรณ์</div>
+          <select value={product} onChange={(e) => setProduct(e.target.value)} disabled={!group} className={sel}>
+            <option value="">{group ? '— เลือก —' : 'เลือกกลุ่มก่อน'}</option>
+            {products.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">3 · ยืนยันชิ้นที่จะตัด</div>
+      {!product ? (
+        <div className="px-3 py-4 text-[13px] text-[#A8A29E] border border-dashed border-[#DDE5EF] rounded-lg text-center">
+          เลือกกลุ่มและรุ่นให้ครบก่อน
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {units.map((c) => (
+            <button key={c.stockItemId} type="button" disabled={busy} onClick={() => onPick(c.stockItemId)}
+              className="flex items-center justify-between gap-3 border border-[#E1E8F2] rounded-lg px-3 py-2.5 text-left hover:bg-[#FBFAF8] disabled:opacity-60">
+              <span className="text-[13px] text-[#1C1917]">
+                Lot {c.lotCode}{c.color ? ` · ${c.color}` : ''}
+                <span className="text-[#8492A6] ml-2">คงเหลือในรุ่นนี้ {c.remaining}</span>
+              </span>
+              <span className="text-[12px] font-bold text-[#EA580C] shrink-0">{busy ? '…' : 'ตัดสต็อก →'}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

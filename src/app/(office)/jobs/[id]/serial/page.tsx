@@ -37,10 +37,18 @@ export default async function JobSerialPage({ params }: { params: Promise<{ id: 
         select: { serialNo: true, status: true, jobId: true },
       })
     : []
+  // A factory serial can exist in several products at once (they only run unique per
+  // model), so more than one row can match. Rank rather than let the last row win:
+  // anything still IN_STOCK means there is stock left to deduct, and a unit already
+  // issued to *this* job beats one issued elsewhere.
+  const RANK = { IN_STOCK: 3, DEDUCTED: 2, ISSUED_OTHER: 1 } as const
   const stockStatus: Record<string, 'DEDUCTED' | 'ISSUED_OTHER' | 'IN_STOCK'> = {}
   for (const m of stockMatches) {
     if (!m.serialNo) continue
-    stockStatus[m.serialNo.toUpperCase()] = m.status === 'ISSUED' ? (m.jobId === job.id ? 'DEDUCTED' : 'ISSUED_OTHER') : 'IN_STOCK'
+    const key = m.serialNo.toUpperCase()
+    const next = m.status === 'ISSUED' ? (m.jobId === job.id ? 'DEDUCTED' : 'ISSUED_OTHER') : 'IN_STOCK'
+    const cur = stockStatus[key]
+    if (!cur || RANK[next] > RANK[cur]) stockStatus[key] = next
   }
 
   return (
