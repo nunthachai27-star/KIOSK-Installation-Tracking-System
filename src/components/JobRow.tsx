@@ -16,12 +16,11 @@ export type JobRowData = Job & {
   memoStatus?: 'DONE' | 'PENDING' // สถานะ ขอเปิด MEMO License (จากการติ๊กในหน้า QC)
 }
 
-// Small MEMO-License badge shown under the job code.
+// MEMO-License warning under the job code — only shows when still pending;
+// once done (or the job is closed) it disappears, no green badge.
 function MemoBadge({ status }: { status?: 'DONE' | 'PENDING' }) {
-  if (!status) return null
-  return status === 'DONE'
-    ? <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[#E2F3EA] text-[#157F4C]">✓ เปิด MEMO แล้ว</span>
-    : <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[#FBE4E4] text-[#C13540]">⚠ ยังไม่ขอเปิด MEMO</span>
+  if (status !== 'PENDING') return null
+  return <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[#FBE4E4] text-[#C13540]">⚠ ยังไม่ขอเปิด MEMO</span>
 }
 
 // The InstallationRecord stores the field tech as "จนท. Remote: <name>".

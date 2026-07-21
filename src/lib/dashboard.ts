@@ -76,11 +76,13 @@ export async function getJobList(
       { updatedAt: 'desc' },
     ],
   })
-  // MEMO License is done for a job only when it has units and every unit is ticked.
-  const withMemo = rows.map(({ serials, ...j }) => ({
-    ...j,
-    memoStatus: (serials.length > 0 && serials.every((s) => s.unitQc?.memoLicense)) ? 'DONE' as const : 'PENDING' as const,
-  }))
+  // MEMO License warning: PENDING only for active jobs that still have an unticked
+  // unit. Closed/cancelled jobs never warn (treated as done).
+  const withMemo = rows.map(({ serials, ...j }) => {
+    const closed = j.currentStatus === 'CLOSED' || j.currentStatus === 'CANCELLED'
+    const allTicked = serials.length > 0 && serials.every((s) => s.unitQc?.memoLicense)
+    return { ...j, memoStatus: (closed || allTicked) ? 'DONE' as const : 'PENDING' as const }
+  })
   // Stable sort by progress rank keeps the contract-date order within each stage.
   return withMemo.sort((a, b) => PROGRESS_RANK[a.currentStatus] - PROGRESS_RANK[b.currentStatus])
 }
