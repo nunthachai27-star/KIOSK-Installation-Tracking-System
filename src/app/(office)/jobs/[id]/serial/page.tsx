@@ -38,10 +38,12 @@ export default async function JobSerialPage({ params }: { params: Promise<{ id: 
       })
     : []
   // A factory serial can exist in several products at once (they only run unique per
-  // model), so more than one row can match. Rank rather than let the last row win:
-  // anything still IN_STOCK means there is stock left to deduct, and a unit already
-  // issued to *this* job beats one issued elsewhere.
-  const RANK = { IN_STOCK: 3, DEDUCTED: 2, ISSUED_OTHER: 1 } as const
+  // model), so more than one stock row can match one component serial. Rank rather than
+  // let the last row win — and DEDUCTED must win: once a unit with this serial is issued
+  // to *this* job the component is fulfilled, so don't keep offering the deduct button
+  // just because a same-serial unit of another model is still IN_STOCK (deducting that
+  // would map the wrong model's unit onto this job).
+  const RANK = { DEDUCTED: 3, IN_STOCK: 2, ISSUED_OTHER: 1 } as const
   const stockStatus: Record<string, 'DEDUCTED' | 'ISSUED_OTHER' | 'IN_STOCK'> = {}
   for (const m of stockMatches) {
     if (!m.serialNo) continue
