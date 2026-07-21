@@ -415,14 +415,11 @@ export function SerialForm({
 function DeductPicker({ serialNo, candidates, busy, onCancel, onPick }: {
   serialNo: string; candidates: Candidate[]; busy: boolean; onCancel: () => void; onPick: (stockItemId: string) => void
 }) {
-  const groups = [...new Set(candidates.map((c) => c.group))].sort((a, b) => a.localeCompare(b, 'th'))
-  const [group, setGroup] = useState(groups.length === 1 ? groups[0] : '')
-  const products = [...new Set(candidates.filter((c) => c.group === group).map((c) => c.product))]
-    .sort((a, b) => a.localeCompare(b, 'th'))
-  const [product, setProduct] = useState('')
-  const units = candidates.filter((c) => c.group === group && c.product === product)
-
-  const sel = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[#EA580C] disabled:bg-[#F4F6F9] disabled:text-[#A8A29E]'
+  // The same factory serial exists in several products, so list them all and let the
+  // user pick the right one directly — they're already separated by รุ่น/Lot, no need
+  // to drill through group → product dropdowns first.
+  const sorted = [...candidates].sort((a, b) =>
+    a.group.localeCompare(b.group, 'th') || a.product.localeCompare(b.product, 'th') || a.lotCode.localeCompare(b.lotCode, 'th'))
 
   return (
     <div className="bg-white border-2 border-[#EA580C] rounded-2xl p-5 shadow-[0_12px_40px_-16px_rgba(234,88,12,0.5)]">
@@ -431,46 +428,24 @@ function DeductPicker({ serialNo, candidates, busy, onCancel, onPick }: {
         <button type="button" onClick={onCancel} className="w-7 h-7 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
       </div>
       <p className="text-[12.5px] text-[#8492A6] mb-4">
-        เลข <span className="tnum font-bold text-[#1C1917]">{serialNo}</span> มีอยู่ใน {candidates.length} รายการ
-        — โรงงานรันเลขแยกตามรุ่น ระบบจึงเลือกแทนไม่ได้ ต้องระบุว่าเป็นของรุ่นไหน
+        เลข <span className="tnum font-bold text-[#1C1917]">{serialNo}</span> มีอยู่ใน {candidates.length} รุ่น
+        — เลือกรุ่นที่จะตัดสต็อกได้เลย
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-        <div>
-          <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">1 · กลุ่มสินค้า</div>
-          <select value={group} onChange={(e) => { setGroup(e.target.value); setProduct('') }} className={sel}>
-            <option value="">— เลือก —</option>
-            {groups.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-        </div>
-        <div>
-          <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">2 · รุ่น / อุปกรณ์</div>
-          <select value={product} onChange={(e) => setProduct(e.target.value)} disabled={!group} className={sel}>
-            <option value="">{group ? '— เลือก —' : 'เลือกกลุ่มก่อน'}</option>
-            {products.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">3 · ยืนยันชิ้นที่จะตัด</div>
-      {!product ? (
-        <div className="px-3 py-4 text-[13px] text-[#A8A29E] border border-dashed border-[#DDE5EF] rounded-lg text-center">
-          เลือกกลุ่มและรุ่นให้ครบก่อน
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {units.map((c) => (
-            <button key={c.stockItemId} type="button" disabled={busy} onClick={() => onPick(c.stockItemId)}
-              className="flex items-center justify-between gap-3 border border-[#E1E8F2] rounded-lg px-3 py-2.5 text-left hover:bg-[#FBFAF8] disabled:opacity-60">
-              <span className="text-[13px] text-[#1C1917]">
-                Lot {c.lotCode}{c.color ? ` · ${c.color}` : ''}
-                <span className="text-[#8492A6] ml-2">คงเหลือในรุ่นนี้ {c.remaining}</span>
+      <div className="flex flex-col gap-2">
+        {sorted.map((c) => (
+          <button key={c.stockItemId} type="button" disabled={busy} onClick={() => onPick(c.stockItemId)}
+            className="flex items-center justify-between gap-3 border border-[#E1E8F2] rounded-lg px-3.5 py-3 text-left hover:bg-[#FFF7ED] hover:border-[#EA580C] disabled:opacity-60 transition">
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-semibold text-[#1C1917] truncate">{c.product}</span>
+              <span className="block text-[12px] text-[#8492A6] mt-0.5">
+                {c.group} · Lot {c.lotCode}{c.color ? ` · ${c.color}` : ''} · คงเหลือ {c.remaining}
               </span>
-              <span className="text-[12px] font-bold text-[#EA580C] shrink-0">{busy ? '…' : 'ตัดสต็อก →'}</span>
-            </button>
-          ))}
-        </div>
-      )}
+            </span>
+            <span className="text-[12.5px] font-bold text-white bg-[#EA580C] rounded-lg px-3 py-1.5 shrink-0">{busy ? '…' : 'ตัดสต็อก'}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
