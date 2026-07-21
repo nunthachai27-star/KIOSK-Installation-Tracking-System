@@ -89,6 +89,7 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(true)
+  const [formOpen, setFormOpen] = useState(false) // การแจ้งเคลม/ปัญหา อยู่ในป็อปอัพ กดปุ่มจึงเปิด
   const [limit, setLimit] = useState(40) // render cap — the full list (412+) is too heavy to mount at once
   const isClaim = issueType === 'CLAIM'
 
@@ -137,6 +138,7 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
         reporter: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), eventCount: 0,
       }, ...x])
       resetForm()
+      setFormOpen(false)
       router.refresh()
     } finally { setSaving(false) }
   }
@@ -215,8 +217,27 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_324px] gap-4 items-start">
-      {/* add form */}
-      <div className="ds-card p-5">
+      {/* CTA — เปิดฟอร์มแจ้งเคลม/ปัญหา ในป็อปอัพ */}
+      <div className="ds-card p-5 flex flex-col gap-3">
+        <div className="text-[15px] font-bold text-[#1C1917]">แจ้งเคลม / ปัญหาใหม่</div>
+        <p className="text-[13px] text-[#8492A6]">กดปุ่มด้านล่างเพื่อเปิดฟอร์มบันทึก</p>
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" onClick={() => { setIssueType('CLAIM'); setErr(''); setFormOpen(true) }}
+            className="ds-hover bg-[#EA580C] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C]">🔧 ＋ แจ้งเคลมอุปกรณ์</button>
+          <button type="button" onClick={() => { setIssueType('GENERAL'); setErr(''); setFormOpen(true) }}
+            className="ds-hover bg-[#1B5FD9] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[#164FB3]">📝 ＋ แจ้งปัญหาทั่วไป</button>
+        </div>
+      </div>
+
+      {/* form modal — fixed จึงไม่กิน grid track (layout เดิมไม่กระทบ) */}
+      {formOpen && (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/30 p-4"
+        onMouseDown={(e) => { if (e.target === e.currentTarget) setFormOpen(false) }}>
+      <div className="mx-auto my-4 w-full max-w-2xl ds-card p-5 bg-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[16px] font-bold text-[#1C1917]">บันทึกแจ้งเคลม / ปัญหา</div>
+          <button type="button" onClick={() => setFormOpen(false)} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
+        </div>
         {/* type toggle: equipment claim vs general problem */}
         <div className="inline-flex rounded-lg border border-[#D6DFEA] overflow-hidden mb-4">
           <button type="button" onClick={() => setIssueType('CLAIM')}
@@ -326,6 +347,8 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
           </div>
         </div>
       </div>
+      </div>
+      )}
 
       {/* helper sidebar — warranty rule, 30-day claim activity, workflow steps */}
       <aside className="ds-card p-5 flex flex-col gap-5">
