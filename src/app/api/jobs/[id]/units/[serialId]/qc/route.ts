@@ -10,10 +10,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id, serialId } = await params
-  const body = (await req.json()) as { staffId?: string | null; status?: string; checklist?: unknown; keyId?: string | null }
+  const body = (await req.json()) as { staffId?: string | null; status?: string; checklist?: unknown; keyId?: string | null; memoLicense?: boolean }
   const status = body.status && VALID.has(body.status) ? (body.status as QcStatus) : 'PENDING'
   const staffId = body.staffId || null
   const keyId = body.keyId?.trim() || null
+  const memoLicense = body.memoLicense === true
 
   // The unit must be a BMS-serial row belonging to this job.
   const unit = await prisma.serialNumber.findFirst({
@@ -24,8 +25,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const saved = await prisma.unitQc.upsert({
     where: { serialId },
-    create: { serialId, staffId, status, checklist: body.checklist ?? [], keyId },
-    update: { staffId, status, checklist: body.checklist ?? [], keyId },
+    create: { serialId, staffId, status, checklist: body.checklist ?? [], keyId, memoLicense },
+    update: { staffId, status, checklist: body.checklist ?? [], keyId, memoLicense },
   })
 
   // Roll the per-unit results up to the job's QC status.
