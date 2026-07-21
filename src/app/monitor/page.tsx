@@ -51,6 +51,7 @@ export default async function MonitorPage({ searchParams }: { searchParams: Prom
       {/* header */}
       <header className="flex items-center justify-between px-8 py-5 border-b border-white/10">
         <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2 px-3 h-10 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold shrink-0">‹ กลับ</Link>
           <span className="ds-logo w-11 h-11 rounded-xl grid place-items-center font-bold text-xl">K</span>
           <div>
             <div className="text-2xl font-bold tracking-tight">คิวงานติดตั้ง KIOSK</div>
