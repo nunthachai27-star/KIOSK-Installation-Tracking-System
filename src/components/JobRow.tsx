@@ -13,6 +13,15 @@ export type JobRowData = Job & {
   installation: { remoteDate: Date | null; result: string | null } | null
   handover: { checklistReceivedDate: Date | null; handoverDate: Date | null } | null
   invoice: { warrantyEndDate: Date | null } | null
+  memoStatus?: 'DONE' | 'PENDING' // สถานะ ขอเปิด MEMO License (จากการติ๊กในหน้า QC)
+}
+
+// Small MEMO-License badge shown under the job code.
+function MemoBadge({ status }: { status?: 'DONE' | 'PENDING' }) {
+  if (!status) return null
+  return status === 'DONE'
+    ? <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[#E2F3EA] text-[#157F4C]">✓ เปิด MEMO แล้ว</span>
+    : <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[#FBE4E4] text-[#C13540]">⚠ ยังไม่ขอเปิด MEMO</span>
 }
 
 // The InstallationRecord stores the field tech as "จนท. Remote: <name>".
@@ -80,6 +89,7 @@ export function JobRow({ job }: { job: JobRowData }) {
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{job.hospital.name}</div>
             <div className="text-xs text-[#8492A6] truncate">{job.jobCode} · {job.province}</div>
+            <MemoBadge status={job.memoStatus} />
           </div>
           <StatusBadge status={job.currentStatus} />
         </div>
@@ -103,6 +113,7 @@ export function JobRow({ job }: { job: JobRowData }) {
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{job.hospital.name}</div>
             <div className="text-xs text-[#8492A6] truncate">{job.jobCode} · {job.province}</div>
+            <MemoBadge status={job.memoStatus} />
           </div>
         </div>
         <div className="text-[13px] text-[#3C4A5E] truncate">{job.productType} ×{formatQty(job.quantity)}</div>

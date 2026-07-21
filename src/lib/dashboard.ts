@@ -67,6 +67,8 @@ export async function getJobList(
       installation: { select: { remoteDate: true, result: true } },
       handover: { select: { checklistReceivedDate: true, handoverDate: true } },
       invoice: { select: { warrantyEndDate: true } },
+      // BMS units + their MEMO-License tick, to flag jobs still needing a MEMO request.
+      serials: { where: { serialType: 'BMS' }, select: { unitQc: { select: { memoLicense: true } } } },
     },
     orderBy: [
       { contractStartDate: { sort: 'desc', nulls: 'last' } },
@@ -74,8 +76,13 @@ export async function getJobList(
       { updatedAt: 'desc' },
     ],
   })
+  // MEMO License is done for a job only when it has units and every unit is ticked.
+  const withMemo = rows.map(({ serials, ...j }) => ({
+    ...j,
+    memoStatus: (serials.length > 0 && serials.every((s) => s.unitQc?.memoLicense)) ? 'DONE' as const : 'PENDING' as const,
+  }))
   // Stable sort by progress rank keeps the contract-date order within each stage.
-  return rows.sort((a, b) => PROGRESS_RANK[a.currentStatus] - PROGRESS_RANK[b.currentStatus])
+  return withMemo.sort((a, b) => PROGRESS_RANK[a.currentStatus] - PROGRESS_RANK[b.currentStatus])
 }
 
 export async function countClosed(): Promise<number> {
