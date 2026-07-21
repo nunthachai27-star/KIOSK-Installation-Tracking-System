@@ -216,11 +216,12 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_324px] gap-4 items-start">
-      {/* CTA — เปิดฟอร์มแจ้งเคลม/ปัญหา ในป็อปอัพ */}
-      <div className="ds-card p-5 flex flex-col gap-3">
-        <div className="text-[15px] font-bold text-[#1C1917]">แจ้งเคลม / ปัญหาใหม่</div>
-        <p className="text-[13px] text-[#8492A6]">กดปุ่มด้านล่างเพื่อเปิดฟอร์มบันทึก</p>
+      {/* CTA bar — เปิดฟอร์มแจ้งเคลม/ปัญหา ในป็อปอัพ (เต็มความกว้าง) */}
+      <div className="ds-card px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <div className="text-[15px] font-bold text-[#1C1917]">แจ้งเคลม / ปัญหาใหม่</div>
+          <p className="text-[12.5px] text-[#8492A6] mt-0.5">กดปุ่มเพื่อเปิดฟอร์มบันทึก</p>
+        </div>
         <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={() => { setIssueType('CLAIM'); setErr(''); setFormOpen(true) }}
             className="ds-hover bg-[#EA580C] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C]">🔧 ＋ แจ้งเคลมอุปกรณ์</button>
@@ -228,6 +229,10 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
             className="ds-hover bg-[#1B5FD9] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[#164FB3]">📝 ＋ แจ้งปัญหาทั่วไป</button>
         </div>
       </div>
+
+      {/* content: รายการ (ซ้าย) + ข้อมูลช่วยเหลือ (ขวา) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_324px] gap-4 items-start">
+      <div className="flex flex-col gap-4 min-w-0">
 
       {/* form modal — fixed จึงไม่กิน grid track (layout เดิมไม่กระทบ) */}
       {formOpen && (
@@ -350,52 +355,6 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
       </div>
       )}
 
-      {/* helper sidebar — warranty rule, 30-day claim activity, workflow steps */}
-      <aside className="ds-card p-5 flex flex-col gap-5">
-        <div className="flex items-center gap-2 pb-3 border-b border-[#F1F3F6]">
-          <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">🛟</span>
-          <span className="font-bold text-[15px] text-[#1C1917]">ข้อมูลช่วยเหลือ</span>
-        </div>
-
-        <div className="flex gap-2.5">
-          <span className="text-[#157F4C] text-[17px] leading-none mt-0.5">🛡️</span>
-          <div>
-            <div className="text-[13px] font-bold text-[#1C1917]">สิทธิประกัน</div>
-            <div className="text-[12px] text-[#8492A6] mt-0.5 leading-relaxed">ระบบตรวจสอบสิทธิประกันอัตโนมัติจากวันที่เปิดบิล (+1 ปี)</div>
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[12.5px] font-bold text-[#57534E] mb-2">📊 สถิติการแจ้งเคลม <span className="text-[#A8A29E] font-medium">(30 วันล่าสุด)</span></div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: 'แจ้งทั้งหมด', value: stats.total, color: '#1C1917' },
-              { label: 'รออนุมัติ', value: stats.received, color: '#B45309' },
-              { label: 'กำลังดำเนินการ', value: stats.inProgress, color: '#1B5FD9' },
-              { label: 'ปิดงานแล้ว', value: stats.done, color: '#157F4C' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-[#EEEAE6] bg-[#FBFAF8] px-3 py-2.5">
-                <div className="text-[20px] font-bold tnum leading-none" style={{ color: s.color }}>{s.value}</div>
-                <div className="text-[11px] text-[#8492A6] mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[12.5px] font-bold text-[#57534E] mb-2">🧭 ขั้นตอนการทำงาน</div>
-          <ol className="flex flex-col gap-2.5">
-            {['กรอกข้อมูลและบันทึกเคลม', 'รอเจ้าหน้าที่ตรวจสอบ/อนุมัติ', 'ดำเนินการและปิดงาน'].map((t, i) => (
-              <li key={i} className="flex items-center gap-2.5">
-                <span className="w-5 h-5 shrink-0 rounded-full bg-[#EA580C] text-white grid place-items-center text-[11px] font-bold tnum">{i + 1}</span>
-                <span className="text-[12.5px] text-[#3C4A5E]">{t}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </aside>
-      </div>
-
       {/* type filter + product-type filter */}
       <div className="flex items-center gap-2 flex-wrap">
         {([['ALL', `ทั้งหมด (${byProduct.length})`], ['CLAIM', `🔧 เคลมอุปกรณ์ (${claimCount})`], ['GENERAL', `📝 ปัญหาทั่วไป (${generalCount})`]] as const).map(([v, label]) => (
@@ -463,6 +422,53 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
             แสดงเพิ่มอีก 40 รายการ · เหลืออีก {shown.length - limit} รายการ (แสดงอยู่ {limit} จาก {shown.length})
           </button>
         )}
+      </div>
+      </div>
+
+      {/* helper sidebar — warranty rule, 30-day claim activity, workflow steps (คอลัมน์ขวา) */}
+      <aside className="ds-card p-5 flex flex-col gap-5 lg:sticky lg:top-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-[#F1F3F6]">
+          <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">🛟</span>
+          <span className="font-bold text-[15px] text-[#1C1917]">ข้อมูลช่วยเหลือ</span>
+        </div>
+
+        <div className="flex gap-2.5">
+          <span className="text-[#157F4C] text-[17px] leading-none mt-0.5">🛡️</span>
+          <div>
+            <div className="text-[13px] font-bold text-[#1C1917]">สิทธิประกัน</div>
+            <div className="text-[12px] text-[#8492A6] mt-0.5 leading-relaxed">ระบบตรวจสอบสิทธิประกันอัตโนมัติจากวันที่เปิดบิล (+1 ปี)</div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[12.5px] font-bold text-[#57534E] mb-2">📊 สถิติการแจ้งเคลม <span className="text-[#A8A29E] font-medium">(30 วันล่าสุด)</span></div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'แจ้งทั้งหมด', value: stats.total, color: '#1C1917' },
+              { label: 'รออนุมัติ', value: stats.received, color: '#B45309' },
+              { label: 'กำลังดำเนินการ', value: stats.inProgress, color: '#1B5FD9' },
+              { label: 'ปิดงานแล้ว', value: stats.done, color: '#157F4C' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl border border-[#EEEAE6] bg-[#FBFAF8] px-3 py-2.5">
+                <div className="text-[20px] font-bold tnum leading-none" style={{ color: s.color }}>{s.value}</div>
+                <div className="text-[11px] text-[#8492A6] mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[12.5px] font-bold text-[#57534E] mb-2">🧭 ขั้นตอนการทำงาน</div>
+          <ol className="flex flex-col gap-2.5">
+            {['กรอกข้อมูลและบันทึกเคลม', 'รอเจ้าหน้าที่ตรวจสอบ/อนุมัติ', 'ดำเนินการและปิดงาน'].map((t, i) => (
+              <li key={i} className="flex items-center gap-2.5">
+                <span className="w-5 h-5 shrink-0 rounded-full bg-[#EA580C] text-white grid place-items-center text-[11px] font-bold tnum">{i + 1}</span>
+                <span className="text-[12.5px] text-[#3C4A5E]">{t}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </aside>
       </div>
     </div>
   )
