@@ -229,7 +229,7 @@ function pageNumbers(cur: number, total: number): number[] {
 function PageLink({ href, active, disabled, children }: { href: string; active?: boolean; disabled?: boolean; children: ReactNode }) {
   if (disabled) return <span className="min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] text-[#D4CFC9]">{children}</span>
   return (
-    <Link href={href} className={`min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] font-semibold tnum ${active ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
+    <Link href={href} prefetch={false} className={`min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] font-semibold tnum ${active ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
       {children}
     </Link>
   )
@@ -237,7 +237,7 @@ function PageLink({ href, active, disabled, children }: { href: string; active?:
 
 function StepLink({ href, active, n, icon, label, count }: { href: string; active: boolean; n?: number; icon?: string; label: string; count: number }) {
   return (
-    <Link href={href} aria-current={active ? 'page' : undefined}
+    <Link href={href} prefetch={false} aria-current={active ? 'page' : undefined}
       className={`shrink-0 md:shrink flex items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors border-l-[3px] ${
         active ? 'bg-[#FFF4EC] text-[#EA580C] border-[#EA580C]' : 'text-[#57534E] border-transparent hover:bg-[#F6F4F2]'}`}>
       {n != null ? (

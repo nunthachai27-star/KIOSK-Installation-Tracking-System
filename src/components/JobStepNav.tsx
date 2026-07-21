@@ -26,6 +26,7 @@ export function JobStepNav({ jobId, active }: { jobId: string; active: StepNo })
           <Link
             key={step.label}
             href={`/jobs/${jobId}${step.href}`}
+            prefetch={false}
             aria-current={isActive ? 'step' : undefined}
             className={`shrink-0 md:shrink flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
               isActive ? 'bg-[#EA580C] text-white shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]' : 'text-[#57534E] hover:bg-[#F0EEEC]'

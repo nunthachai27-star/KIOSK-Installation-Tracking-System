@@ -70,6 +70,7 @@ export function JobRow({ job }: { job: JobRowData }) {
   return (
     <Link
       href={`/jobs/${job.id}${STEP_HREF[step - 1]}`}
+      prefetch={false}
       className="group ds-hover block px-5 py-3.5 border-t border-[#EEF2F8] border-l-4 hover:bg-[#F8FAFD]"
       style={{ borderLeftColor: warn ? warn.bar : 'transparent' }}
     >
