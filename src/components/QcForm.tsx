@@ -120,14 +120,14 @@ export function QcForm({
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
       {/* หัวข้อ: โรงพยาบาล (จากข้อมูลงาน) + รหัสสถานพยาบาล */}
-      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5 flex flex-wrap items-end gap-x-6 gap-y-3">
-        <div className="min-w-[220px]">
+      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5 flex flex-wrap items-start gap-x-8 gap-y-4">
+        <div className="min-w-[240px]">
           <div className="text-sm font-semibold text-[#5A6B82] mb-1.5">โรงพยาบาล</div>
-          <div className="text-[15px] font-bold text-[#1C1917]">🏥 {hospital.name}</div>
+          <div className="h-[42px] flex items-center gap-1.5 text-[15px] font-bold text-[#1C1917]">🏥 {hospital.name}</div>
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">รหัสสถานพยาบาล</label>
-          <div className="flex items-center gap-2">
+          <div className="h-[42px] flex items-center gap-2">
             <input value={hCode} onChange={e => { setHCode(e.target.value); setHSaved(false) }}
               placeholder="เช่น 10715" onBlur={() => { if ((hCode.trim() || null) !== (hospital.code ?? null)) saveHospitalCode() }}
               className="w-40 border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
