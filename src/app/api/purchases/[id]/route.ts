@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PurchaseStatus } from '@prisma/client'
+import { PURCHASE_DELETE_USERNAMES } from '@/lib/purchase'
 
 const VALID = new Set<string>(Object.values(PurchaseStatus))
 const clean = (v: unknown) => (typeof v === 'string' ? (v.trim() || null) : undefined)
@@ -38,6 +39,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+
+  // Deleting is restricted to a specific allowlist of users.
+  const me = session.user?.id ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }) : null
+  if (!me || !PURCHASE_DELETE_USERNAMES.includes(me.username)) {
+    return NextResponse.json({ error: 'forbidden', message: 'บัญชีนี้ไม่มีสิทธิ์ลบงานจัดซื้อ' }, { status: 403 })
+  }
+
   const { id } = await params
   await prisma.purchase.delete({ where: { id } }).catch(() => null)
   return NextResponse.json({ ok: true })

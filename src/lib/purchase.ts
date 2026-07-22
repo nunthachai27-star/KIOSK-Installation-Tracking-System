@@ -14,3 +14,6 @@ export const PURCHASE_STATUS: Record<PurchaseStatus, { label: string; color: str
 
 // The 5 forward steps shown on the tracker (CANCELLED is off-pipeline).
 export const PURCHASE_STEPS: PurchaseStatus[] = ['REQUESTED', 'APPROVED', 'ORDERED', 'SHIPPING', 'RECEIVED']
+
+// Only these users may delete a purchase (by username).
+export const PURCHASE_DELETE_USERNAMES = ['jakkrit', 'thanita', 'phattaradon']

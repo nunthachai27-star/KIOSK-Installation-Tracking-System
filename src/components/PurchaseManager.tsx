@@ -18,7 +18,7 @@ const dFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', 
 const fmt = (iso: string | null) => (iso ? dFmt.format(new Date(iso)) : '—')
 const money = (n: number | null) => (n == null ? '—' : `${baht.format(n)} ฿`)
 
-export function PurchaseManager({ initial }: { initial: Item[] }) {
+export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDelete: boolean }) {
   const router = useRouter()
   const [items] = useState<Item[]>(initial)
   const [q, setQ] = useState('')
@@ -112,24 +112,39 @@ export function PurchaseManager({ initial }: { initial: Item[] }) {
             {items.length === 0 ? 'ยังไม่มีงานจัดซื้อ — กด “＋ เพิ่มอุปกรณ์ที่จัดซื้อ” เพื่อเริ่ม' : 'ไม่พบรายการ'}
           </div>
         )}
-        {shown.map((it) => <PurchaseCard key={it.id} item={it} onStatus={(s) => patch(it.id, { status: s })} onEdit={() => openEdit(it)} onDelete={() => remove(it.id)} />)}
+        {shown.map((it) => <PurchaseCard key={it.id} item={it} canDelete={canDelete} onStatus={(s) => patch(it.id, { status: s })} onEdit={() => openEdit(it)} onDelete={() => remove(it.id)} />)}
       </div>
     </div>
   )
 }
 
 function StepTracker({ status }: { status: PurchaseStatus }) {
-  if (status === 'CANCELLED') return <span className="text-[12px] font-bold text-[#C13540]">✕ ยกเลิกแล้ว</span>
+  if (status === 'CANCELLED') {
+    return <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[#C13540] bg-[#FBE4E4] rounded-lg px-2.5 py-1">✕ ยกเลิกแล้ว</span>
+  }
   const cur = PURCHASE_STATUS[status].step
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-start gap-0 overflow-x-auto">
       {PURCHASE_STEPS.map((s, i) => {
         const st = PURCHASE_STATUS[s]
-        const done = st.step <= cur
+        const done = st.step < cur
+        const active = st.step === cur
+        const bg = done ? st.color : active ? st.color : '#E1E8F2'
+        const textColor = active ? st.color : done ? st.color : '#A8A29E'
         return (
-          <div key={s} className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: done ? st.color : '#E1E8F2' }} title={st.label} />
-            {i < PURCHASE_STEPS.length - 1 && <span className="w-4 h-px" style={{ background: done && PURCHASE_STATUS[PURCHASE_STEPS[i + 1]].step <= cur ? st.color : '#E1E8F2' }} />}
+          <div key={s} className="flex items-start shrink-0">
+            <div className="flex flex-col items-center gap-1 w-[62px]">
+              <div className="flex items-center w-full">
+                {/* left connector */}
+                <span className="h-[3px] flex-1 rounded" style={{ background: i === 0 ? 'transparent' : (st.step <= cur ? st.color : '#E1E8F2') }} />
+                <span className="w-5 h-5 shrink-0 rounded-full grid place-items-center text-[10px] font-bold text-white" style={{ background: bg }}>
+                  {done ? '✓' : st.step}
+                </span>
+                {/* right connector */}
+                <span className="h-[3px] flex-1 rounded" style={{ background: i === PURCHASE_STEPS.length - 1 ? 'transparent' : (PURCHASE_STATUS[PURCHASE_STEPS[i + 1]].step <= cur ? PURCHASE_STATUS[PURCHASE_STEPS[i + 1]].color : '#E1E8F2') }} />
+              </div>
+              <span className={`text-[10.5px] leading-tight text-center ${active ? 'font-bold' : 'font-medium'}`} style={{ color: textColor }}>{st.label}</span>
+            </div>
           </div>
         )
       })}
@@ -137,7 +152,7 @@ function StepTracker({ status }: { status: PurchaseStatus }) {
   )
 }
 
-function PurchaseCard({ item, onStatus, onEdit, onDelete }: { item: Item; onStatus: (s: PurchaseStatus) => void; onEdit: () => void; onDelete: () => void }) {
+function PurchaseCard({ item, canDelete, onStatus, onEdit, onDelete }: { item: Item; canDelete: boolean; onStatus: (s: PurchaseStatus) => void; onEdit: () => void; onDelete: () => void }) {
   const st = PURCHASE_STATUS[item.status]
   return (
     <div className="ds-card p-4">
@@ -164,9 +179,11 @@ function PurchaseCard({ item, onStatus, onEdit, onDelete }: { item: Item; onStat
             className="border border-[#D6DFEA] rounded-lg px-2 py-1 text-[12px] bg-white outline-none focus:border-[#EA580C]">
             {PURCHASE_STATUS_ORDER.map((s) => <option key={s} value={s}>{PURCHASE_STATUS[s].label}</option>)}
           </select>
-          <div className="flex items-center gap-1">
-            <button onClick={onEdit} className="w-7 h-7 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]" title="แก้ไข">✎</button>
-            <button onClick={onDelete} className="w-7 h-7 grid place-items-center rounded-md text-[#C13540] hover:bg-[#FBE4E4]" title="ลบ">✕</button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={onEdit} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[12px] font-semibold text-[#5A6B82] border border-[#E1E8F2] hover:bg-[#F0EEEC]">✎ แก้ไข</button>
+            {canDelete && (
+              <button onClick={onDelete} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[12px] font-semibold text-[#C13540] border border-[#F3D2D2] hover:bg-[#FBE4E4]">✕ ลบ</button>
+            )}
           </div>
         </div>
       </div>

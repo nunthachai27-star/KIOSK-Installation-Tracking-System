@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { PurchaseManager } from '@/components/PurchaseManager'
+import { PURCHASE_DELETE_USERNAMES } from '@/lib/purchase'
 
 export default async function PurchasesPage() {
+  const session = await auth()
+  const me = session?.user?.id ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }) : null
+  const canDelete = !!me && PURCHASE_DELETE_USERNAMES.includes(me.username)
+
   const rows = await prisma.purchase.findMany({
     orderBy: { createdAt: 'desc' },
     include: { requestedBy: { select: { name: true } } },
@@ -33,7 +39,7 @@ export default async function PurchasesPage() {
           <p className="text-[13px] text-[#8492A6] mt-0.5">บันทึกอุปกรณ์ที่จัดซื้อ · ติดตามสถานะตั้งแต่ขอซื้อจนรับของ</p>
         </div>
       </div>
-      <PurchaseManager initial={items} />
+      <PurchaseManager initial={items} canDelete={canDelete} />
     </div>
   )
 }
