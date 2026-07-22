@@ -407,7 +407,6 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
               className="flex items-center gap-1.5 bg-[#1B5FD9] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#164FB3]">
               📄 รายงานขอใบส่งของ
             </button>
-            <span className="text-[12.5px] text-[#8492A6]">ดาวน์โหลดไฟล์ Word (.doc) พร้อมปริ้น — ไม่กระทบข้อมูลงาน</span>
           </div>
         )}
 
@@ -432,8 +431,7 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="text-[13px] text-[#8492A6]">หากลงข้อมูลผิด สามารถยกเลิกรายการนี้ได้ (เก็บเป็นประวัติ กู้คืนได้ภายหลัง)</div>
+            <div className="flex items-center justify-end gap-3 flex-wrap">
               <button type="button" onClick={cancelJob} disabled={cancelling}
                 className="text-sm font-semibold rounded-lg px-5 py-2.5 border border-[#E4B8BB] text-[#C13540] hover:bg-[#FBE4E4] disabled:opacity-60">
                 {cancelling ? 'กำลังยกเลิก…' : 'ยกเลิกรายการ'}
