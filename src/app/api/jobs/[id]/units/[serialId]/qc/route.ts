@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { QcStatus } from '@prisma/client'
 
 const VALID = new Set<string>(Object.values(QcStatus))
@@ -56,5 +57,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
   }
 
+  await logAction(session.user, 'UPDATE', 'QC', 'บันทึก QC เครื่อง')
   return NextResponse.json({ ...saved, rollup, passed, total })
 }

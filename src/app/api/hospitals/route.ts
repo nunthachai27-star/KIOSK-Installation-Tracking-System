@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 // Create (or reuse) a hospital by name + province — used by the searchable
 // hospital picker so office staff can add one without leaving the job form.
@@ -19,5 +20,6 @@ export async function POST(req: Request) {
   if (existing) return NextResponse.json(existing, { status: 200 })
 
   const created = await prisma.hospital.create({ data: { name: cleanName, province: cleanProvince } })
+  await logAction(session.user, 'CREATE', 'โรงพยาบาล', `เพิ่ม "${created.name}"`)
   return NextResponse.json(created, { status: 201 })
 }

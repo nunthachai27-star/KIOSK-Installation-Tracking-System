@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 type ItemInput = { serialBMS?: string; serialNo?: string; color?: string }
 
@@ -83,5 +84,6 @@ export async function POST(req: Request) {
     })),
   })
 
+  await logAction(session.user, 'CREATE', 'คลังสินค้า', `รับเข้า ${rows.length} ชิ้น (Lot ${lot.lotCode})`)
   return NextResponse.json({ productId: pid, lotId: lot.id, count: rows.length }, { status: 201 })
 }

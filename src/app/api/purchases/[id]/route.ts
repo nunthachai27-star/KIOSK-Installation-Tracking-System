@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PurchaseStatus } from '@prisma/client'
 import { PURCHASE_DELETE_USERNAMES } from '@/lib/purchase'
+import { logAction } from '@/lib/audit'
 
 const VALID = new Set<string>(Object.values(PurchaseStatus))
 const clean = (v: unknown) => (typeof v === 'string' ? (v.trim() || null) : undefined)
@@ -31,8 +32,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (!Object.keys(data).length) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
 
-  const updated = await prisma.purchase.update({ where: { id }, data }).catch(() => null)
+  const updated = await prisma.purchase.update({ where: { id }, data, select: { id: true, status: true, itemName: true } }).catch(() => null)
   if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  await logAction(session.user, 'UPDATE', 'งานจัดซื้อ', `แก้ไข "${updated.itemName}"`)
   return NextResponse.json({ id: updated.id, status: updated.status })
 }
 
@@ -47,6 +49,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   const { id } = await params
-  await prisma.purchase.delete({ where: { id } }).catch(() => null)
+  const gone = await prisma.purchase.delete({ where: { id }, select: { itemName: true } }).catch(() => null)
+  if (gone) await logAction(session.user, 'DELETE', 'งานจัดซื้อ', `ลบ "${gone.itemName}"`)
   return NextResponse.json({ ok: true })
 }

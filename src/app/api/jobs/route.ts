@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { jobInput } from '@/lib/jobSchema'
 
 export async function GET(req: Request) {
@@ -40,5 +41,6 @@ export async function POST(req: Request) {
   const parsed = jobInput.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   const job = await prisma.job.create({ data: { ...parsed.data, createdById: session.user.id ?? null } })
+  await logAction(session.user, 'CREATE', 'งาน', `สร้างงาน ${job.jobCode}`)
   return NextResponse.json(job, { status: 201 })
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 // Edit an individual stock unit's identity fields (serial BMS / serial NO. / color).
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,5 +31,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const updated = await prisma.stockItem.update({ where: { id }, data }).catch(() => null)
   if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  await logAction(session.user, 'UPDATE', 'คลังสินค้า', `แก้ไขข้อมูลเครื่อง (serial ${updated.serialNo ?? updated.serialBMS ?? updated.id})`)
   return NextResponse.json({ id: updated.id, serialBMS: updated.serialBMS, serialNo: updated.serialNo, color: updated.color })
 }

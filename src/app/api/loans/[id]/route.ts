@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 // Take a lent unit back: closes the loan and returns the unit to stock.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,5 +29,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await tx.stockItem.updateMany({ where: { id: loan.itemId, status: 'BORROWED' }, data: { status: 'IN_STOCK' } })
   })
 
+  await logAction(session.user, 'UPDATE', 'ยืม-คืน', 'รับคืนอุปกรณ์')
   return NextResponse.json({ id: loan.id, status: 'RETURNED' })
 }

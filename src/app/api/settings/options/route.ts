@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { isCategory } from '@/lib/master'
 
 export async function GET(req: Request) {
@@ -28,5 +29,6 @@ export async function POST(req: Request) {
   const created = await prisma.masterOption.create({
     data: { category, value: value.trim(), sortOrder: (max._max.sortOrder ?? 0) + 1 },
   })
+  await logAction(session.user, 'CREATE', 'ตั้งค่า', `เพิ่มตัวเลือก "${created.value}"`)
   return NextResponse.json(created, { status: 201 })
 }

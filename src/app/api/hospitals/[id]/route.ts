@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 // Rename / edit a hospital. The name change propagates to every job via the FK,
 // so no data migration is needed.
@@ -21,6 +22,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const updated = await prisma.hospital.update({ where: { id }, data }).catch(() => null)
   if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  await logAction(session.user, 'UPDATE', 'โรงพยาบาล', `แก้ไข "${updated.name}"`)
   return NextResponse.json(updated)
 }
 
@@ -33,6 +35,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const jobCount = await prisma.job.count({ where: { hospitalId: id } })
   if (jobCount > 0) return NextResponse.json({ error: 'has_jobs', jobCount }, { status: 409 })
 
-  await prisma.hospital.delete({ where: { id } }).catch(() => null)
+  const gone = await prisma.hospital.delete({ where: { id }, select: { name: true } }).catch(() => null)
+  if (gone) await logAction(session.user, 'DELETE', 'โรงพยาบาล', `ลบ "${gone.name}"`)
   return NextResponse.json({ ok: true })
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { isCategory } from '@/lib/master'
 import { applyRename, findCollisions } from '@/lib/master-rename'
 
@@ -30,6 +31,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const renaming = !!data.value && data.value !== existing.value
   if (!renaming || !isCategory(existing.category)) {
     const updated = await prisma.masterOption.update({ where: { id }, data })
+    await logAction(session.user, 'UPDATE', 'ตั้งค่า', `แก้ตัวเลือก "${updated.value}"`)
     return NextResponse.json(updated)
   }
 
@@ -50,5 +52,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return [u, m] as const
   })
 
+  await logAction(session.user, 'UPDATE', 'ตั้งค่า', `เปลี่ยนชื่อ "${from}" → "${to}"`)
   return NextResponse.json({ ...updated, renamedFrom: from, updatedRows: moved })
 }

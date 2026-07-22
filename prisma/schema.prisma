@@ -171,6 +171,20 @@ model User {
   purchases     Purchase[]     @relation("PurchaseRequester")
 }
 
+// บันทึกการกระทำหลัก (เพิ่ม/แก้/ลบ) ว่าใครทำอะไร — ตารางแยกเดี่ยว ลบได้จาก DB เท่านั้น.
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  // อ้างอิงผู้ทำ (ไม่มี FK เพื่อไม่ผูกกับ User — กันข้อมูลหายถ้าลบ user)
+  userName  String?  // snapshot ชื่อผู้ทำ ณ ตอนนั้น
+  action    String   // CREATE | UPDATE | DELETE
+  entity    String   // หมวด เช่น "งานจัดซื้อ", "คลังสินค้า", "งาน"
+  summary   String   // อ่านเข้าใจง่าย เช่น เพิ่ม "ทดสอบ"
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
 enum PurchaseStatus {
   REQUESTED  // ขอซื้อ
   APPROVED   // อนุมัติแล้ว

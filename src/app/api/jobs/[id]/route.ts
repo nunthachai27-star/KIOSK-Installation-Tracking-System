@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { jobInput } from '@/lib/jobSchema'
 import { fieldCanAccessJob } from '@/lib/access'
 
@@ -26,5 +27,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const parsed = jobInput.partial().safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   const job = await prisma.job.update({ where: { id }, data: parsed.data })
+  await logAction(session.user, 'UPDATE', 'งาน', `แก้ไขงาน ${job.jobCode}`)
   return NextResponse.json(job)
 }

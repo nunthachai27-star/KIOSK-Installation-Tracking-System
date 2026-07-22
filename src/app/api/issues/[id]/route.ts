@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { IssueStatus, IssueMethod, IssueWarranty } from '@prisma/client'
 import { ISSUE_WARRANTY } from '@/lib/issue'
 
@@ -66,6 +67,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id },
     data: { ...data, ...(events.length ? { events: { create: events } } : {}) },
   })
+  await logAction(session.user, 'UPDATE', 'แจ้งปัญหา/เคลม', `แก้ไข "${updated.title}"`)
   return NextResponse.json(updated)
 }
 
@@ -74,6 +76,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  await prisma.issue.delete({ where: { id } }).catch(() => null)
+  const gone = await prisma.issue.delete({ where: { id }, select: { title: true } }).catch(() => null)
+  if (gone) await logAction(session.user, 'DELETE', 'แจ้งปัญหา/เคลม', `ลบ "${gone.title}"`)
   return NextResponse.json({ ok: true })
 }

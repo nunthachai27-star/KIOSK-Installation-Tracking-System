@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 // Edit a staff member's nickname (ชื่อเล่น) — shown in the daily work report.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,5 +16,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const updated = await prisma.user.update({ where: { id }, data }).catch(() => null)
   if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  await logAction(session.user, 'UPDATE', 'ผู้ใช้', `แก้ชื่อเล่น ${updated.name}`)
   return NextResponse.json({ id: updated.id, nickname: updated.nickname })
 }

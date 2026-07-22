@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 import { IssueStatus, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { warrantyStateFrom, ISSUE_WARRANTY } from '@/lib/issue'
 
@@ -72,5 +73,6 @@ export async function POST(req: Request) {
       },
     },
   })
+  await logAction(session.user, 'CREATE', 'แจ้งปัญหา/เคลม', `แจ้ง "${created.title}"`)
   return NextResponse.json(created, { status: 201 })
 }

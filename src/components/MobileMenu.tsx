@@ -61,6 +61,13 @@ export function MobileMenu({ initial }: { initial: string }) {
             })}
             <div className="h-px bg-[#EEF2F8] my-1.5" />
             <Link
+              href="/logs"
+              onClick={close}
+              className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#3C4A5E] hover:bg-[#F6F9FC]"
+            >
+              🧾 Log การใช้งาน
+            </Link>
+            <Link
               href="/jobs/new"
               onClick={close}
               className="px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-[#EA580C] text-white text-center hover:bg-[#C2410C]"

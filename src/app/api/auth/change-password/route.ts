@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/audit'
 
 const MIN_LEN = 4
 
@@ -34,5 +35,6 @@ export async function POST(req: Request) {
   }
 
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } })
+  await logAction(session.user, 'UPDATE', 'ผู้ใช้', 'เปลี่ยนรหัสผ่านตัวเอง')
   return NextResponse.json({ ok: true })
 }

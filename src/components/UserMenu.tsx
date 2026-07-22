@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
 import { signOut } from 'next-auth/react'
 
@@ -31,6 +32,10 @@ export function UserMenu({ name, initial, role }: { name: string; initial: strin
             <div className="text-[13px] font-semibold text-[#1C1917] truncate">{name}</div>
             <div className="text-[11.5px] text-[#8492A6]">{role}</div>
           </div>
+          <Link href="/logs" onClick={() => setOpen(false)}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            🧾 Log การใช้งาน
+          </Link>
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🔑 เปลี่ยนรหัสผ่าน
