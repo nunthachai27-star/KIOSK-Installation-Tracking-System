@@ -10,12 +10,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params
   const body = await req.json()
-  const data: { name?: string; province?: string } = {}
+  const data: { name?: string; province?: string; code?: string | null } = {}
   if (typeof body.name === 'string') {
     if (!body.name.trim()) return NextResponse.json({ error: 'name required' }, { status: 400 })
     data.name = body.name.trim()
   }
   if (typeof body.province === 'string') data.province = body.province.trim()
+  if (body.code !== undefined) data.code = typeof body.code === 'string' && body.code.trim() ? body.code.trim() : null
   if (!Object.keys(data).length) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
 
   const updated = await prisma.hospital.update({ where: { id }, data }).catch(() => null)

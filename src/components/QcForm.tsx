@@ -42,15 +42,29 @@ function initialChecklist(checklist: unknown): Marks {
 }
 
 export function QcForm({
-  jobId, units, checklistItems, users, currentUser,
+  jobId, units, checklistItems, users, currentUser, hospital,
 }: {
   jobId: string
   units: Unit[]
   checklistItems: string[]
   users: UserOpt[]
   currentUser: { id: string; name: string }
+  hospital: { id: string; name: string; code: string | null }
 }) {
   const router = useRouter()
+  // รหัสสถานพยาบาล — เก็บที่ตัวโรงพยาบาล (ใช้ร่วมทุกงานของ รพ.นี้) บันทึกแยกจาก QC รายเครื่อง
+  const [hCode, setHCode] = useState(hospital.code ?? '')
+  const [hSaving, setHSaving] = useState(false)
+  const [hSaved, setHSaved] = useState(false)
+  async function saveHospitalCode() {
+    setHSaving(true); setHSaved(false)
+    try {
+      const res = await fetch(`/api/hospitals/${hospital.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: hCode }),
+      })
+      if (res.ok) { setHSaved(true); router.refresh() }
+    } finally { setHSaving(false) }
+  }
   const [state, setState] = useState<Record<string, UnitState>>(() => {
     const m: Record<string, UnitState> = {}
     for (const u of units) m[u.id] = { checklist: initialChecklist(u.qc?.checklist), status: u.qc?.status ?? 'PENDING', staffId: u.qc?.staffId ?? '', keyId: u.qc?.keyId ?? '', licenseKey: u.qc?.licenseKey ?? '', memoLicense: u.qc?.memoLicense ?? false }
@@ -105,6 +119,25 @@ export function QcForm({
 
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
+      {/* หัวข้อ: โรงพยาบาล (จากข้อมูลงาน) + รหัสสถานพยาบาล */}
+      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5 flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div className="min-w-[220px]">
+          <div className="text-sm font-semibold text-[#5A6B82] mb-1.5">โรงพยาบาล</div>
+          <div className="text-[15px] font-bold text-[#1C1917]">🏥 {hospital.name}</div>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">รหัสสถานพยาบาล</label>
+          <div className="flex items-center gap-2">
+            <input value={hCode} onChange={e => { setHCode(e.target.value); setHSaved(false) }}
+              placeholder="เช่น 10715" onBlur={() => { if ((hCode.trim() || null) !== (hospital.code ?? null)) saveHospitalCode() }}
+              className="w-40 border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
+            {hSaving ? <span className="text-[12px] text-[#8492A6]">กำลังบันทึก…</span>
+              : hSaved ? <span className="text-[12px] font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span> : null}
+          </div>
+          <div className="text-[11.5px] text-[#A8A29E] mt-1">ใช้ร่วมทุกงานของโรงพยาบาลนี้</div>
+        </div>
+      </div>
+
       {units.map((unit, idx) => {
         const st = state[unit.id]
         return (

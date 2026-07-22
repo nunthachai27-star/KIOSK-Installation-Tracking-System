@@ -11,6 +11,7 @@ export default async function JobQcPage({ params }: { params: Promise<{ id: stri
     prisma.job.findUnique({
       where: { id },
       include: {
+        hospital: { select: { id: true, name: true, code: true } },
         // Load every serial (BMS units + their component children) so QC can list
         // the equipment recorded per unit.
         serials: { include: { unitQc: true }, orderBy: { serialNo: 'asc' } },
@@ -38,7 +39,8 @@ export default async function JobQcPage({ params }: { params: Promise<{ id: stri
 
   return (
     <JobDetailShell jobId={job.id} active={3}>
-      <QcForm jobId={job.id} units={units} checklistItems={spec.checklist} users={users} currentUser={currentUser} />
+      <QcForm jobId={job.id} units={units} checklistItems={spec.checklist} users={users} currentUser={currentUser}
+        hospital={{ id: job.hospital.id, name: job.hospital.name, code: job.hospital.code }} />
     </JobDetailShell>
   )
 }

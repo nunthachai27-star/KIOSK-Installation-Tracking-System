@@ -191,6 +191,7 @@ model Task {
 model Hospital {
   id           String  @id @default(cuid())
   name         String
+  code         String? // รหัสสถานพยาบาล (HCODE 5 หลัก)
   province     String
   healthRegion String?
   address      String?
