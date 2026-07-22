@@ -29,7 +29,7 @@ export default async function JobQcPage({ params }: { params: Promise<{ id: stri
     .map((s) => ({
       id: s.id,
       serialNo: s.serialNo,
-      qc: s.unitQc ? { status: s.unitQc.status, checklist: s.unitQc.checklist, staffId: s.unitQc.staffId, keyId: s.unitQc.keyId, memoLicense: s.unitQc.memoLicense } : null,
+      qc: s.unitQc ? { status: s.unitQc.status, checklist: s.unitQc.checklist, staffId: s.unitQc.staffId, keyId: s.unitQc.keyId, licenseKey: s.unitQc.licenseKey, memoLicense: s.unitQc.memoLicense } : null,
       // Equipment recorded for this unit in the Serial step (component children).
       items: job.serials
         .filter((c) => c.parentId === s.id)

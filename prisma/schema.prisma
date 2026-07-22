@@ -371,6 +371,7 @@ model UnitQc {
   status    QcStatus @default(PENDING)
   checklist Json     @default("[]")
   keyId     String?  // Key ID / MAC Address ของเครื่อง (บันทึกตอน QC)
+  licenseKey String? // License Key ของเครื่อง (บันทึกตอน QC)
   memoLicense Boolean @default(false) // ขอเปิด MEMO License แล้วหรือยัง (ติ๊กตอน QC)
   remark    String?
   createdAt DateTime @default(now())

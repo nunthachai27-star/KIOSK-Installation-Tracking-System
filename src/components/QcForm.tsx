@@ -5,10 +5,10 @@ import type { QcStatus } from '@prisma/client'
 
 type UserOpt = { id: string; name: string }
 type UnitItem = { label: string; serialNo: string }
-type Unit = { id: string; serialNo: string; qc: { status: QcStatus; checklist: unknown; staffId: string | null; keyId: string | null; memoLicense: boolean } | null; items: UnitItem[] }
+type Unit = { id: string; serialNo: string; qc: { status: QcStatus; checklist: unknown; staffId: string | null; keyId: string | null; licenseKey: string | null; memoLicense: boolean } | null; items: UnitItem[] }
 type Mark = { result: 'pass' | 'fail'; by: string; at: string }
 type Marks = Record<string, Mark | undefined>
-type UnitState = { checklist: Marks; status: QcStatus; staffId: string; keyId: string; memoLicense: boolean }
+type UnitState = { checklist: Marks; status: QcStatus; staffId: string; keyId: string; licenseKey: string; memoLicense: boolean }
 
 const STATUS_OPTIONS: { value: QcStatus; label: string }[] = [
   { value: 'PENDING', label: 'รอตรวจ' },
@@ -53,7 +53,7 @@ export function QcForm({
   const router = useRouter()
   const [state, setState] = useState<Record<string, UnitState>>(() => {
     const m: Record<string, UnitState> = {}
-    for (const u of units) m[u.id] = { checklist: initialChecklist(u.qc?.checklist), status: u.qc?.status ?? 'PENDING', staffId: u.qc?.staffId ?? '', keyId: u.qc?.keyId ?? '', memoLicense: u.qc?.memoLicense ?? false }
+    for (const u of units) m[u.id] = { checklist: initialChecklist(u.qc?.checklist), status: u.qc?.status ?? 'PENDING', staffId: u.qc?.staffId ?? '', keyId: u.qc?.keyId ?? '', licenseKey: u.qc?.licenseKey ?? '', memoLicense: u.qc?.memoLicense ?? false }
     return m
   })
   const [saving, setSaving] = useState<Record<string, boolean>>({})
@@ -83,7 +83,7 @@ export function QcForm({
     try {
       const res = await fetch(`/api/jobs/${jobId}/units/${unitId}/qc`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: st.status, staffId: st.staffId || null, checklist, keyId: st.keyId || null, memoLicense: st.memoLicense }),
+        body: JSON.stringify({ status: st.status, staffId: st.staffId || null, checklist, keyId: st.keyId || null, licenseKey: st.licenseKey || null, memoLicense: st.memoLicense }),
       })
       if (res.ok) { setSaved(x => ({ ...x, [unitId]: true })); router.refresh() }
     } finally {
@@ -178,6 +178,10 @@ export function QcForm({
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">Key ID / MAC Address</label>
               <input value={st.keyId} onChange={e => patch(unit.id, { keyId: e.target.value })}
                 placeholder="เช่น 00:1A:2B:3C:4D:5E หรือ Key ID ของเครื่อง"
+                className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
+              <label className="block text-sm font-semibold text-[#5A6B82] mt-3 mb-1.5">License Key</label>
+              <input value={st.licenseKey} onChange={e => patch(unit.id, { licenseKey: e.target.value })}
+                placeholder="License Key ของเครื่อง"
                 className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
               <label className="mt-2.5 flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" checked={st.memoLicense} onChange={e => patch(unit.id, { memoLicense: e.target.checked })}
