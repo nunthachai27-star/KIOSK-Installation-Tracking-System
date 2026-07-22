@@ -170,7 +170,9 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
       label: ACTIVITY_LABEL[a.activityType],
       activityDate: a.activityDate,
       status: a.status,
-      allDay: false,
+      // Reminder activities are scheduled by date (stored at midnight) with no real
+      // time — show them as "ทั้งวัน" instead of a meaningless 00:00.
+      allDay: a.activityDate.getHours() === 0 && a.activityDate.getMinutes() === 0,
       // Fall back to the job's installer/admin owner when the activity itself has
       // no one assigned — otherwise the board shows "—" even though the job has an
       // owner (a manual activity overrides the record-derived row that would show it).
