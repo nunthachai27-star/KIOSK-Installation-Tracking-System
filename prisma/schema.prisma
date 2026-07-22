@@ -168,6 +168,38 @@ model User {
   assignedIssues Issue[]       @relation("IssueAssignee")
   ownedTasks    Task[]         @relation("TaskOwner")
   loansRecorded Loan[]         @relation("LoanRecorder")
+  purchases     Purchase[]     @relation("PurchaseRequester")
+}
+
+enum PurchaseStatus {
+  REQUESTED  // ขอซื้อ
+  APPROVED   // อนุมัติแล้ว
+  ORDERED    // สั่งซื้อแล้ว
+  SHIPPING   // กำลังจัดส่ง
+  RECEIVED   // รับของแล้ว
+  CANCELLED  // ยกเลิก
+}
+
+// งานจัดซื้อ — standalone procurement tracking (ยังไม่ผูกกับคลังสินค้า).
+model Purchase {
+  id            String         @id @default(cuid())
+  itemName      String         // ชื่อสินค้า/อุปกรณ์ที่จัดซื้อ
+  category      String?        // ประเภท/หมวด
+  quantity      Int            @default(1)
+  unit          String         @default("ชิ้น")
+  vendor        String?        // ผู้ขาย/ร้านค้า
+  price         Decimal?       // ราคา/งบประมาณ (รวม)
+  status        PurchaseStatus @default(REQUESTED)
+  note          String?
+  neededDate    DateTime?      // วันที่ต้องการใช้
+  orderedDate   DateTime?      // วันสั่งซื้อ
+  receivedDate  DateTime?      // วันรับของ
+  requestedBy   User?          @relation("PurchaseRequester", fields: [requestedById], references: [id])
+  requestedById String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([status])
 }
 
 // Ad-hoc work reminder not tied to a job/ORDER (ประชุม / ติดตามงาน / อบรม / อื่นๆ).

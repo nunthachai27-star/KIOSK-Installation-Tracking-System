@@ -1,0 +1,39 @@
+import { NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { PurchaseStatus } from '@prisma/client'
+
+const VALID = new Set<string>(Object.values(PurchaseStatus))
+const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+const dateOrNull = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00Z`) : null)
+
+// Create a procurement item (งานจัดซื้อ).
+export async function POST(req: Request) {
+  const session = await auth()
+  if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+
+  const b = await req.json()
+  const itemName = str(b.itemName)
+  if (!itemName) return NextResponse.json({ error: 'name required', message: 'กรอกชื่อสินค้า/อุปกรณ์' }, { status: 400 })
+
+  const status = typeof b.status === 'string' && VALID.has(b.status) ? (b.status as PurchaseStatus) : 'REQUESTED'
+  const priceN = Number(b.price)
+
+  const created = await prisma.purchase.create({
+    data: {
+      itemName,
+      category: str(b.category),
+      quantity: Number.isFinite(Number(b.quantity)) ? Math.max(1, Math.floor(Number(b.quantity))) : 1,
+      unit: str(b.unit) ?? 'ชิ้น',
+      vendor: str(b.vendor),
+      price: b.price != null && b.price !== '' && Number.isFinite(priceN) ? priceN : null,
+      status,
+      note: str(b.note),
+      neededDate: dateOrNull(b.neededDate),
+      orderedDate: dateOrNull(b.orderedDate),
+      receivedDate: dateOrNull(b.receivedDate),
+      requestedById: session.user?.id ?? null,
+    },
+  })
+  return NextResponse.json({ id: created.id }, { status: 201 })
+}

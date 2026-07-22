@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { href: '/schedule', label: 'จัดคิว', icon: 'queue' },
   { href: '/monitor', label: 'Monitor', icon: 'monitor' },
   { href: '/issues', label: 'แจ้งปัญหา', icon: 'issue' },
+  { href: '/purchases', label: 'งานจัดซื้อ', icon: 'purchase' },
   { href: '/stock', label: 'คลังสินค้า', icon: 'stock' },
   { href: '/loans', label: 'ยืม-คืน', icon: 'loan' },
   { href: '/report', label: 'สรุปงาน', icon: 'report' },
@@ -29,6 +30,7 @@ function NavIcon({ name }: { name: string }) {
     case 'queue': return <svg {...common}><path d="M8 5.5h9M8 10h9M8 14.5h9" /><path d="M4 5.5h.01M4 10h.01M4 14.5h.01" /></svg>
     case 'monitor': return <svg {...common}><rect x="3" y="4" width="14" height="9" rx="1.5" /><path d="M7 17h6M10 13v4" /></svg>
     case 'issue': return <svg {...common}><circle cx="10" cy="10" r="7" /><path d="M10 6.5v4.5M10 14h.01" /></svg>
+    case 'purchase': return <svg {...common}><path d="M3 4h2l1.2 9.5a1 1 0 0 0 1 .9h6.9a1 1 0 0 0 1-.8L17 7H6" /><circle cx="8.5" cy="17" r="1" /><circle cx="14.5" cy="17" r="1" /></svg>
     case 'stock': return <svg {...common}><path d="M10 3l7 3.8v6.4L10 17l-7-3.8V6.8z" /><path d="M3 6.8l7 3.8 7-3.8M10 10.6V17" /></svg>
     case 'loan': return <svg {...common}><path d="M3 11.5l3-3 3.5 1.5 4-1 3.5 3" /><path d="M6 8.5V5.5h8v3" /><path d="M3 14.5h14" /></svg>
     case 'report': return <svg {...common}><path d="M4 16V9M9 16V5M14 16v-6" /><path d="M3 17h14" /></svg>
