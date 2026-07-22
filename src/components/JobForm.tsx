@@ -206,9 +206,16 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
     if (!job || !report) return
     const esc = (v: string | null | undefined) =>
       (v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // Prefix a label only when the value doesn't already start with it
+    // (hospital names/provinces are often stored with "โรงพยาบาล"/"จังหวัด" already).
+    const labeled = (label: string, v: string | null | undefined) => {
+      const s = (v ?? '').trim()
+      if (!s) return label
+      return s.startsWith(label) ? s : `${label} ${s}`
+    }
     const title = `ติดตั้ง ${esc(job.productType)}`.trim()
-    const hospital = esc(report.hospitalName)
-    const province = esc(job.province)
+    const hospital = esc(labeled('โรงพยาบาล', report.hospitalName))
+    const province = esc(labeled('จังหวัด', job.province))
     const contractNo = esc(job.contractNo) || '-'
     // A job may hold several BMS units — one bordered table (installation sheet) each.
     const units = report.units.length ? report.units : [{ serialNo: '', items: [] as ReportUnit['items'] }]
@@ -224,7 +231,7 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
       return `<table class="sheet"${ui > 0 ? ' style="page-break-before:always"' : ''}>
         <tr><td colspan="3" class="title">${title}</td></tr>
         <tr>
-          <td colspan="2" class="hd">โรงพยาบาล ${hospital || '&nbsp;'}&nbsp;&nbsp;&nbsp;&nbsp;จังหวัด ${province || '&nbsp;'}</td>
+          <td colspan="2" class="hd">${hospital}&nbsp;&nbsp;&nbsp;&nbsp;${province}</td>
           <td class="hd">เลขที่สัญญา/PO<br>${contractNo}</td>
         </tr>
         <tr><td colspan="3" class="hd">BMS Serial : ${esc(u.serialNo) || '-'}</td></tr>
