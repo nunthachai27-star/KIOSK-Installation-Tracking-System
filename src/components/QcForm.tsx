@@ -161,8 +161,8 @@ export function QcForm({
           <div className="text-[11.5px] text-[#A8A29E] mt-1">ใช้ร่วมทุกงานของโรงพยาบาลนี้</div>
         </div>
         <button type="button" onClick={downloadReport}
-          className="ml-auto self-end flex items-center gap-1.5 bg-[#1B5FD9] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[#164FB3]">
-          📄 ดึงรายงาน (text)
+          className="ml-auto self-end flex items-center gap-1.5 bg-[#EA580C] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C]">
+          📄 ดึงรายงานขอออก License Key
         </button>
       </div>
 
