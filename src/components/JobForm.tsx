@@ -408,19 +408,16 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
 
         {formError && <div className="text-sm text-[#C13540] font-medium">{formError}</div>}
 
-        {isEdit && report && (
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button type="submit" disabled={saving} className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+            {saving ? 'กำลังบันทึก…' : 'บันทึกข้อมูลงาน'}
+          </button>
+          {isEdit && report && (
             <button type="button" onClick={downloadReport}
               className="flex items-center gap-1.5 bg-[#1B5FD9] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#164FB3]">
               📄 รายงานขอใบส่งของ
             </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          <button type="submit" disabled={saving} className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
-            {saving ? 'กำลังบันทึก…' : 'บันทึกข้อมูลงาน'}
-          </button>
+          )}
           {saved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
         </div>
       </form>
