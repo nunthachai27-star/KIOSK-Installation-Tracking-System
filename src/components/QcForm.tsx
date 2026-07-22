@@ -42,7 +42,7 @@ function initialChecklist(checklist: unknown): Marks {
 }
 
 export function QcForm({
-  jobId, units, checklistItems, users, currentUser, hospital,
+  jobId, units, checklistItems, users, currentUser, hospital, jobColor,
 }: {
   jobId: string
   units: Unit[]
@@ -50,6 +50,7 @@ export function QcForm({
   users: UserOpt[]
   currentUser: { id: string; name: string }
   hospital: { id: string; name: string; code: string | null }
+  jobColor: string | null
 }) {
   const router = useRouter()
   // รหัสสถานพยาบาล — เก็บที่ตัวโรงพยาบาล (ใช้ร่วมทุกงานของ รพ.นี้) บันทึกแยกจาก QC รายเครื่อง
@@ -72,6 +73,29 @@ export function QcForm({
   })
   const [saving, setSaving] = useState<Record<string, boolean>>({})
   const [saved, setSaved] = useState<Record<string, boolean>>({})
+
+  // Build a plain-text QC report for this job and download it as a .txt file.
+  function downloadReport() {
+    const L: string[] = []
+    L.push(`ชื่อโรงพยาบาล: ${hospital.name}     รหัสสถานพยาบาล: ${hCode.trim() || '-'}`)
+    L.push('')
+    units.forEach((u, i) => {
+      const st = state[u.id]
+      if (i > 0) L.push('------------------------------------------')
+      L.push(`เครื่อง ${i + 1}`)
+      L.push(`สี: ${jobColor || '-'}`)
+      L.push(`เลข BMS Serial: ${u.serialNo}`)
+      L.push(`Key ID / MAC Address: ${st?.keyId?.trim() || '-'}`)
+    })
+    const text = L.join('\r\n')
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `QC-${hospital.name}.txt`.replace(/[\\/:*?"<>|]/g, '_')
+    document.body.appendChild(a); a.click(); a.remove()
+    URL.revokeObjectURL(url)
+  }
 
   function patch(unitId: string, upd: Partial<UnitState>) {
     setState(s => ({ ...s, [unitId]: { ...s[unitId], ...upd } }))
@@ -136,6 +160,10 @@ export function QcForm({
           </div>
           <div className="text-[11.5px] text-[#A8A29E] mt-1">ใช้ร่วมทุกงานของโรงพยาบาลนี้</div>
         </div>
+        <button type="button" onClick={downloadReport}
+          className="ml-auto self-end flex items-center gap-1.5 bg-[#1B5FD9] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[#164FB3]">
+          📄 ดึงรายงาน (text)
+        </button>
       </div>
 
       {units.map((unit, idx) => {

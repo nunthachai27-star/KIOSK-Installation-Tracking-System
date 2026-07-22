@@ -40,7 +40,7 @@ export default async function JobQcPage({ params }: { params: Promise<{ id: stri
   return (
     <JobDetailShell jobId={job.id} active={3}>
       <QcForm jobId={job.id} units={units} checklistItems={spec.checklist} users={users} currentUser={currentUser}
-        hospital={{ id: job.hospital.id, name: job.hospital.name, code: job.hospital.code }} />
+        hospital={{ id: job.hospital.id, name: job.hospital.name, code: job.hospital.code }} jobColor={job.color} />
     </JobDetailShell>
   )
 }
