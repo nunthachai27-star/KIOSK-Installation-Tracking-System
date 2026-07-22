@@ -123,7 +123,7 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
   const [activities, deliveries, installs, qcPlans, handovers, shippedDeliveries, tasks] = await Promise.all([
     prisma.jobActivity.findMany({
       where: { activityDate: { gte: from, lte: to } },
-      include: { job: { include: { hospital: true } }, responsibleUser: true },
+      include: { job: { include: { hospital: true, installerOwner: true, adminOwner: true } }, responsibleUser: true },
     }),
     prisma.deliveryRecord.findMany({
       where: { OR: [{ shippedDate: { gte: from, lte: to } }, { arrivedDate: { gte: from, lte: to } }] },
@@ -171,7 +171,10 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
       activityDate: a.activityDate,
       status: a.status,
       allDay: false,
-      responsibleName: a.responsibleUser?.name ?? null,
+      // Fall back to the job's installer/admin owner when the activity itself has
+      // no one assigned — otherwise the board shows "—" even though the job has an
+      // owner (a manual activity overrides the record-derived row that would show it).
+      responsibleName: a.responsibleUser?.name ?? a.job.installerOwner?.name ?? a.job.adminOwner?.name ?? null,
       productType: a.job.productType,
       quantity: a.job.quantity,
       jobCode: a.job.jobCode,
