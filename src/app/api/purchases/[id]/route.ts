@@ -23,6 +23,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (b.quantity !== undefined && Number.isFinite(Number(b.quantity))) data.quantity = Math.max(1, Math.floor(Number(b.quantity)))
   if (typeof b.unit === 'string' && b.unit.trim()) data.unit = b.unit.trim()
   if (b.vendor !== undefined) data.vendor = clean(b.vendor)
+  if (b.unitPrice !== undefined) data.unitPrice = b.unitPrice === null || b.unitPrice === '' || !Number.isFinite(Number(b.unitPrice)) ? null : Number(b.unitPrice)
   if (b.price !== undefined) data.price = b.price === null || b.price === '' || !Number.isFinite(Number(b.price)) ? null : Number(b.price)
   if (b.note !== undefined) data.note = clean(b.note)
   if (typeof b.status === 'string' && VALID.has(b.status)) data.status = b.status as PurchaseStatus

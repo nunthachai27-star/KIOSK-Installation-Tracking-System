@@ -202,6 +202,7 @@ model Purchase {
   quantity      Int            @default(1)
   unit          String         @default("ชิ้น")
   vendor        String?        // ผู้ขาย/ร้านค้า
+  unitPrice     Decimal?       // ราคาต่อชิ้น
   price         Decimal?       // ราคา/งบประมาณ (รวม)
   status        PurchaseStatus @default(REQUESTED)
   note          String?

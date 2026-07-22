@@ -20,6 +20,7 @@ export default async function PurchasesPage() {
     quantity: p.quantity,
     unit: p.unit,
     vendor: p.vendor,
+    unitPrice: p.unitPrice ? p.unitPrice.toNumber() : null,
     price: p.price ? p.price.toNumber() : null,
     status: p.status,
     note: p.note,

@@ -6,7 +6,7 @@ import { PURCHASE_STATUS, PURCHASE_STATUS_ORDER, PURCHASE_STEPS } from '@/lib/pu
 
 type Item = {
   id: string; itemName: string; category: string | null; quantity: number; unit: string
-  vendor: string | null; price: number | null; status: PurchaseStatus; note: string | null
+  vendor: string | null; unitPrice: number | null; price: number | null; status: PurchaseStatus; note: string | null
   neededDate: string | null; orderedDate: string | null; receivedDate: string | null
   requestedByName: string | null; createdAt: string
 }
@@ -20,7 +20,9 @@ const money = (n: number | null) => (n == null ? '—' : `${baht.format(n)} ฿`
 
 export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDelete: boolean }) {
   const router = useRouter()
-  const [items] = useState<Item[]>(initial)
+  // Use the server prop directly so router.refresh() (after add/edit/delete)
+  // shows the fresh list immediately — a useState snapshot would freeze it.
+  const items = initial
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<'ALL' | PurchaseStatus>('ALL')
   const [formOpen, setFormOpen] = useState(false)
@@ -165,7 +167,7 @@ function PurchaseCard({ item, canDelete, onStatus, onEdit, onDelete }: { item: I
           </div>
           <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-1.5 text-[12.5px] text-[#5A6B82]">
             {item.vendor && <span>🏪 {item.vendor}</span>}
-            <span>💰 {money(item.price)}</span>
+            <span>💰 {money(item.price)}{item.unitPrice != null && <span className="text-[#A8A29E]"> (@{baht.format(item.unitPrice)}/{item.unit})</span>}</span>
             {item.neededDate && <span>ต้องการ {fmt(item.neededDate)}</span>}
             {item.receivedDate && <span className="text-[#157F4C]">รับ {fmt(item.receivedDate)}</span>}
             {item.requestedByName && <span className="text-[#A8A29E]">โดย {item.requestedByName}</span>}
@@ -198,6 +200,7 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
   const [quantity, setQuantity] = useState(String(editing?.quantity ?? 1))
   const [unit, setUnit] = useState(editing?.unit ?? 'ชิ้น')
   const [vendor, setVendor] = useState(editing?.vendor ?? '')
+  const [unitPrice, setUnitPrice] = useState(editing?.unitPrice != null ? String(editing.unitPrice) : '')
   const [price, setPrice] = useState(editing?.price != null ? String(editing.price) : '')
   const [status, setStatus] = useState<PurchaseStatus>(editing?.status ?? 'REQUESTED')
   const [neededDate, setNeededDate] = useState(iso(editing?.neededDate ?? null))
@@ -209,11 +212,19 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
 
   const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
 
+  // Auto-fill the total from ราคาต่อชิ้น × จำนวน (still editable by hand).
+  const totalFrom = (up: string, qty: string) => {
+    const u = Number(up), n = Number(qty)
+    return up.trim() !== '' && Number.isFinite(u) && Number.isFinite(n) ? String(Math.round(u * n * 100) / 100) : null
+  }
+  const onUnitPrice = (v: string) => { setUnitPrice(v); const t = totalFrom(v, quantity); if (t != null) setPrice(t) }
+  const onQuantity = (v: string) => { setQuantity(v); const t = totalFrom(unitPrice, v); if (t != null) setPrice(t) }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!itemName.trim()) { setErr('กรอกชื่อสินค้า/อุปกรณ์'); return }
     setSaving(true); setErr('')
-    const body = { itemName, category, quantity, unit, vendor, price, status, neededDate, orderedDate, receivedDate, note }
+    const body = { itemName, category, quantity, unit, vendor, unitPrice, price, status, neededDate, orderedDate, receivedDate, note }
     try {
       const res = await fetch(editing ? `/api/purchases/${editing.id}` : '/api/purchases', {
         method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -247,16 +258,22 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">จำนวน</label>
-              <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} className={`${field} tnum`} />
+              <input type="number" min={1} value={quantity} onChange={(e) => onQuantity(e.target.value)} className={`${field} tnum`} />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">หน่วย</label>
               <input value={unit} onChange={(e) => setUnit(e.target.value)} className={field} />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ราคา / งบประมาณ (บาท)</label>
-            <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="รวม" className={`${field} tnum`} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ราคาต่อชิ้น (บาท)</label>
+              <input type="number" min={0} step="0.01" value={unitPrice} onChange={(e) => onUnitPrice(e.target.value)} placeholder="ต่อชิ้น" className={`${field} tnum`} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ราคารวม (บาท)</label>
+              <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="รวม" className={`${field} tnum`} />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">สถานะ</label>

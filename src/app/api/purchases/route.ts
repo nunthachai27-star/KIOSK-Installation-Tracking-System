@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   if (!itemName) return NextResponse.json({ error: 'name required', message: 'กรอกชื่อสินค้า/อุปกรณ์' }, { status: 400 })
 
   const status = typeof b.status === 'string' && VALID.has(b.status) ? (b.status as PurchaseStatus) : 'REQUESTED'
-  const priceN = Number(b.price)
+  const num = (v: unknown) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null)
 
   const created = await prisma.purchase.create({
     data: {
@@ -27,7 +27,8 @@ export async function POST(req: Request) {
       quantity: Number.isFinite(Number(b.quantity)) ? Math.max(1, Math.floor(Number(b.quantity))) : 1,
       unit: str(b.unit) ?? 'ชิ้น',
       vendor: str(b.vendor),
-      price: b.price != null && b.price !== '' && Number.isFinite(priceN) ? priceN : null,
+      unitPrice: num(b.unitPrice),
+      price: num(b.price),
       status,
       note: str(b.note),
       neededDate: dateOrNull(b.neededDate),
