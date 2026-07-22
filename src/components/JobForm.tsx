@@ -64,7 +64,10 @@ function initialState(job?: SerializedJob): JobFormState {
 
 type FieldErrors = Record<string, string[] | undefined>
 
-export function JobForm({ job, hospitals, users, productTypes, provinces }: { job?: SerializedJob; hospitals: HospitalOption[]; users: UserOption[]; productTypes: string[]; provinces: string[] }) {
+type ReportUnit = { serialNo: string; items: { label: string; serialNo: string }[] }
+type JobReport = { hospitalName: string; units: ReportUnit[] }
+
+export function JobForm({ job, hospitals, users, productTypes, provinces, report }: { job?: SerializedJob; hospitals: HospitalOption[]; users: UserOption[]; productTypes: string[]; provinces: string[]; report?: JobReport }) {
   const router = useRouter()
   const isEdit = Boolean(job)
   const [form, setForm] = useState<JobFormState>(() => initialState(job))
@@ -195,6 +198,68 @@ export function JobForm({ job, hospitals, users, productTypes, provinces }: { jo
 
   function restoreJob() {
     setStatus('DATA_ENTRY', () => router.refresh())
+  }
+
+  // Build a print-ready Word (.doc) delivery-note report from the saved job data.
+  // Read-only — it never writes to the job; it only reads the stored record.
+  function downloadReport() {
+    if (!job || !report) return
+    const esc = (v: string | null | undefined) =>
+      (v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const title = `ติดตั้ง ${esc(job.productType)}`.trim()
+    const hospital = esc(report.hospitalName)
+    const province = esc(job.province)
+    const contractNo = esc(job.contractNo) || '-'
+    // A job may hold several BMS units — one bordered table (installation sheet) each.
+    const units = report.units.length ? report.units : [{ serialNo: '', items: [] as ReportUnit['items'] }]
+
+    const blocks = units.map((u, ui) => {
+      const bodyRows = u.items.length
+        ? u.items.map((it, i) => `<tr>
+            <td class="c">${i + 1}</td>
+            <td>${esc(it.label)}</td>
+            <td>${esc(it.serialNo) || '&nbsp;'}</td>
+          </tr>`).join('')
+        : `<tr><td class="c">1</td><td>&nbsp;</td><td>&nbsp;</td></tr>`
+      return `<table class="sheet"${ui > 0 ? ' style="page-break-before:always"' : ''}>
+        <tr><td colspan="3" class="title">${title}</td></tr>
+        <tr>
+          <td colspan="2" class="hd">โรงพยาบาล ${hospital || '&nbsp;'}&nbsp;&nbsp;&nbsp;&nbsp;จังหวัด ${province || '&nbsp;'}</td>
+          <td class="hd">เลขที่สัญญา/PO<br>${contractNo}</td>
+        </tr>
+        <tr><td colspan="3" class="hd">BMS Serial : ${esc(u.serialNo) || '-'}</td></tr>
+        <tr class="head"><td class="c">ลำดับ</td><td class="c">รายการ</td><td class="c">S/N</td></tr>
+        ${bodyRows}
+      </table>`
+    }).join('<p class="gap">&nbsp;</p>')
+
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>
+  @page { size: A4; margin: 1.6cm 1.4cm; }
+  body { font-family: 'TH Sarabun New','Sarabun','Angsana New',sans-serif; font-size: 16pt; color: #000; }
+  table.sheet { border-collapse: collapse; width: 100%; }
+  table.sheet td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+  td.title { text-align: center; font-weight: bold; font-size: 18pt; padding: 8px; }
+  td.hd { font-size: 15pt; }
+  tr.head td { background: #EFEFEF; font-weight: bold; text-align: center; }
+  td.c { text-align: center; }
+  table.sheet tr.head td:nth-child(1) { width: 12%; }
+  table.sheet tr.head td:nth-child(3) { width: 34%; }
+  p.gap { margin: 14px 0; }
+</style></head>
+<body>${blocks}</body></html>`
+
+    const safe = (report.hospitalName || job.jobCode || 'job').replace(/[\\/:*?"<>|]+/g, '_').trim()
+    const blob = new Blob(['﻿', html], { type: 'application/msword' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ใบส่งของ-${safe}.doc`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   const err = (field: string) => fieldErrors[field]?.[0]
@@ -335,6 +400,16 @@ export function JobForm({ job, hospitals, users, productTypes, provinces }: { jo
         </div>
 
         {formError && <div className="text-sm text-[#C13540] font-medium">{formError}</div>}
+
+        {isEdit && report && (
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={downloadReport}
+              className="flex items-center gap-1.5 bg-[#1B5FD9] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#164FB3]">
+              📄 รายงานขอใบส่งของ
+            </button>
+            <span className="text-[12.5px] text-[#8492A6]">ดาวน์โหลดไฟล์ Word (.doc) พร้อมปริ้น — ไม่กระทบข้อมูลงาน</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <button type="submit" disabled={saving} className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
