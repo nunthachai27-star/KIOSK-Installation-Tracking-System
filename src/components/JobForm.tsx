@@ -340,7 +340,7 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
               {err('province') && <p className="text-xs text-[#C13540] mt-1">{err('province')}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#5A6B82] mb-1">รหัสสถานพยาบาล <span className="font-normal text-[#8492A6]">(ใช้ร่วมกับหน้า QC)</span></label>
+              <label className="block text-sm font-semibold text-[#5A6B82] mb-1">รหัสสถานพยาบาล</label>
               <input value={hospitalCode} onChange={e => { setHospitalCode(e.target.value); setSaved(false) }} placeholder="เช่น 10985"
                 className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
             </div>
