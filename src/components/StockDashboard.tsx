@@ -60,11 +60,14 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
     }))
     .filter((g) => g.products.length > 0), [groups, group, ql, level])
 
+  // Proportion of received that is issued / borrowed / remaining (for the KPI bar).
+  const base = Math.max(1, kpi.received)
+  const pct = (n: number) => `${(n / base) * 100}%`
   const cards = [
-    { icon: '📥', bg: '#E4EEFF', label: 'รับเข้ารวม', value: kpi.received, sub: 'ชิ้น', color: '#1C1917' },
-    { icon: '📤', bg: '#F3EEFF', label: 'จ่ายออกแล้ว', value: kpi.issued, sub: 'ชิ้น', color: '#1C1917' },
-    { icon: '📦', bg: '#E2F3EA', label: 'คงเหลือในคลัง', value: kpi.remaining, sub: kpi.borrowed > 0 ? `ถูกยืมอยู่ ${nf.format(kpi.borrowed)} ชิ้น` : 'ชิ้น', color: '#157F4C' },
-    { icon: '⚠️', bg: '#FBE4E4', label: 'ใกล้หมด / หมด', value: kpi.low + kpi.out, sub: `ใกล้หมด ${nf.format(kpi.low)} · หมด ${nf.format(kpi.out)}`, color: kpi.low + kpi.out > 0 ? '#C13540' : '#1C1917' },
+    { icon: '📥', bg: '#E4EEFF', label: 'รับเข้ารวม', value: kpi.received, sub: 'ชิ้น', color: '#1C1917', bar: false },
+    { icon: '📤', bg: '#F3EEFF', label: 'จ่ายออกแล้ว', value: kpi.issued, sub: 'ชิ้น', color: '#1C1917', bar: false },
+    { icon: '📦', bg: '#E2F3EA', label: 'คงเหลือในคลัง', value: kpi.remaining, sub: kpi.borrowed > 0 ? `ถูกยืมอยู่ ${nf.format(kpi.borrowed)} ชิ้น` : 'ชิ้น', color: '#157F4C', bar: true },
+    { icon: '⚠️', bg: '#FBE4E4', label: 'ใกล้หมด / หมด', value: kpi.low + kpi.out, sub: `ใกล้หมด ${nf.format(kpi.low)} · หมด ${nf.format(kpi.out)}`, color: kpi.low + kpi.out > 0 ? '#C13540' : '#1C1917', bar: false },
   ]
 
   return (
@@ -72,13 +75,22 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="ds-card ds-hover px-5 py-4 flex items-center gap-3.5">
-            <span className="w-12 h-12 rounded-2xl grid place-items-center text-[22px] shrink-0" style={{ background: c.bg }}>{c.icon}</span>
-            <div className="min-w-0">
-              <div className="text-[12px] font-semibold text-[#8492A6] truncate">{c.label}</div>
-              <div className="text-[26px] leading-none font-bold tnum mt-1" style={{ color: c.color }}>{nf.format(c.value)}</div>
-              <div className="text-[11px] text-[#A8A29E] mt-0.5">{c.sub}</div>
+          <div key={c.label} className="ds-card ds-hover px-5 py-4 flex flex-col gap-2.5">
+            <div className="flex items-center gap-3.5">
+              <span className="w-12 h-12 rounded-2xl grid place-items-center text-[22px] shrink-0" style={{ background: c.bg }}>{c.icon}</span>
+              <div className="min-w-0">
+                <div className="text-[12px] font-semibold text-[#8492A6] truncate">{c.label}</div>
+                <div className="text-[26px] leading-none font-bold tnum mt-1" style={{ color: c.color }}>{nf.format(c.value)}</div>
+                <div className="text-[11px] text-[#A8A29E] mt-0.5">{c.sub}</div>
+              </div>
             </div>
+            {c.bar && (
+              <div className="flex h-1.5 rounded-full overflow-hidden bg-[#EDF0F5]" title={`จ่ายออก ${nf.format(kpi.issued)} · ถูกยืม ${nf.format(kpi.borrowed)} · คงเหลือ ${nf.format(kpi.remaining)}`}>
+                <span className="h-full" style={{ width: pct(kpi.issued), background: '#6D28D9' }} />
+                {kpi.borrowed > 0 && <span className="h-full" style={{ width: pct(kpi.borrowed), background: '#1B5FD9' }} />}
+                <span className="h-full" style={{ width: pct(kpi.remaining), background: '#157F4C' }} />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -173,12 +185,22 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
         </div>
       ) : filtered.map((g) => (
         <div key={g.group} className="ds-card overflow-hidden">
-          <div className="flex items-center justify-between gap-2 flex-wrap px-4 md:px-5 py-3 bg-[#FBFAF8] border-b border-[#F1F3F6]">
-            <div className="text-[14px] font-bold text-[#1C1917]">{g.group}</div>
-            <div className="flex items-center gap-3 md:gap-4 text-[12px]">
-              <span className="text-[#8492A6]">รับ <b className="text-[#1C1917] tnum">{nf.format(g.received)}</b></span>
-              <span className="text-[#8492A6]">จ่าย <b className="text-[#6D28D9] tnum">{nf.format(g.issued)}</b></span>
-              <span className="text-[#8492A6]">เหลือ <b className="text-[#157F4C] tnum">{nf.format(g.remaining)}</b></span>
+          <div className="px-4 md:px-5 pt-3.5 pb-3 bg-[#FBFAF8] border-b border-[#F1F3F6]">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-5 rounded-full bg-[#EA580C]" />
+                <span className="text-[14px] font-bold text-[#1C1917]">{g.group}</span>
+                <span className="text-[11px] font-semibold text-[#5A6B82] bg-white border border-[#EEF1F5] rounded-full px-2 py-0.5">{g.products.length} รุ่น</span>
+              </div>
+              <div className="flex items-center gap-3 md:gap-4 text-[12px]">
+                <span className="text-[#8492A6]">รับ <b className="text-[#1C1917] tnum">{nf.format(g.received)}</b></span>
+                <span className="text-[#8492A6]">จ่าย <b className="text-[#6D28D9] tnum">{nf.format(g.issued)}</b></span>
+                <span className="text-[#8492A6]">เหลือ <b className="text-[#157F4C] tnum">{nf.format(g.remaining)}</b></span>
+              </div>
+            </div>
+            <div className="flex h-2 rounded-full overflow-hidden bg-[#EDF0F5] mt-2.5" title={`จ่ายออก ${nf.format(g.issued)} · คงเหลือ ${nf.format(g.remaining)}`}>
+              <span className="h-full" style={{ width: `${(g.issued / Math.max(1, g.received)) * 100}%`, background: '#6D28D9' }} />
+              <span className="h-full" style={{ width: `${(g.remaining / Math.max(1, g.received)) * 100}%`, background: '#157F4C' }} />
             </div>
           </div>
           <div className="hidden md:grid grid-cols-[1fr_84px_84px_84px_120px] gap-2 px-5 py-2 text-[11px] font-semibold text-[#A8A29E] border-b border-[#F1F3F6]">
@@ -197,10 +219,18 @@ function ProductRow({ p }: { p: ProductSummary }) {
   return (
     <div className="border-b border-[#F7F8FA] last:border-0">
       <button onClick={() => setOpen((v) => !v)} className="w-full text-left px-4 md:px-5 py-2.5 hover:bg-[#FBFAF8] grid grid-cols-1 gap-1 md:grid-cols-[1fr_84px_84px_84px_120px] md:gap-2 md:items-center">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className={`text-[#A8A29E] text-[11px] shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
-          <span className="text-[13px] font-semibold text-[#1C1917] truncate">{p.name}</span>
-          <span className="text-[11px] text-[#A8A29E] shrink-0">· {p.lots.length} lot</span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`text-[#A8A29E] text-[11px] shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
+            <span className="text-[13px] font-semibold text-[#1C1917] truncate">{p.name}</span>
+            <span className="text-[11px] text-[#A8A29E] shrink-0">· {p.lots.length} lot</span>
+          </div>
+          {/* stock-level bar (remaining ÷ received) — visual only */}
+          <div className="hidden md:block mt-1.5 pl-5">
+            <span className="block w-full max-w-[190px] h-1.5 rounded-full bg-[#EDF0F5] overflow-hidden">
+              <span className="block h-full rounded-full" style={{ width: `${(p.remaining / Math.max(1, p.received)) * 100}%`, background: meta.color }} />
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pl-5 md:pl-0 md:contents text-[12.5px]">
           <span className="tnum text-[#3C4A5E] md:text-right md:text-[13px]"><span className="text-[#8492A6] md:hidden">รับ </span>{nf.format(p.received)}</span>
