@@ -198,10 +198,6 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
                 <span className="text-[#8492A6]">เหลือ <b className="text-[#157F4C] tnum">{nf.format(g.remaining)}</b></span>
               </div>
             </div>
-            <div className="flex h-2 rounded-full overflow-hidden bg-[#EDF0F5] mt-2.5" title={`จ่ายออก ${nf.format(g.issued)} · คงเหลือ ${nf.format(g.remaining)}`}>
-              <span className="h-full" style={{ width: `${(g.issued / Math.max(1, g.received)) * 100}%`, background: '#6D28D9' }} />
-              <span className="h-full" style={{ width: `${(g.remaining / Math.max(1, g.received)) * 100}%`, background: '#157F4C' }} />
-            </div>
           </div>
           <div className="hidden md:grid grid-cols-[1fr_84px_84px_84px_120px] gap-2 px-5 py-2 text-[11px] font-semibold text-[#A8A29E] border-b border-[#F1F3F6]">
             <div>รุ่น / อุปกรณ์</div><div className="text-right">รับเข้า</div><div className="text-right">จ่ายออก</div><div className="text-right">คงเหลือ</div><div className="text-right pr-1">สถานะ</div>
@@ -219,18 +215,10 @@ function ProductRow({ p }: { p: ProductSummary }) {
   return (
     <div className="border-b border-[#F7F8FA] last:border-0">
       <button onClick={() => setOpen((v) => !v)} className="w-full text-left px-4 md:px-5 py-2.5 hover:bg-[#FBFAF8] grid grid-cols-1 gap-1 md:grid-cols-[1fr_84px_84px_84px_120px] md:gap-2 md:items-center">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className={`text-[#A8A29E] text-[11px] shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
-            <span className="text-[13px] font-semibold text-[#1C1917] truncate">{p.name}</span>
-            <span className="text-[11px] text-[#A8A29E] shrink-0">· {p.lots.length} lot</span>
-          </div>
-          {/* stock-level bar (remaining ÷ received) — visual only */}
-          <div className="hidden md:block mt-1.5 pl-5">
-            <span className="block w-full max-w-[190px] h-1.5 rounded-full bg-[#EDF0F5] overflow-hidden">
-              <span className="block h-full rounded-full" style={{ width: `${(p.remaining / Math.max(1, p.received)) * 100}%`, background: meta.color }} />
-            </span>
-          </div>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`text-[#A8A29E] text-[11px] shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
+          <span className="text-[13px] font-semibold text-[#1C1917] truncate">{p.name}</span>
+          <span className="text-[11px] text-[#A8A29E] shrink-0">· {p.lots.length} lot</span>
         </div>
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pl-5 md:pl-0 md:contents text-[12.5px]">
           <span className="tnum text-[#3C4A5E] md:text-right md:text-[13px]"><span className="text-[#8492A6] md:hidden">รับ </span>{nf.format(p.received)}</span>
