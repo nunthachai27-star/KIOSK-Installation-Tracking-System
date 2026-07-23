@@ -17,6 +17,42 @@ export function countPlanned(): Promise<number> {
   return prisma.job.count({ where: { isPlanned: true } })
 }
 
+// Monthly order-count + revenue for the dashboard charts.
+// Orders are bucketed by createdAt (วันลงข้อมูลงาน), signed jobs only (planned
+// excluded for now), cancelled excluded. Read-only aggregation — touches nothing.
+export type DashboardData = {
+  years: number[]      // CE years present in data, newest first
+  year: number         // the selected/effective year (CE)
+  orders: number[]     // 12 entries, index 0 = January
+  revenue: number[]    // 12 entries, baht
+}
+const TH_OFFSET_MS = 7 * 60 * 60 * 1000 // bucket by Asia/Bangkok local month
+
+export async function getDashboardData(selectedYearCE?: number): Promise<DashboardData> {
+  const jobs = await prisma.job.findMany({
+    where: { isPlanned: false, currentStatus: { not: 'CANCELLED' } },
+    select: { createdAt: true, salesAmount: true },
+  })
+
+  const yearsSet = new Set<number>()
+  const byYear = new Map<number, { orders: number[]; revenue: number[] }>()
+  for (const j of jobs) {
+    const th = new Date(j.createdAt.getTime() + TH_OFFSET_MS)
+    const y = th.getUTCFullYear()
+    const m = th.getUTCMonth()
+    yearsSet.add(y)
+    let b = byYear.get(y)
+    if (!b) { b = { orders: Array(12).fill(0), revenue: Array(12).fill(0) }; byYear.set(y, b) }
+    b.orders[m] += 1
+    b.revenue[m] += Number(j.salesAmount)
+  }
+
+  const years = [...yearsSet].sort((a, b) => b - a)
+  const year = selectedYearCE && yearsSet.has(selectedYearCE) ? selectedYearCE : (years[0] ?? new Date().getFullYear())
+  const data = byYear.get(year) ?? { orders: Array(12).fill(0), revenue: Array(12).fill(0) }
+  return { years, year, orders: data.orders, revenue: data.revenue }
+}
+
 export async function getProductTypes(): Promise<string[]> {
   const rows = await prisma.job.findMany({
     distinct: ['productType'],
