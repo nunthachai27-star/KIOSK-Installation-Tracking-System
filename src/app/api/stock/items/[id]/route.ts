@@ -18,15 +18,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.color !== undefined) data.color = clean(body.color)
   if (!Object.keys(data).length) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
 
-  // Prevent duplicate Serial NO. within the same product (across its lots).
-  if (data.serialNo) {
-    const item = await prisma.stockItem.findUnique({ where: { id }, select: { lot: { select: { productId: true } } } })
+  // Serial NO. edits are guarded: once a unit is issued it must stay locked,
+  // and a new value must not duplicate another unit of the same product.
+  if (body.serialNo !== undefined) {
+    const item = await prisma.stockItem.findUnique({ where: { id }, select: { status: true, lot: { select: { productId: true } } } })
     if (!item) return NextResponse.json({ error: 'not found' }, { status: 404 })
-    const dup = await prisma.stockItem.findFirst({
-      where: { id: { not: id }, serialNo: { equals: data.serialNo, mode: 'insensitive' }, lot: { productId: item.lot.productId } },
-      select: { id: true },
-    })
-    if (dup) return NextResponse.json({ error: 'duplicate', message: `เลข Serial "${data.serialNo}" มีในสินค้านี้แล้ว` }, { status: 409 })
+    // Locked: an issued unit's Serial NO. cannot be changed or cleared.
+    if (item.status === 'ISSUED') {
+      return NextResponse.json({ error: 'locked', message: 'รายการนี้จ่ายออกแล้ว — แก้ไข/ลบ Serial NO. ไม่ได้' }, { status: 409 })
+    }
+    if (data.serialNo) {
+      const dup = await prisma.stockItem.findFirst({
+        where: { id: { not: id }, serialNo: { equals: data.serialNo, mode: 'insensitive' }, lot: { productId: item.lot.productId } },
+        select: { id: true },
+      })
+      if (dup) return NextResponse.json({ error: 'duplicate', message: `เลข Serial "${data.serialNo}" มีในสินค้านี้แล้ว` }, { status: 409 })
+    }
   }
 
   const updated = await prisma.stockItem.update({ where: { id }, data }).catch(() => null)

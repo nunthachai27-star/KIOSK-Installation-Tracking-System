@@ -68,7 +68,7 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
         ))}
       </div>
 
-      <div className="text-[12.5px] text-[#8492A6]">พบ {nf.format(filtered.length)} เครื่อง · <span className="text-[#A8A29E]">คลิกช่อง Serial NO. / สี เพื่อแก้ไข · กด 📷 สแกนบาร์โค้ด/QR (มือถือ) เพื่อลดกรอกผิด · S/N BMS กำหนดอัตโนมัติเมื่อจ่ายออก</span></div>
+      <div className="text-[12.5px] text-[#8492A6]">พบ {nf.format(filtered.length)} เครื่อง · <span className="text-[#A8A29E]">คลิกช่อง Serial NO. / สี เพื่อแก้ไข · กด 📷 สแกนบาร์โค้ด/QR (มือถือ) เพื่อลดกรอกผิด · S/N BMS กำหนดอัตโนมัติเมื่อจ่ายออก · 🔒 รายการที่จ่ายออกแล้วจะล็อก Serial NO. แก้ไข/ลบไม่ได้</span></div>
 
       {/* table */}
       <div className="ds-card overflow-x-auto">
@@ -129,7 +129,13 @@ function StockItemRow({ it, onPatched }: { it: Item; onPatched: (p: Partial<Reco
           ? <span className="font-bold tnum text-[#1C1917]">{it.serialBMS}</span>
           : <span className="text-[#C7CDD6] text-[12px]" title="S/N BMS กำหนดอัตโนมัติเมื่อจ่ายออกให้โรงพยาบาล (สร้างงาน)">— รอจ่ายออก</span>}
       </td>
-      <td className="px-1.5 py-1"><EditCell value={it.serialNo} placeholder="เพิ่มเลขเครื่อง" tnum scan onSave={(v) => save('serialNo', v)} /></td>
+      <td className="px-1.5 py-1">
+        {it.status === 'ISSUED'
+          ? <span className="flex items-center gap-1 px-2 py-1 text-[13px] tnum text-[#1C1917]" title="จ่ายออกแล้ว — ล็อก Serial NO. (แก้ไข/ลบไม่ได้)">
+              {it.serialNo ?? '—'}<span className="text-[#B8B2AC] text-[11px]">🔒</span>
+            </span>
+          : <EditCell value={it.serialNo} placeholder="เพิ่มเลขเครื่อง" tnum scan onSave={(v) => save('serialNo', v)} />}
+      </td>
       <td className="px-1.5 py-1"><EditCell value={it.color} placeholder="เพิ่มสี" onSave={(v) => save('color', v)} /></td>
       <td className="px-3 py-1.5">
         <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ background: st.bg, color: st.color }}>{st.label}</span>
