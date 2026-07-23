@@ -6,7 +6,7 @@ import type { SerializedJob } from '@/lib/serialize'
 import { withCurrent } from '@/lib/options'
 import { Combobox } from '@/components/Combobox'
 
-type HospitalOption = Pick<Hospital, 'id' | 'name' | 'province'>
+type HospitalOption = Pick<Hospital, 'id' | 'name' | 'province' | 'code'>
 type UserOption = Pick<User, 'id' | 'name' | 'role'>
 
 function toDateInput(v: Date | string | null | undefined): string {
@@ -72,6 +72,11 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
   const isEdit = Boolean(job)
   const [form, setForm] = useState<JobFormState>(() => initialState(job))
   const [hospitalOpts, setHospitalOpts] = useState<HospitalOption[]>(hospitals)
+  // รหัสสถานพยาบาล lives on the Hospital (shared with the QC step). Track the
+  // loaded value so we only write it back when the user actually changes it.
+  const initialCode = hospitals.find(h => h.id === (job?.hospitalId ?? ''))?.code ?? ''
+  const [hospitalCode, setHospitalCode] = useState<string>(initialCode)
+  const [hospitalCodeOrig, setHospitalCodeOrig] = useState<string>(initialCode)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [formError, setFormError] = useState('')
@@ -88,6 +93,9 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
   function onHospitalChange(hospitalId: string) {
     const h = hospitalOpts.find(h => h.id === hospitalId)
     setForm(f => ({ ...f, hospitalId, province: h ? h.province : f.province }))
+    // Load the chosen hospital's facility code into the field.
+    setHospitalCode(h?.code ?? '')
+    setHospitalCodeOrig(h?.code ?? '')
     setSaved(false)
   }
 
@@ -99,8 +107,10 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
     })
     if (!res.ok) { setFormError('เพิ่มโรงพยาบาลไม่สำเร็จ'); return }
     const h = await res.json() as HospitalOption
-    setHospitalOpts(prev => (prev.some(p => p.id === h.id) ? prev : [...prev, { id: h.id, name: h.name, province: h.province }]))
+    setHospitalOpts(prev => (prev.some(p => p.id === h.id) ? prev : [...prev, { id: h.id, name: h.name, province: h.province, code: h.code ?? null }]))
     setForm(f => ({ ...f, hospitalId: h.id, province: h.province || f.province }))
+    // New hospital has no code yet — keep whatever the user typed so it saves on submit.
+    setHospitalCodeOrig('')
     setSaved(false)
   }
 
@@ -155,6 +165,18 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
       }
 
       const created = await res.json()
+
+      // Persist รหัสสถานพยาบาล onto the hospital (shared with the QC step) —
+      // only when it actually changed, so an untouched blank never wipes an
+      // existing code. Never blocks the job save.
+      if (form.hospitalId && hospitalCode !== hospitalCodeOrig) {
+        await fetch(`/api/hospitals/${form.hospitalId}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: hospitalCode || null }),
+        }).catch(() => {})
+        setHospitalCodeOrig(hospitalCode)
+      }
+
       if (isEdit) {
         setSaved(true)
         router.refresh()
@@ -316,6 +338,11 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
                 {withCurrent(provinces, form.province).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
               {err('province') && <p className="text-xs text-[#C13540] mt-1">{err('province')}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5A6B82] mb-1">รหัสสถานพยาบาล <span className="font-normal text-[#8492A6]">(ใช้ร่วมกับหน้า QC)</span></label>
+              <input value={hospitalCode} onChange={e => { setHospitalCode(e.target.value); setSaved(false) }} placeholder="เช่น 10985"
+                className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ประเภทสินค้า</label>
