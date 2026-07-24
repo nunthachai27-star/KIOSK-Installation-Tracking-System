@@ -55,6 +55,7 @@ export async function POST(req: Request) {
       machineSerial: mSerial,
       hospitalName: hName,
       productType: typeof body.productType === 'string' && body.productType.trim() ? body.productType.trim() : null,
+      equipment: typeof body.equipment === 'string' && body.equipment.trim() ? body.equipment.trim() : null,
       title: title.trim(),
       solution: initialSolution,
       status: initialStatus,

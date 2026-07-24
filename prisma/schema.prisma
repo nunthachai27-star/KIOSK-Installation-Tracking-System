@@ -327,6 +327,7 @@ model Issue {
   hospitalName  String?  // free-text hospital when not linked to a job
   machineSerial String?  // raw S/N BMS text when not linked to a SerialNumber
   productType   String?  // product line for standalone claims (job-linked ones use job.productType)
+  equipment  String?     // รายการอุปกรณ์ที่เคลม (เลือกจากตั้งค่า EQUIPMENT_ITEM)
   issueType  IssueType   @default(CLAIM)
   title      String
   solution   String?

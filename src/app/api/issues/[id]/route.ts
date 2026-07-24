@@ -38,8 +38,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     title?: string; solution?: string | null; status?: IssueStatus
     warrantyState?: IssueWarranty; method?: IssueMethod | null
     failedSerial?: string | null; replacementSerial?: string | null; cost?: number | null
-    assignedToId?: string | null
+    assignedToId?: string | null; productType?: string | null; equipment?: string | null
   } = {}
+  if (body.productType !== undefined) data.productType = typeof body.productType === 'string' && body.productType.trim() ? body.productType.trim() : null
+  if (body.equipment !== undefined) data.equipment = typeof body.equipment === 'string' && body.equipment.trim() ? body.equipment.trim() : null
   if (body.assignedToId !== undefined) data.assignedToId = typeof body.assignedToId === 'string' && body.assignedToId ? body.assignedToId : null
   if (typeof body.title === 'string' && body.title.trim()) data.title = body.title.trim()
   if (typeof body.solution === 'string') data.solution = body.solution.trim() || null

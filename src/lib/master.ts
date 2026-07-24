@@ -5,6 +5,7 @@ export const MASTER_CATEGORIES = [
   { key: 'PRODUCT_TYPE', label: 'ประเภทสินค้า' },
   { key: 'PROVINCE', label: 'จังหวัด' },
   { key: 'COLOR', label: 'สี' },
+  { key: 'EQUIPMENT_ITEM', label: 'รายการอุปกรณ์ (เคลม)' },
 ] as const
 
 export type MasterCategory = (typeof MASTER_CATEGORIES)[number]['key']

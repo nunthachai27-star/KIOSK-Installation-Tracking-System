@@ -1,9 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import { IssueManager } from '@/components/IssueManager'
-import { getJobFormOptions } from '@/lib/master'
+import { getJobFormOptions, getMasterValues } from '@/lib/master'
 
 export default async function IssuesPage() {
-  const { productTypes: masterProductTypes } = await getJobFormOptions()
+  const [{ productTypes: masterProductTypes }, equipmentOptions] = await Promise.all([
+    getJobFormOptions(),
+    getMasterValues('EQUIPMENT_ITEM'),
+  ])
   const [issues, serials, spareParts, users, stat30] = await Promise.all([
     prisma.issue.findMany({
       include: {
@@ -65,6 +68,7 @@ export default async function IssuesPage() {
     hospital: i.job?.hospital.name ?? i.hospitalName ?? '—',
     jobCode: i.job?.jobCode ?? null,
     productType: i.job?.productType ?? i.productType ?? null,
+    equipment: i.equipment ?? null,
     title: i.title,
     solution: i.solution,
     status: i.status,
@@ -95,7 +99,7 @@ export default async function IssuesPage() {
       </div>
       <IssueManager serials={serialOpts} initial={items} spareParts={spareOpts} users={users} stats={stats}
         productTypes={[...new Set(items.map((i) => i.productType).filter((p): p is string => !!p))].sort()}
-        productTypeOptions={masterProductTypes} />
+        productTypeOptions={masterProductTypes} equipmentOptions={equipmentOptions} />
     </div>
   )
 }
