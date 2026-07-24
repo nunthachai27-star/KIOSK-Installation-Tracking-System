@@ -62,12 +62,13 @@ function StatusCard({ active, label, n, color, onClick }: { active: boolean; lab
   )
 }
 
-export function IssueManager({ serials, initial, productTypes, spareParts, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; spareParts: SpareOpt[]; users: UserOpt[]; stats: ClaimStats }) {
+export function IssueManager({ serials, initial, productTypes, productTypeOptions, spareParts, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; spareParts: SpareOpt[]; users: UserOpt[]; stats: ClaimStats }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   // Keep in sync with the server after router.refresh() so the timeline/claim data reflect updates.
   useEffect(() => { setItems(initial) }, [initial])
   const [issueType, setIssueType] = useState<IssueType>('CLAIM')
+  const [prodType, setProdType] = useState('') // ประเภทสินค้า (เลือกจากตั้งค่า)
   const [serialId, setSerialId] = useState('')
   const [manualSerial, setManualSerial] = useState(false) // S/N ไม่พบในระบบ → พิมพ์เอง
   const [manualSerialText, setManualSerialText] = useState('')
@@ -94,7 +95,7 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
   const isClaim = issueType === 'CLAIM'
 
   function resetForm() {
-    setSerialId(''); setManualSerial(false); setManualSerialText(''); setManualHospital('')
+    setProdType(''); setSerialId(''); setManualSerial(false); setManualSerialText(''); setManualHospital('')
     setTitle(''); setSolution(''); setStatus('RECEIVED'); setWarranty('UNKNOWN')
     setMethod(''); setFailedSerial(''); setReplacementSerial(''); setCost(''); setErr('')
   }
@@ -106,6 +107,8 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
     setSerialId(id)
     const s = serials.find((x) => x.id === id)
     setWarranty(s ? warrantyStateFrom(s.warrantyEndDate) : 'UNKNOWN')
+    // Auto-fill product type from the picked unit's job (still editable).
+    if (s?.productType) setProdType(s.productType)
   }
 
   async function add() {
@@ -116,8 +119,8 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
     setSaving(true); setErr('')
     try {
       const body = usePicked
-        ? { issueType, serialId, title, solution, status, warrantyState: warranty, method: method || null, failedSerial, replacementSerial, cost }
-        : { issueType, machineSerial: isClaim ? manualSerialText : null, hospitalName: manualHospital, title, solution, status,
+        ? { issueType, productType: prodType || null, serialId, title, solution, status, warrantyState: warranty, method: method || null, failedSerial, replacementSerial, cost }
+        : { issueType, productType: prodType || null, machineSerial: isClaim ? manualSerialText : null, hospitalName: manualHospital, title, solution, status,
             warrantyState: isClaim ? warranty : 'UNKNOWN', method: isClaim ? (method || null) : null,
             failedSerial: isClaim ? failedSerial : null, replacementSerial: isClaim ? replacementSerial : null, cost: isClaim ? cost : null }
       const res = await fetch('/api/issues', {
@@ -129,7 +132,7 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
         id: crypto.randomUUID(), issueType,
         serialNo: usePicked ? s!.serialNo : (isClaim ? manualSerialText.trim() || null : null),
         hospital: usePicked ? s!.hospital : (manualHospital.trim() || '—'),
-        jobCode: usePicked ? s!.jobCode : null, productType: usePicked ? s!.productType : null,
+        jobCode: usePicked ? s!.jobCode : null, productType: prodType || (usePicked ? s!.productType : null),
         title: title.trim(), solution: solution.trim() || null, status,
         warrantyState: isClaim ? warranty : 'UNKNOWN', method: isClaim ? (method || null) : null,
         failedSerial: isClaim ? (failedSerial.trim() || null) : null, replacementSerial: isClaim ? (replacementSerial.trim() || null) : null,
@@ -256,6 +259,13 @@ export function IssueManager({ serials, initial, productTypes, spareParts, users
         </div>
 
         <div className="flex flex-col gap-3">
+          <div>
+            <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ประเภทสินค้า</label>
+            <select value={prodType} onChange={(e) => setProdType(e.target.value)} className={field}>
+              <option value="">— เลือกประเภทสินค้า —</option>
+              {[...new Set([...productTypeOptions, ...(prodType ? [prodType] : [])])].map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
           {isClaim ? (
             <div>
               <div className="flex items-center justify-between gap-2 mb-1.5">

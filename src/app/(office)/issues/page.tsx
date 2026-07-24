@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { IssueManager } from '@/components/IssueManager'
+import { getJobFormOptions } from '@/lib/master'
 
 export default async function IssuesPage() {
+  const { productTypes: masterProductTypes } = await getJobFormOptions()
   const [issues, serials, spareParts, users, stat30] = await Promise.all([
     prisma.issue.findMany({
       include: {
@@ -91,7 +93,9 @@ export default async function IssuesPage() {
         </h1>
         <p className="text-[13px] text-[#8492A6] mt-0.5">รับแจ้งเคลมตาม S/N BMS ของตู้ · ระบบตัดสินประกันอัตโนมัติจากวันเปิดบิล (+1 ปี) · บันทึก serial อุปกรณ์ที่เสีย/ที่ส่งเปลี่ยน วิธีดำเนินการ และค่าใช้จ่าย</p>
       </div>
-      <IssueManager serials={serialOpts} initial={items} spareParts={spareOpts} users={users} stats={stats} productTypes={[...new Set(items.map((i) => i.productType).filter((p): p is string => !!p))].sort()} />
+      <IssueManager serials={serialOpts} initial={items} spareParts={spareOpts} users={users} stats={stats}
+        productTypes={[...new Set(items.map((i) => i.productType).filter((p): p is string => !!p))].sort()}
+        productTypeOptions={masterProductTypes} />
     </div>
   )
 }
