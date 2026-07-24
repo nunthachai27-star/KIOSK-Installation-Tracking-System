@@ -32,6 +32,7 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
 
   const patchField = (id: string, patch: Partial<Record<EditField, string | null>>) =>
     setItems((x) => x.map((it) => (it.id === id ? { ...it, ...patch } : it)))
+  const dropItem = (id: string) => setItems((x) => x.filter((it) => it.id !== id))
 
   const ql = q.trim().toLowerCase()
   const filtered = useMemo(() => items.filter((i) => {
@@ -84,11 +85,12 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
               <th className="px-3 py-2.5 font-semibold">รับเข้า</th>
               <th className="px-3 py-2.5 font-semibold">จ่ายออก</th>
               <th className="px-3 py-2.5 font-semibold">ส่งถึง รพ.</th>
+              <th className="px-2 py-2.5 font-semibold" />
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={9} className="px-3 py-8 text-center text-[#8492A6]">ไม่พบรายการ</td></tr>}
-            {rows.map((it) => <StockItemRow key={it.id} it={it} onPatched={(p) => patchField(it.id, p)} />)}
+            {rows.length === 0 && <tr><td colSpan={10} className="px-3 py-8 text-center text-[#8492A6]">ไม่พบรายการ</td></tr>}
+            {rows.map((it) => <StockItemRow key={it.id} it={it} onPatched={(p) => patchField(it.id, p)} onDeleted={() => dropItem(it.id)} />)}
           </tbody>
         </table>
       </div>
@@ -106,8 +108,18 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
   )
 }
 
-function StockItemRow({ it, onPatched }: { it: Item; onPatched: (p: Partial<Record<EditField, string | null>>) => void }) {
+function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: Partial<Record<EditField, string | null>>) => void; onDeleted: () => void }) {
   const st = STATUS[it.status]
+  // A unit can only be removed while untouched: in stock and with no serial yet.
+  const canDelete = it.status === 'IN_STOCK' && !(it.serialNo ?? '').trim() && !(it.serialBMS ?? '').trim()
+
+  async function remove() {
+    if (!window.confirm(`ลบเครื่องนี้ออกจาก Lot ${it.lotCode}?\nลบได้เฉพาะรายการที่ยังไม่มี Serial NO. และยังไม่จ่ายออก`)) return
+    const res = await fetch(`/api/stock/items/${it.id}`, { method: 'DELETE' })
+    if (res.ok) { onDeleted(); return }
+    const d = await res.json().catch(() => null)
+    window.alert(d?.message || 'ลบไม่สำเร็จ')
+  }
 
   // Returns an error message on failure (e.g. duplicate serial), else null.
   async function save(field: EditField, value: string): Promise<string | null> {
@@ -158,6 +170,12 @@ function StockItemRow({ it, onPatched }: { it: Item; onPatched: (p: Partial<Reco
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.receivedDate)}</td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.issuedDate)}</td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.deliveredDate)}</td>
+      <td className="px-2 py-1.5 text-right whitespace-nowrap">
+        {canDelete && (
+          <button type="button" onClick={remove} title="ลบรายการนี้ (ยังไม่มี Serial NO. และยังไม่จ่ายออก)"
+            className="w-6 h-6 grid place-items-center rounded-md text-[12px] text-[#C4BFB9] hover:text-[#C13540] hover:bg-[#FBE4E4]">✕</button>
+        )}
+      </td>
     </tr>
   )
 }
