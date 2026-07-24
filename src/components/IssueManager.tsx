@@ -8,6 +8,9 @@ import {
   ISSUE_METHOD, ISSUE_WARRANTY, warrantyStateFrom,
 } from '@/lib/issue'
 
+const dFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })
+const fmtDate = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '—' : dFmt.format(d) }
+
 type SerialOpt = { id: string; serialNo: string; hospital: string; jobCode: string; productType: string; warrantyEndDate: string | null }
 type SpareOpt = { id: string; name: string; stockQty: number; sellPrice: number | null }
 type UserOpt = { id: string; name: string }
@@ -93,7 +96,8 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
   const [dateTo, setDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(true)
   const [formOpen, setFormOpen] = useState(false) // การแจ้งเคลม/ปัญหา อยู่ในป็อปอัพ กดปุ่มจึงเปิด
-  const [limit, setLimit] = useState(40) // render cap — the full list (412+) is too heavy to mount at once
+  const [detailId, setDetailId] = useState<string | null>(null) // แถวที่กดเปิดดูรายละเอียด (ป็อปอัพ)
+  const [limit, setLimit] = useState(20) // แสดงล่าสุด 20 รายการ — ที่เหลือค้นหาเอา
   const isClaim = issueType === 'CLAIM'
 
   function resetForm() {
@@ -204,8 +208,11 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
     ? bySearch.filter((i) => { const t = new Date(i.createdAt).getTime(); return (!fromT || t >= fromT) && (!toT || t <= toT) })
     : bySearch
   // Reset the render cap whenever the visible set changes (new filter/search).
-  useEffect(() => { setLimit(40) }, [filter, typeFilter, productFilter, search, dateFrom, dateTo])
-  const visible = shown.slice(0, limit)
+  useEffect(() => { setLimit(20) }, [filter, typeFilter, productFilter, search, dateFrom, dateTo])
+  // Newest report first, always.
+  const sorted = [...shown].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const visible = sorted.slice(0, limit)
+  const detailItem = detailId ? items.find((i) => i.id === detailId) ?? null : null
   const openCount = byType.filter((i) => (ISSUE_OPEN_STATUSES as IssueStatus[]).includes(i.status)).length
   // Only surface status chips that actually have records, to keep the filter compact.
   const statusChips = ISSUE_STATUS_ORDER.map((st) => ({ st, n: byType.filter((i) => i.status === st).length })).filter((c) => c.n > 0)
@@ -431,22 +438,39 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
         </div>
       )}
 
-      {/* list */}
-      <div className="flex flex-col gap-3">
-        {sq && <div className="text-[12.5px] text-[#8492A6]">พบ {shown.length} รายการที่ตรงกับ “{search.trim()}”</div>}
-        {shown.length === 0 && <div className="ds-card p-6 text-sm text-[#8492A6]">{sq ? 'ไม่พบรายการที่ค้นหา' : 'ไม่มีรายการ'}</div>}
-        {visible.map((it) => (
-          <IssueCard key={it.id} item={it} spareParts={spareParts} users={users} repeatCount={repeatOf(it)}
-            onShowHistory={() => setSearch(it.serialNo ?? '')} onPatch={(b) => patch(it.id, b)} onDelete={() => remove(it.id)}
-            onAddPart={(b) => addPart(it.id, b)} onRemovePart={(pid) => removePart(it.id, pid)} />
-        ))}
-        {shown.length > limit && (
-          <button onClick={() => setLimit((n) => n + 40)}
-            className="ds-card p-3.5 text-[13px] font-semibold text-[#EA580C] hover:bg-[#FFF7F2] text-center">
-            แสดงเพิ่มอีก 40 รายการ · เหลืออีก {shown.length - limit} รายการ (แสดงอยู่ {limit} จาก {shown.length})
+      {/* list — compact rows; click a row to open full detail/edit in a popup */}
+      <div className="flex flex-col gap-2">
+        <div className="text-[12.5px] text-[#8492A6]">
+          {sq
+            ? `พบ ${sorted.length} รายการที่ตรงกับ “${search.trim()}”`
+            : `ทั้งหมด ${byProduct.length} รายการ · แสดงล่าสุด ${Math.min(limit, sorted.length)} · พิมพ์ค้นหาเพื่อดูรายการอื่น`}
+        </div>
+        {sorted.length === 0 && <div className="ds-card p-6 text-sm text-[#8492A6]">{sq ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีรายการ'}</div>}
+        {visible.map((it) => <IssueRow key={it.id} item={it} onOpen={() => setDetailId(it.id)} />)}
+        {sorted.length > limit && (
+          <button onClick={() => setLimit((n) => n + 20)}
+            className="ds-card p-3 text-[13px] font-semibold text-[#EA580C] hover:bg-[#FFF7F2] text-center">
+            แสดงเพิ่มอีก 20 · เหลืออีก {sorted.length - limit} รายการ (แนะนำใช้ช่องค้นหา)
           </button>
         )}
       </div>
+
+      {/* detail / edit popup */}
+      {detailItem && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setDetailId(null) }}>
+          <div className="mx-auto my-4 w-full max-w-2xl">
+            <div className="flex items-center justify-between bg-white rounded-t-2xl px-4 py-3 border-b border-[#F1F3F6] shadow-[0_-1px_0_#E7EDF4]">
+              <div className="font-bold text-[15px] text-[#1C1917]">รายละเอียดเคลม / แก้ไข</div>
+              <button type="button" onClick={() => setDetailId(null)} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
+            </div>
+            <IssueCard item={detailItem} spareParts={spareParts} users={users} repeatCount={repeatOf(detailItem)}
+              onShowHistory={() => { setSearch(detailItem.serialNo ?? ''); setDetailId(null) }}
+              onPatch={(b) => patch(detailItem.id, b)} onDelete={() => { remove(detailItem.id); setDetailId(null) }}
+              onAddPart={(b) => addPart(detailItem.id, b)} onRemovePart={(pid) => removePart(detailItem.id, pid)} />
+          </div>
+        </div>
+      )}
       </div>
 
       {/* helper sidebar — warranty rule, 30-day claim activity, workflow steps (คอลัมน์ขวา) */}
@@ -495,6 +519,30 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       </aside>
       </div>
     </div>
+  )
+}
+
+// Compact list row — hospital first, then S/N + report date; opens the detail popup.
+function IssueRow({ item, onOpen }: { item: Item; onOpen: () => void }) {
+  const meta = ISSUE_STATUS[item.status]
+  return (
+    <button type="button" onClick={onOpen}
+      className="ds-card px-4 py-3 w-full text-left hover:bg-[#FBFAF8] flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[14px] font-bold text-[#1C1917] truncate">{item.hospital || '—'}</span>
+          {item.serialNo && <span className="tnum text-[12px] text-[#5A6B82]">S/N {item.serialNo}</span>}
+          <span className="text-[11.5px] text-[#A8A29E]">· {fmtDate(item.createdAt)}</span>
+        </div>
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          <span className="text-[11px]">{item.issueType === 'CLAIM' ? '🔧' : '📝'}</span>
+          {item.equipment && <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-[#EEF3FA] text-[#1B5FD9]">{item.equipment}</span>}
+          <span className="text-[12.5px] text-[#5A6B82] truncate">{item.title}</span>
+        </div>
+      </div>
+      <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0" style={{ background: meta.bg, color: meta.color }}>{meta.label}</span>
+      <span className="text-[#C4BFB9] shrink-0">›</span>
+    </button>
   )
 }
 
