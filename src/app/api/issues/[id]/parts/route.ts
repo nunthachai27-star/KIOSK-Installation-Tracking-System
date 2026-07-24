@@ -25,19 +25,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     stockProductId = prod.id
     name = prod.name
     unitPrice = prod.sellPrice?.toNumber() ?? null
-    if (b.deductStock) {
-      // Mark up-to-qty available units as issued (consumed for the repair).
-      const items = await prisma.stockItem.findMany({
-        where: { status: 'IN_STOCK', lot: { productId: prod.id } }, take: qty, select: { id: true },
-      })
-      if (items.length) {
-        await prisma.stockItem.updateMany({
-          where: { id: { in: items.map((i) => i.id) } },
-          data: { status: 'ISSUED', note: 'ตัดใช้ในเคลม', issuedDate: new Date() },
-        })
-        deducted = true
-      }
-    }
+    // Stock deduction from claims is disabled for now — record the part used,
+    // but never mark warehouse units as issued. (kept off intentionally)
+    void b.deductStock
   }
   if (!name) return NextResponse.json({ error: 'stockProductId or name required' }, { status: 400 })
 

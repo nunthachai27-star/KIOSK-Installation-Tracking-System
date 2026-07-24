@@ -513,7 +513,6 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
   const [loadingTl, setLoadingTl] = useState(false)
   const [partId, setPartId] = useState('')
   const [partQty, setPartQty] = useState('1')
-  const [deductStock, setDeductStock] = useState(true)
   const [copied, setCopied] = useState(false)
   const meta = ISSUE_STATUS[item.status]
 
@@ -644,11 +643,7 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
           </select>
           <input type="number" min={1} value={partQty} onChange={(e) => setPartQty(e.target.value)}
             className="w-16 border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
-          <label className="flex items-center gap-1 text-[11.5px] text-[#5A6B82]">
-            <input type="checkbox" checked={deductStock} onChange={(e) => setDeductStock(e.target.checked)} className="w-3.5 h-3.5 accent-[#EA580C]" />
-            ตัดสต็อก
-          </label>
-          <button disabled={!partId} onClick={() => { onAddPart({ stockProductId: partId, qty: Math.max(1, Number(partQty) || 1), deductStock }); setPartId(''); setPartQty('1') }}
+          <button disabled={!partId} onClick={() => { onAddPart({ stockProductId: partId, qty: Math.max(1, Number(partQty) || 1), deductStock: false }); setPartId(''); setPartQty('1') }}
             className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">＋ เพิ่ม</button>
         </div>
       </div>
