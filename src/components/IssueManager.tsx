@@ -66,7 +66,7 @@ function StatusCard({ active, label, n, color, onClick }: { active: boolean; lab
   )
 }
 
-export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentOptions, spareParts, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentOptions: string[]; spareParts: SpareOpt[]; users: UserOpt[]; stats: ClaimStats }) {
+export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, spareParts, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; spareParts: SpareOpt[]; users: UserOpt[]; stats: ClaimStats }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   // Keep in sync with the server after router.refresh() so the timeline/claim data reflect updates.
@@ -75,7 +75,6 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
   const [prodType, setProdType] = useState('') // ประเภทสินค้า (เลือกจากตั้งค่า)
   const [equipment, setEquipment] = useState('') // รายการอุปกรณ์ (เลือกจากตั้งค่า)
   const [serialId, setSerialId] = useState('')
-  const [manualSerial, setManualSerial] = useState(false) // S/N ไม่พบในระบบ → พิมพ์เอง
   const [manualSerialText, setManualSerialText] = useState('')
   const [manualHospital, setManualHospital] = useState('')
   const [title, setTitle] = useState('')
@@ -101,7 +100,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
   const isClaim = issueType === 'CLAIM'
 
   function resetForm() {
-    setProdType(''); setEquipment(''); setSerialId(''); setManualSerial(false); setManualSerialText(''); setManualHospital('')
+    setProdType(''); setEquipment(''); setSerialId(''); setManualSerialText(''); setManualHospital('')
     setTitle(''); setSolution(''); setStatus('RECEIVED'); setWarranty('UNKNOWN')
     setMethod(''); setFailedSerial(''); setReplacementSerial(''); setCost(''); setErr('')
   }
@@ -113,14 +112,13 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
     setSerialId(id)
     const s = serials.find((x) => x.id === id)
     setWarranty(s ? warrantyStateFrom(s.warrantyEndDate) : 'UNKNOWN')
-    // Auto-fill product type from the picked unit's job (still editable).
-    if (s?.productType) setProdType(s.productType)
+    // Fill the separate fields + product type from the picked unit (still editable).
+    if (s) { setManualSerialText(s.serialNo); setManualHospital(s.hospital); if (s.productType) setProdType(s.productType) }
   }
 
   async function add() {
-    const usePicked = isClaim && !manualSerial
-    if (usePicked && !serialId) { setErr('เลือก S/N BMS หรือกด “S/N ไม่พบในระบบ”'); return }
-    if (isClaim && manualSerial && !manualSerialText.trim() && !manualHospital.trim()) { setErr('พิมพ์ S/N หรือชื่อโรงพยาบาล'); return }
+    const usePicked = isClaim && !!serialId
+    if (isClaim && !serialId && !manualSerialText.trim() && !manualHospital.trim()) { setErr('ระบุโรงพยาบาลหรือ S/N BMS'); return }
     if (!title.trim()) { setErr('ระบุอาการ/รายละเอียดปัญหา'); return }
     setSaving(true); setErr('')
     try {
@@ -280,40 +278,37 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
             {isClaim && (
               <div>
                 <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">รายการอุปกรณ์</label>
-                <select value={equipment} onChange={(e) => setEquipment(e.target.value)} className={field}>
-                  <option value="">— เลือกรายการอุปกรณ์ —</option>
-                  {[...new Set([...equipmentOptions, ...(equipment ? [equipment] : [])])].map((p) => <option key={p} value={p}>{p}</option>)}
+                <select value={equipment} onChange={(e) => setEquipment(e.target.value)} className={field} disabled={!prodType}>
+                  <option value="">{prodType ? '— เลือกรายการอุปกรณ์ —' : '— เลือกประเภทสินค้าก่อน —'}</option>
+                  {[...new Set([...(equipmentByProduct[prodType] ?? []), ...(equipment ? [equipment] : [])])].map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
             )}
           </div>
           {isClaim ? (
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <label className="block text-sm font-semibold text-[#5A6B82]">S/N BMS (ตู้/เครื่อง)</label>
-                <button type="button" onClick={() => { setManualSerial((v) => !v); setSerialId('') }}
-                  className="text-[12px] font-semibold text-[#EA580C] hover:underline">
-                  {manualSerial ? '↩ เลือกจากรายการในระบบ' : 'S/N ไม่พบในระบบ? พิมพ์เอง'}
-                </button>
-              </div>
-              {manualSerial ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input value={manualSerialText} onChange={(e) => setManualSerialText(e.target.value)} placeholder="พิมพ์ S/N BMS / เลขเครื่อง" className={`${field} tnum`} />
-                  <input value={manualHospital} onChange={(e) => setManualHospital(e.target.value)} placeholder="ชื่อโรงพยาบาล" className={field} />
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">โรงพยาบาล</label>
+                  <input value={manualHospital} onChange={(e) => { setManualHospital(e.target.value); setSerialId('') }} placeholder="ชื่อโรงพยาบาล" className={field} />
                 </div>
-              ) : (
-                <>
-                  <Combobox value={serialId} onChange={onPickSerial} options={comboOpts} placeholder="พิมพ์ค้นหา S/N BMS หรือชื่อโรงพยาบาล…" />
-                  {selectedSerial && (
-                    <div className="mt-2 flex items-center gap-2 flex-wrap text-[12.5px] text-[#5A6B82]">
-                      <span>{selectedSerial.hospital} · {selectedSerial.productType}</span>
-                      <WarrantyBadge w={warrantyStateFrom(selectedSerial.warrantyEndDate)} />
-                      <span className="text-[#A8A29E]">(อัตโนมัติจากวันเปิดบิล +1 ปี)</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">S/N BMS (ตู้/เครื่อง)</label>
+                  <input value={manualSerialText} onChange={(e) => { setManualSerialText(e.target.value); setSerialId('') }} placeholder="พิมพ์ S/N BMS / เลขเครื่อง" className={`${field} tnum`} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ดึงจากระบบ <span className="font-normal text-[#8492A6]">(ถ้ามีในระบบ — เลือกเพื่อเติมอัตโนมัติ + ตรวจสิทธิประกัน)</span></label>
+                <Combobox value={serialId} onChange={onPickSerial} options={comboOpts} placeholder="ค้นหา S/N BMS หรือชื่อโรงพยาบาลในระบบ…" />
+                {selectedSerial && (
+                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[12.5px] text-[#5A6B82]">
+                    <span>{selectedSerial.productType}</span>
+                    <WarrantyBadge w={warrantyStateFrom(selectedSerial.warrantyEndDate)} />
+                    <span className="text-[#A8A29E]">(อัตโนมัติจากวันเปิดบิล +1 ปี)</span>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ชื่อโรงพยาบาล / หน่วยงาน (ถ้ามี)</label>

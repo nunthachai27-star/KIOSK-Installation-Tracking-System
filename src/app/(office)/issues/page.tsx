@@ -3,10 +3,18 @@ import { IssueManager } from '@/components/IssueManager'
 import { getJobFormOptions, getMasterValues } from '@/lib/master'
 
 export default async function IssuesPage() {
-  const [{ productTypes: masterProductTypes }, equipmentOptions] = await Promise.all([
+  const [{ productTypes: masterProductTypes }, masterEquip, eqRows] = await Promise.all([
     getJobFormOptions(),
     getMasterValues('EQUIPMENT_ITEM'),
+    // Equipment items actually used, grouped by product type — so the claim form
+    // offers only the items that belong to the chosen product type.
+    prisma.issue.findMany({ where: { equipment: { not: null } }, select: { productType: true, equipment: true }, distinct: ['productType', 'equipment'] }),
   ])
+  const equipmentByProduct: Record<string, string[]> = {}
+  for (const r of eqRows) { if (!r.productType || !r.equipment) continue; (equipmentByProduct[r.productType] ??= []).push(r.equipment) }
+  // Settings-managed list belongs to BMS-Smart Hospital Kiosk (that's what was imported).
+  if (masterEquip.length) equipmentByProduct['BMS-Smart Hospital Kiosk'] = [...new Set([...(equipmentByProduct['BMS-Smart Hospital Kiosk'] ?? []), ...masterEquip])]
+  for (const k of Object.keys(equipmentByProduct)) equipmentByProduct[k].sort((a, b) => a.localeCompare(b, 'th'))
   const [issues, serials, spareParts, users, stat30] = await Promise.all([
     prisma.issue.findMany({
       include: {
@@ -99,7 +107,7 @@ export default async function IssuesPage() {
       </div>
       <IssueManager serials={serialOpts} initial={items} spareParts={spareOpts} users={users} stats={stats}
         productTypes={[...new Set(items.map((i) => i.productType).filter((p): p is string => !!p))].sort()}
-        productTypeOptions={masterProductTypes} equipmentOptions={equipmentOptions} />
+        productTypeOptions={masterProductTypes} equipmentByProduct={equipmentByProduct} />
     </div>
   )
 }
