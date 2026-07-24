@@ -14,8 +14,7 @@ export const NAV_ITEMS = [
   { href: '/purchases', label: 'งานจัดซื้อ', icon: 'purchase' },
   { href: '/stock', label: 'คลังสินค้า', icon: 'stock' },
   { href: '/loans', label: 'ยืม-คืน', icon: 'loan' },
-  { href: '/report', label: 'สรุปงาน', icon: 'report' },
-  { href: '/settings', label: 'ตั้งค่า', icon: 'settings' },
+  // สรุปงาน (/report) และ ตั้งค่า (/settings) ย้ายไปอยู่ในเมนูผู้ใช้แล้ว
 ] as const
 
 // Clean monochrome line icons (recolor via currentColor).
