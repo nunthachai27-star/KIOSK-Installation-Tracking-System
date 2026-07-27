@@ -32,6 +32,16 @@ export default async function StockProductPage({ params, searchParams }: {
   })
   if (!product) notFound()
 
+  // For units cut into a claim, look up the claimed machine's S/N BMS so the
+  // warehouse row can show which unit the part was sent to fix.
+  const claimIds = [...new Set(
+    product.lots.flatMap((l) => l.items).filter((it) => it.status === 'CLAIM' && it.claimIssueId).map((it) => it.claimIssueId as string),
+  )]
+  const claims = claimIds.length
+    ? await prisma.issue.findMany({ where: { id: { in: claimIds } }, select: { id: true, machineSerial: true, serial: { select: { serialNo: true } } } })
+    : []
+  const claimMachine = new Map(claims.map((c) => [c.id, c.serial?.serialNo ?? c.machineSerial ?? null]))
+
   const items = product.lots.flatMap((l) => l.items.map((it) => ({
     id: it.id,
     lotCode: l.lotCode,
@@ -47,6 +57,7 @@ export default async function StockProductPage({ params, searchParams }: {
     jobId: it.job?.id ?? null,
     jobCode: it.job?.jobCode ?? null,
     claimIssueId: it.claimIssueId,
+    claimMachineSerial: it.claimIssueId ? (claimMachine.get(it.claimIssueId) ?? null) : null,
     borrowerName: it.loans[0]?.borrowerName ?? null,
     borrowerPhone: it.loans[0]?.borrowerPhone ?? null,
     dueDate: it.loans[0]?.dueDate ? it.loans[0].dueDate.toISOString() : null,
