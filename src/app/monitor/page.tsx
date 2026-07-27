@@ -22,7 +22,7 @@ export default async function MonitorPage({ searchParams }: { searchParams: Prom
   const { d } = await searchParams
   const day = parseDateParam(d)
   const { from, to } = dayRangeLocal(day)
-  const queue = await getMonitorQueueForDate(from, to)
+  const queue = await getMonitorQueueForDate(from, to, true)
 
   const prev = new Date(day); prev.setDate(day.getDate() - 1)
   const next = new Date(day); next.setDate(day.getDate() + 1)
@@ -104,6 +104,7 @@ export default async function MonitorPage({ searchParams }: { searchParams: Prom
                   </div>
                   <div className="px-3 py-4">
                     <div className="text-[24px] font-semibold leading-tight">{q.hospitalName}</div>
+                    {q.contactPhone && <div className="text-[16px] text-white/70 tnum mt-0.5">📞 {q.contactPhone}</div>}
                     {(q.province || q.jobCode) && <div className="text-[15px] text-white/50">{[q.province, q.jobCode].filter(Boolean).join(' · ')}</div>}
                   </div>
                   <div className="px-3 py-4 text-[22px] font-medium">{q.responsibleName ?? '—'}</div>

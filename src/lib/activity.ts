@@ -82,6 +82,7 @@ export type MonitorItem = {
   jobCode: string
   province: string
   hospitalName: string
+  contactPhone: string | null
 }
 
 function ymdKey(d: Date) {
@@ -113,7 +114,7 @@ function handStatus(s: string): ActivityStatus {
  * A record date is skipped if a manual queue item already covers the same
  * job + type + day (the manual one wins, since it carries status + staff).
  */
-export async function getMonitorQueueForDate(from: Date, to: Date): Promise<MonitorItem[]> {
+export async function getMonitorQueueForDate(from: Date, to: Date, includeOngoing = false): Promise<MonitorItem[]> {
   const jobInclude = { hospital: true, installerOwner: true, adminOwner: true } as const
   const inRange = (d: Date | null | undefined) => !!d && d >= from && d <= to
   // "Call the hospital" reminders fall 2 business days after shipping, so widen
@@ -161,6 +162,29 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
   const items: MonitorItem[] = []
   const covered = new Set<string>()
 
+  // Ongoing installs: keep "ติดตั้ง & ส่งมอบ" on the board every day from the Remote
+  // date until the checklist is received — status follows the installation status.
+  const ongoingItems: MonitorItem[] = []
+  const ongoingJobIds = new Set<string>()
+  if (includeOngoing) {
+    const ongoing = await prisma.installationRecord.findMany({
+      where: { remoteDate: { not: null, lte: to } },
+      include: { job: { include: { ...jobInclude, handover: { select: { checklistReceivedDate: true } } } } },
+    })
+    for (const it of ongoing) {
+      if (it.job.currentStatus === 'CANCELLED') continue
+      if (it.job.handover?.checklistReceivedDate) continue // checklist received → stop showing
+      ongoingJobIds.add(it.jobId)
+      ongoingItems.push({
+        id: `ongoing-${it.id}`, activityType: 'ONSITE', icon: '🔧', label: 'ติดตั้ง & ส่งมอบ',
+        activityDate: from, status: instStatus(it.status), allDay: true,
+        responsibleName: it.job.installerOwner?.name ?? it.job.adminOwner?.name ?? null,
+        productType: it.job.productType, quantity: it.job.quantity, jobCode: it.job.jobCode,
+        province: it.job.province, hospitalName: it.job.hospital.name, contactPhone: it.job.contactPhone,
+      })
+    }
+  }
+
   for (const a of activities) {
     covered.add(`${a.jobId}|${a.activityType}|${ymdKey(a.activityDate)}`)
     items.push({
@@ -182,12 +206,13 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
       jobCode: a.job.jobCode,
       province: a.job.province,
       hospitalName: a.job.hospital.name,
+      contactPhone: a.job.contactPhone,
     })
   }
 
   const pushRecord = (
     id: string, type: ActivityType, label: string, date: Date, status: ActivityStatus,
-    job: { id: string; productType: string; quantity: number; jobCode: string; province: string; hospital: { name: string }; installerOwner: { name: string } | null; adminOwner: { name: string } | null },
+    job: { id: string; productType: string; quantity: number; jobCode: string; province: string; contactPhone: string | null; hospital: { name: string }; installerOwner: { name: string } | null; adminOwner: { name: string } | null },
     icon: string = ACTIVITY_ICON[type],
   ) => {
     if (covered.has(`${job.id}|${type}|${ymdKey(date)}`)) return
@@ -195,7 +220,7 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
       id, activityType: type, icon, label, activityDate: date, status, allDay: true,
       responsibleName: job.installerOwner?.name ?? job.adminOwner?.name ?? null,
       productType: job.productType, quantity: job.quantity, jobCode: job.jobCode,
-      province: job.province, hospitalName: job.hospital.name,
+      province: job.province, hospitalName: job.hospital.name, contactPhone: job.contactPhone,
     })
   }
 
@@ -204,10 +229,12 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
     if (inRange(d.arrivedDate)) pushRecord(`arr-${d.id}`, 'DELIVERY', 'จัดส่งสินค้า (ถึงปลายทาง)', d.arrivedDate!, delivStatus(d.status), d.job, '📦')
   }
   for (const it of installs) {
+    if (ongoingJobIds.has(it.jobId)) continue // shown as a single ongoing row instead
     if (inRange(it.remoteDate)) pushRecord(`rem-${it.id}`, 'REMOTE', 'Remote ติดตั้ง', it.remoteDate!, instStatus(it.status), it.job)
     if (inRange(it.onsiteDate)) pushRecord(`ons-${it.id}`, 'ONSITE', 'ติดตั้งหน้างาน', it.onsiteDate!, instStatus(it.status), it.job)
   }
   for (const h of handovers) {
+    if (ongoingJobIds.has(h.jobId)) continue // covered by the ongoing install row
     if (inRange(h.handoverDate)) pushRecord(`hand-${h.id}`, 'HANDOVER', 'ส่งมอบงาน', h.handoverDate!, handStatus(h.handoverStatus), h.job)
   }
   // Reminder: call the hospital to book the install date, 2 business days after shipping.
@@ -228,7 +255,7 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
       status: t.status, allDay: true,
       responsibleName: t.responsibleUser?.name ?? null,
       productType: t.kind, quantity: 0, jobCode: '', province: '',
-      hospitalName: t.hospitalName || 'งานภายใน',
+      hospitalName: t.hospitalName || 'งานภายใน', contactPhone: null,
     })
   }
 
@@ -244,7 +271,9 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
   }
 
   // hide finished work — the board shows only what still needs doing
-  const pending = items.filter((it) => it.status !== 'DONE')
+  // (ongoing install rows are exempt: they persist until the checklist is received,
+  //  even if the installation status itself is already "เสร็จ")
+  const pending = [...items.filter((it) => it.status !== 'DONE'), ...ongoingItems]
 
   // timed items first (by time), all-day record items after
   pending.sort((a, b) =>
