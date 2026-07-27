@@ -144,7 +144,7 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
         {it.serialBMS
           ? <span className="font-bold tnum text-[#1C1917]">{it.serialBMS}</span>
           : it.status === 'CLAIM' && it.claimMachineSerial
-          ? <span className="tnum text-[#1C1917]" title="S/N BMS ของตู้ที่เคลม (อะไหล่ชิ้นนี้ถูกตัดไปซ่อมตู้นี้)">{it.claimMachineSerial} <span className="text-[#EA580C] text-[10.5px] font-semibold">ตู้ที่เคลม</span></span>
+          ? <span className="font-bold tnum text-[#1C1917]" title="S/N BMS ของตู้ที่เคลม (อะไหล่ชิ้นนี้ถูกตัดไปซ่อมตู้นี้)">{it.claimMachineSerial}</span>
           : <span className="text-[#C7CDD6] text-[12px]" title="S/N BMS กำหนดอัตโนมัติเมื่อจ่ายออกให้โรงพยาบาล (สร้างงาน)">— รอจ่ายออก</span>}
       </td>
       <td className="px-1.5 py-1">
