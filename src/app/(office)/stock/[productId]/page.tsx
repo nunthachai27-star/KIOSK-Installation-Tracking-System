@@ -72,7 +72,7 @@ export default async function StockProductPage({ params, searchParams }: {
   const claimed = product.serialized ? items.filter((i) => i.status === 'CLAIM').length : 0
   const remaining = received - issued - borrowed - claimed
   const unit = product.serialized ? 'เครื่อง' : product.unit
-  const lotCodes = product.lots.map((l) => l.lotCode)
+  const lotList = product.lots.map((l) => ({ id: l.id, lotCode: l.lotCode }))
 
   return (
     <div className="p-4 sm:p-6 max-w-[1160px] mx-auto flex flex-col gap-4">
@@ -102,7 +102,7 @@ export default async function StockProductPage({ params, searchParams }: {
       </div>
 
       {product.serialized ? (
-        <StockItemList items={items} lotCodes={lotCodes} initialLot={lot ?? ''} initialQ={q ?? ''} />
+        <StockItemList items={items} lots={lotList} initialLot={lot ?? ''} initialQ={q ?? ''} />
       ) : (
         <div className="ds-card p-6 text-center text-[13px] text-[#8492A6]">
           สินค้านับจำนวน (อะไหล่) — คงเหลือ <span className="font-bold text-[#157F4C]">{remaining}</span> {unit} · ไม่มี Serial รายชิ้น

@@ -24,13 +24,45 @@ const STATUS = {
   CLAIM: { label: 'เคลม', color: '#EA580C', bg: '#FCE7D6' },
 }
 
-export function StockItemList({ items: initial, lotCodes, initialLot, initialQ = '' }: { items: Item[]; lotCodes: string[]; initialLot: string; initialQ?: string }) {
+export function StockItemList({ items: initial, lots, initialLot, initialQ = '' }: { items: Item[]; lots: { id: string; lotCode: string }[]; initialLot: string; initialQ?: string }) {
+  const lotCodes = lots.map((l) => l.lotCode)
   const [items, setItems] = useState<Item[]>(initial)
   useEffect(() => { setItems(initial) }, [initial])
   const [q, setQ] = useState(initialQ)
   const [lot, setLot] = useState(initialLot)
   const [status, setStatus] = useState<'' | 'IN_STOCK' | 'ISSUED' | 'BORROWED' | 'CLAIM'>('')
   const [page, setPage] = useState(1)
+  // Add-more-units-into-an-existing-lot control.
+  const [adding, setAdding] = useState(false)
+  const [addLot, setAddLot] = useState('')
+  const [addCount, setAddCount] = useState('1')
+  const [addBusy, setAddBusy] = useState(false)
+
+  function openAdd() {
+    setAddLot(lot || lots[0]?.lotCode || '')
+    setAddCount('1')
+    setAdding(true)
+  }
+  async function addUnits() {
+    const target = lots.find((l) => l.lotCode === addLot)
+    if (!target || addBusy) return
+    const count = Math.min(200, Math.max(1, Math.trunc(Number(addCount) || 1)))
+    setAddBusy(true)
+    try {
+      const res = await fetch(`/api/stock/lots/${target.id}/items`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ count }),
+      })
+      if (res.ok) {
+        const created = await res.json() as Item[]
+        setItems((x) => [...x, ...created])
+        setLot(target.lotCode); setStatus('') // jump the view to the lot so the new blank rows are visible
+        setAdding(false)
+      } else {
+        const d = await res.json().catch(() => null)
+        window.alert(d?.message || 'เพิ่มไม่สำเร็จ')
+      }
+    } finally { setAddBusy(false) }
+  }
 
   const patchField = (id: string, patch: Partial<Record<EditField, string | null>>) =>
     setItems((x) => x.map((it) => (it.id === id ? { ...it, ...patch } : it)))
@@ -69,7 +101,34 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
             {s === '' ? 'ทั้งหมด' : STATUS[s].label}
           </button>
         ))}
+        {lots.length > 0 && !adding && (
+          <button onClick={openAdd} title="เพิ่มเครื่องเข้า Lot ที่มีอยู่ (กรณีสร้างครั้งแรกมาไม่ครบ)"
+            className="ml-auto px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border border-[#EA580C] text-[#EA580C] bg-white hover:bg-[#FFF3EC]">＋ เพิ่มเครื่องใน Lot</button>
+        )}
       </div>
+
+      {adding && (
+        <div className="flex items-end gap-2 flex-wrap rounded-xl bg-[#FBFAF8] border border-[#EEEAE6] px-3 py-2.5">
+          <div className="flex flex-col gap-1">
+            <label className="text-[11.5px] text-[#8492A6]">Lot</label>
+            <select value={addLot} onChange={(e) => setAddLot(e.target.value)}
+              className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C]">
+              {lots.map((l) => <option key={l.id} value={l.lotCode}>Lot {l.lotCode}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11.5px] text-[#8492A6]">จำนวน (เครื่อง)</label>
+            <input type="number" min={1} max={200} value={addCount} onChange={(e) => setAddCount(e.target.value)}
+              className="w-24 border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] tnum outline-none focus:border-[#EA580C]" />
+          </div>
+          <button disabled={addBusy || !addLot} onClick={addUnits}
+            className="bg-[#EA580C] text-white text-[12.5px] font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] disabled:opacity-50">
+            {addBusy ? 'กำลังเพิ่ม…' : '＋ เพิ่มเข้า Lot'}
+          </button>
+          <button onClick={() => setAdding(false)} className="text-[12.5px] text-[#5A6B82] rounded-lg px-3 py-2 hover:bg-[#F0EEEC]">ยกเลิก</button>
+          <span className="text-[11.5px] text-[#A8A29E] pb-2">เพิ่มเป็นเครื่องเปล่า (ยังไม่มี Serial) แล้วค่อยกรอกเลขในตารางทีหลัง</span>
+        </div>
+      )}
 
       <div className="text-[12.5px] text-[#8492A6]">พบ {nf.format(filtered.length)} เครื่อง · <span className="text-[#A8A29E]">คลิกช่อง Serial NO. / สี เพื่อแก้ไข · กด 📷 สแกนบาร์โค้ด/QR (มือถือ) เพื่อลดกรอกผิด · S/N BMS กำหนดอัตโนมัติเมื่อจ่ายออก · 🔒 รายการที่จ่ายออกแล้วจะล็อก Serial NO. แก้ไข/ลบไม่ได้</span></div>
 
