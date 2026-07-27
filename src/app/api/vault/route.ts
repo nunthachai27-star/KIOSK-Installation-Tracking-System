@@ -63,6 +63,18 @@ export async function POST(req: Request) {
 
   if (total === 0) { await unlink(dest).catch(() => {}); return NextResponse.json({ error: 'empty', message: 'ไฟล์ว่าง' }, { status: 400 }) }
 
+  // Integrity guard: if the client advertised a size, the bytes we received must
+  // match. A shortfall means something upstream (reverse proxy body limit) cut
+  // the stream — reject instead of silently storing a corrupt/truncated file.
+  if (declared && total !== declared) {
+    await unlink(dest).catch(() => {})
+    const mb = (n: number) => (n / 1048576).toFixed(1)
+    return NextResponse.json({
+      error: 'incomplete',
+      message: `อัปโหลดไม่ครบ (ได้ ${mb(total)}MB จาก ${mb(declared)}MB) — ไฟล์ถูกตัดระหว่างทาง มักเกิดจากลิมิตขนาดอัปโหลดที่ reverse proxy`,
+    }, { status: 422 })
+  }
+
   const created = await prisma.fileAsset.create({
     data: {
       folderId, name: displayName, originalName, ext, mimeType, size: total, note,
