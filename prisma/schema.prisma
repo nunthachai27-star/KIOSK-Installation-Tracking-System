@@ -675,6 +675,9 @@ model StockItem {
   hospitalId    String?
   job           Job?        @relation(fields: [jobId], references: [id])
   jobId         String?
+  // When cut out for a claim (status = CLAIM): link back to the claim so the
+  // warehouse row shows which claim consumed the unit.
+  claimIssueId  String?
   note          String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

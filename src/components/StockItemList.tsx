@@ -7,7 +7,7 @@ type Item = {
   id: string; lotCode: string; seq: number | null; serialBMS: string | null; serialNo: string | null
   color: string | null; status: 'IN_STOCK' | 'ISSUED' | 'BORROWED' | 'CLAIM'; receivedDate: string | null; issuedDate: string | null
   deliveredDate: string | null; hospitalName: string | null; jobId: string | null; jobCode: string | null
-  borrowerName: string | null; borrowerPhone: string | null; dueDate: string | null
+  borrowerName: string | null; borrowerPhone: string | null; dueDate: string | null; claimIssueId: string | null
 }
 type EditField = 'serialBMS' | 'serialNo' | 'color'
 
@@ -111,6 +111,8 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
 
 function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: Partial<Record<EditField, string | null>>) => void; onDeleted: () => void }) {
   const st = STATUS[it.status]
+  // Serial NO. is locked once a unit leaves the shelf (issued or cut for a claim).
+  const serialLocked = it.status === 'ISSUED' || it.status === 'CLAIM'
   // A unit can only be removed while untouched: in stock and with no serial yet.
   const canDelete = it.status === 'IN_STOCK' && !(it.serialNo ?? '').trim() && !(it.serialBMS ?? '').trim()
 
@@ -143,8 +145,8 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
           : <span className="text-[#C7CDD6] text-[12px]" title="S/N BMS กำหนดอัตโนมัติเมื่อจ่ายออกให้โรงพยาบาล (สร้างงาน)">— รอจ่ายออก</span>}
       </td>
       <td className="px-1.5 py-1">
-        {it.status === 'ISSUED'
-          ? <span className="flex items-center gap-1 px-2 py-1 text-[13px] tnum text-[#1C1917]" title="จ่ายออกแล้ว — ล็อก Serial NO. (แก้ไข/ลบไม่ได้)">
+        {serialLocked
+          ? <span className="flex items-center gap-1 px-2 py-1 text-[13px] tnum text-[#1C1917]" title={it.status === 'CLAIM' ? 'ตัดเป็นเคลมแล้ว — ล็อก Serial NO. (แก้ไข/ลบไม่ได้)' : 'จ่ายออกแล้ว — ล็อก Serial NO. (แก้ไข/ลบไม่ได้)'}>
               {it.serialNo ?? '—'}<span className="text-[#B8B2AC] text-[11px]">🔒</span>
             </span>
           : <EditCell value={it.serialNo} placeholder="เพิ่มเลขเครื่อง" tnum scan onSave={(v) => save('serialNo', v)} />}
@@ -163,6 +165,10 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
           <Link href="/loans" className="text-[#1B5FD9] hover:underline">
             🤝 {it.borrowerName}
             {it.borrowerPhone && <span className="text-[#8492A6] ml-1.5 tnum text-[11.5px]">{it.borrowerPhone}</span>}
+          </Link>
+        ) : it.status === 'CLAIM' && it.claimIssueId ? (
+          <Link href={`/issues?open=${it.claimIssueId}`} className="text-[#EA580C] hover:underline" title="เปิดรายการเคลมที่ตัดชิ้นนี้ไป">
+            🔧 {it.hospitalName ?? 'ดูรายการเคลม'}
           </Link>
         ) : it.jobId ? (
           <Link href={`/jobs/${it.jobId}`} className="text-[#EA580C] hover:underline">{it.hospitalName ?? it.jobCode}</Link>

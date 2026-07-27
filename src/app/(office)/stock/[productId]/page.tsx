@@ -46,6 +46,7 @@ export default async function StockProductPage({ params, searchParams }: {
     hospitalName: it.hospital?.name ?? it.hospitalName ?? null,
     jobId: it.job?.id ?? null,
     jobCode: it.job?.jobCode ?? null,
+    claimIssueId: it.claimIssueId,
     borrowerName: it.loans[0]?.borrowerName ?? null,
     borrowerPhone: it.loans[0]?.borrowerPhone ?? null,
     dueDate: it.loans[0]?.dueDate ? it.loans[0].dueDate.toISOString() : null,

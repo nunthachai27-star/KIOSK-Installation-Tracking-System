@@ -10,8 +10,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const issue = await prisma.issue.findUnique({ where: { id }, select: { id: true } })
+  const issue = await prisma.issue.findUnique({
+    where: { id },
+    select: { id: true, hospitalName: true, job: { select: { hospital: { select: { name: true } } } } },
+  })
   if (!issue) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  // Hospital of the claim (job-linked → job hospital, else free-text).
+  const claimHospital = issue.job?.hospital?.name ?? issue.hospitalName ?? null
 
   const b = await req.json()
 
@@ -32,8 +37,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const price = unit.lot.product.sellPrice?.toNumber() ?? null
     const created = await prisma.$transaction(async (tx) => {
       // Only proceed if it is still IN_STOCK (guards against a double-cut race).
+      // Stamp the claim on the unit: issued date (วันจ่ายออก), hospital, and a back-link.
       const flipped = await tx.stockItem.updateMany({
-        where: { id: unit.id, status: 'IN_STOCK' }, data: { status: 'CLAIM', note: 'ตัดใช้ในเคลม' },
+        where: { id: unit.id, status: 'IN_STOCK' },
+        data: { status: 'CLAIM', note: 'ตัดใช้ในเคลม', issuedDate: new Date(), hospitalName: claimHospital, claimIssueId: id },
       })
       if (flipped.count === 0) throw new Error('conflict')
       const cp = await tx.claimPart.create({

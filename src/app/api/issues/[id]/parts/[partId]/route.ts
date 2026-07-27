@@ -11,10 +11,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const part = await prisma.claimPart.findUnique({ where: { id: partId } })
   if (part) {
     if (part.stockItemId) {
-      // Serial unit cut into CLAIM — restore it to IN_STOCK (only if still CLAIM).
+      // Serial unit cut into CLAIM — restore it to IN_STOCK and clear the claim stamp.
       await prisma.stockItem.updateMany({
         where: { id: part.stockItemId, status: 'CLAIM' },
-        data: { status: 'IN_STOCK', note: null },
+        data: { status: 'IN_STOCK', note: null, issuedDate: null, hospitalName: null, claimIssueId: null },
       })
     } else if (part.stockDeducted && part.stockProductId) {
       // Legacy: units that had been deducted from stock (old flow).

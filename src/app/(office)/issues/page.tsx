@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { IssueManager } from '@/components/IssueManager'
 import { getJobFormOptions, getEquipmentByProduct } from '@/lib/master'
 
-export default async function IssuesPage() {
+export default async function IssuesPage({ searchParams }: { searchParams: Promise<{ open?: string }> }) {
+  const { open: openId } = await searchParams
   const [{ productTypes: masterProductTypes }, settingsEquip, eqRows] = await Promise.all([
     getJobFormOptions(),
     // Settings-managed equipment, grouped by product type (source of truth).
@@ -114,7 +115,7 @@ export default async function IssuesPage() {
         </h1>
         <p className="text-[13px] text-[#8492A6] mt-0.5">รับแจ้งเคลมตาม S/N BMS ของตู้ · ระบบตัดสินประกันอัตโนมัติจากวันเปิดบิล (+1 ปี) · บันทึก serial อุปกรณ์ที่เสีย/ที่ส่งเปลี่ยน วิธีดำเนินการ และค่าใช้จ่าย</p>
       </div>
-      <IssueManager serials={serialOpts} initial={items} stockCatalog={stockCatalog} users={users} stats={stats}
+      <IssueManager serials={serialOpts} initial={items} stockCatalog={stockCatalog} users={users} stats={stats} openId={openId ?? null}
         productTypes={[...new Set(items.map((i) => i.productType).filter((p): p is string => !!p))].sort()}
         productTypeOptions={masterProductTypes} equipmentByProduct={equipmentByProduct} />
     </div>

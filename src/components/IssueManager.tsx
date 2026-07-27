@@ -69,7 +69,7 @@ function StatusCard({ active, label, n, color, onClick }: { active: boolean; lab
   )
 }
 
-export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, stockCatalog, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; stockCatalog: StockCatGroup[]; users: UserOpt[]; stats: ClaimStats }) {
+export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, stockCatalog, users, stats, openId = null }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; stockCatalog: StockCatGroup[]; users: UserOpt[]; stats: ClaimStats; openId?: string | null }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   // Keep in sync with the server after router.refresh() so the timeline/claim data reflect updates.
@@ -98,7 +98,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
   const [dateTo, setDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(true)
   const [formOpen, setFormOpen] = useState(false) // การแจ้งเคลม/ปัญหา อยู่ในป็อปอัพ กดปุ่มจึงเปิด
-  const [detailId, setDetailId] = useState<string | null>(null) // แถวที่กดเปิดดูรายละเอียด (ป็อปอัพ)
+  const [detailId, setDetailId] = useState<string | null>(openId) // แถวที่กดเปิดดูรายละเอียด (ป็อปอัพ) — เปิดอัตโนมัติเมื่อมาจากลิงก์ ?open=
   const [limit, setLimit] = useState(20) // แสดงล่าสุด 20 รายการ — ที่เหลือค้นหาเอา
   const isClaim = issueType === 'CLAIM'
 

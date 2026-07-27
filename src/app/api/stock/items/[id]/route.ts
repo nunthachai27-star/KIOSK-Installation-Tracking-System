@@ -23,9 +23,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.serialNo !== undefined) {
     const item = await prisma.stockItem.findUnique({ where: { id }, select: { status: true, lot: { select: { productId: true } } } })
     if (!item) return NextResponse.json({ error: 'not found' }, { status: 404 })
-    // Locked: an issued unit's Serial NO. cannot be changed or cleared.
-    if (item.status === 'ISSUED') {
-      return NextResponse.json({ error: 'locked', message: 'รายการนี้จ่ายออกแล้ว — แก้ไข/ลบ Serial NO. ไม่ได้' }, { status: 409 })
+    // Locked: an issued or claim-cut unit's Serial NO. cannot be changed or cleared.
+    if (item.status === 'ISSUED' || item.status === 'CLAIM') {
+      const msg = item.status === 'CLAIM' ? 'รายการนี้ตัดเป็นเคลมแล้ว — แก้ไข/ลบ Serial NO. ไม่ได้' : 'รายการนี้จ่ายออกแล้ว — แก้ไข/ลบ Serial NO. ไม่ได้'
+      return NextResponse.json({ error: 'locked', message: msg }, { status: 409 })
     }
     if (data.serialNo) {
       const dup = await prisma.stockItem.findFirst({
