@@ -721,6 +721,31 @@ model Loan {
   @@index([dueDate])
 }
 
+enum LoanRequestStatus {
+  PENDING   // ผู้ยืมส่งคำขอเข้ามา (ฉบับร่าง) รอเจ้าหน้าที่
+  APPROVED  // เจ้าหน้าที่เลือกอุปกรณ์ + อนุมัติแล้ว → มี Loan
+  REJECTED  // เจ้าหน้าที่ปฏิเสธ
+}
+
+// คำขอยืม (ฉบับร่าง) จากผู้ยืมผ่านลิงก์/QR สาธารณะ — ไม่ต้อง login.
+// ผู้ยืมกรอกได้แค่ข้อมูลตัวเอง; การเลือกกลุ่ม/รุ่น/Lot/serial เป็นของเจ้าหน้าที่
+// ตอนอนุมัติ (สร้าง Loan). ไม่ผูก FK กับ Loan เพื่อไม่กระทบตาราง Loan เดิม.
+model LoanRequest {
+  id            String            @id @default(cuid())
+  borrowerName  String
+  borrowerPhone String
+  borrowerOrg   String?
+  purpose       String?
+  dueDate       DateTime?         // กำหนดคืนที่ผู้ยืมเสนอ (เจ้าหน้าที่ปรับได้ตอนอนุมัติ)
+  status        LoanRequestStatus @default(PENDING)
+  note          String?           // เหตุผลปฏิเสธ / หมายเหตุเจ้าหน้าที่
+  loanId        String?           // Loan ที่สร้างเมื่ออนุมัติ (อ้างอิงเฉยๆ)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([status])
+}
+
 // กระดานโน้ตของทีม — ทุกคนเพิ่ม/แก้/ลบได้ เห็นเหมือนกันทั้งหมด.
 // authorId/authorName เป็น snapshot (ไม่ผูก FK) เพื่อไม่กระทบตาราง User.
 model Note {

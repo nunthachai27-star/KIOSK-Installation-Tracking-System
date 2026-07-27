@@ -3,7 +3,7 @@ import { loanLevel } from '@/lib/loan'
 import { LoanManager } from '@/components/LoanManager'
 
 export default async function LoansPage() {
-  const [loans, available] = await Promise.all([
+  const [loans, available, pendingReqs] = await Promise.all([
     prisma.loan.findMany({
       orderBy: [{ status: 'asc' }, { dueDate: 'asc' }],
       include: {
@@ -17,6 +17,8 @@ export default async function LoansPage() {
       orderBy: [{ serialBMS: 'asc' }, { serialNo: 'asc' }],
       select: { id: true, serialBMS: true, serialNo: true, color: true, lot: { select: { lotCode: true, product: { select: { name: true, group: true } } } } },
     }),
+    // Public borrow requests awaiting staff review (newest first).
+    prisma.loanRequest.findMany({ where: { status: 'PENDING' }, orderBy: { createdAt: 'desc' } }),
   ])
 
   const now = new Date()
@@ -50,6 +52,16 @@ export default async function LoansPage() {
     group: i.lot.product.group,
   }))
 
+  const requests = pendingReqs.map((r) => ({
+    id: r.id,
+    borrowerName: r.borrowerName,
+    borrowerPhone: r.borrowerPhone,
+    borrowerOrg: r.borrowerOrg,
+    purpose: r.purpose,
+    dueDate: r.dueDate ? r.dueDate.toISOString().slice(0, 10) : null,
+    createdAt: r.createdAt.toISOString(),
+  }))
+
   const overdue = rows.filter((r) => r.level === 'OVERDUE').length
   const out = rows.filter((r) => r.returnedAt === null).length
 
@@ -62,7 +74,7 @@ export default async function LoansPage() {
           <p className="text-[13px] text-[#8492A6] mt-0.5">ยืมอุปกรณ์จากคลังตาม Serial · ต้องระบุชื่อและเบอร์โทรผู้ยืมทุกครั้ง · แจ้งเตือนเมื่อเกินกำหนดคืน</p>
         </div>
       </div>
-      <LoanManager rows={rows} options={options} outCount={out} overdueCount={overdue} availableCount={available.length} />
+      <LoanManager rows={rows} options={options} requests={requests} outCount={out} overdueCount={overdue} availableCount={available.length} />
     </div>
   )
 }

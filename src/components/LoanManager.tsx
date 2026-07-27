@@ -1,6 +1,7 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import QRCode from 'qrcode'
 import { LOAN_LEVEL_META, type LoanLevel } from '@/lib/loan'
 
 type Row = {
@@ -10,6 +11,11 @@ type Row = {
   lotCode: string; productName: string; group: string; recordedBy: string | null
 }
 type Option = { id: string; serialBMS: string | null; serialNo: string | null; color: string | null; lotCode: string; productName: string; group: string }
+type Req = {
+  id: string; borrowerName: string; borrowerPhone: string; borrowerOrg: string | null
+  purpose: string | null; dueDate: string | null; createdAt: string
+}
+type Prefill = { name: string; phone: string; org: string; purpose: string; due: string }
 
 const nf = new Intl.NumberFormat('th-TH')
 const dFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -25,13 +31,15 @@ function defaultDue() {
   return d.toISOString().slice(0, 10)
 }
 
-export function LoanManager({ rows, options, outCount, overdueCount, availableCount }: {
-  rows: Row[]; options: Option[]; outCount: number; overdueCount: number; availableCount: number
+export function LoanManager({ rows, options, requests, outCount, overdueCount, availableCount }: {
+  rows: Row[]; options: Option[]; requests: Req[]; outCount: number; overdueCount: number; availableCount: number
 }) {
   const router = useRouter()
   const [q, setQ] = useState('')
   const [tab, setTab] = useState<'OUT' | 'ALL'>('OUT')
   const [open, setOpen] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+  const [approving, setApproving] = useState<Req | null>(null) // คำขอที่กำลังเลือกอุปกรณ์ & อนุมัติ
 
   const ql = q.trim().toLowerCase()
   const shown = useMemo(() => rows.filter((r) => {
@@ -80,14 +88,44 @@ export function LoanManager({ rows, options, outCount, overdueCount, availableCo
             {t === 'OUT' ? 'ที่ยังไม่คืน' : 'ทั้งหมด'}
           </button>
         ))}
-        <button onClick={() => setOpen((v) => !v)} disabled={options.length === 0}
+        <button onClick={() => setShowQR(true)}
+          className="ds-hover text-sm font-semibold rounded-lg px-4 py-2 border border-[#1B5FD9] text-[#1B5FD9] bg-white hover:bg-[#EEF3FA]"
+          title="สร้าง QR / ลิงก์ให้ผู้ยืมกรอกคำขอเอง">
+          🔗 QR ให้ผู้ยืม
+        </button>
+        <button onClick={() => { setApproving(null); setOpen((v) => !v) }} disabled={options.length === 0}
           className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] disabled:opacity-50 disabled:cursor-not-allowed"
           title={options.length === 0 ? 'ไม่มีอุปกรณ์ว่างในคลัง' : undefined}>
           ＋ ยืมของ
         </button>
       </div>
 
-      {open && <BorrowForm options={options} onClose={() => setOpen(false)} onDone={() => { setOpen(false); router.refresh() }} />}
+      {showQR && <QrModal onClose={() => setShowQR(false)} />}
+
+      {/* Pending public borrow requests awaiting staff review. */}
+      {requests.length > 0 && (
+        <div className="ds-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[14px] font-bold text-[#1C1917]">📥 คำขอยืมรออนุมัติ</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#FCE7D6] text-[#EA580C] text-[12px] font-bold tnum">{nf.format(requests.length)}</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {requests.map((rq) => (
+              <RequestCard key={rq.id} rq={rq}
+                onApprove={() => { setOpen(false); setApproving(rq) }}
+                onDone={() => router.refresh()} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(open || approving) && (
+        <BorrowForm key={approving?.id ?? 'manual'} options={options}
+          prefill={approving ? { name: approving.borrowerName, phone: approving.borrowerPhone, org: approving.borrowerOrg ?? '', purpose: approving.purpose ?? '', due: approving.dueDate ?? '' } : undefined}
+          requestId={approving?.id}
+          onClose={() => { setOpen(false); setApproving(null) }}
+          onDone={() => { setOpen(false); setApproving(null); router.refresh() }} />
+      )}
 
       <div className="ds-card overflow-x-auto">
         <table className="w-full text-[13px] min-w-[900px]">
@@ -186,7 +224,8 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
   )
 }
 
-function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: () => void; onDone: () => void }) {
+function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options: Option[]; prefill?: Prefill; requestId?: string; onClose: () => void; onDone: () => void }) {
+  const approving = !!requestId
   const [itemId, setItemId] = useState('')
   const [pick, setPick] = useState('')
   // Narrow down group → product → lot before picking a serial, so the list of
@@ -194,11 +233,11 @@ function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: 
   const [group, setGroup] = useState('')
   const [productName, setProductName] = useState('')
   const [lotCode, setLotCode] = useState('')
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [org, setOrg] = useState('')
-  const [purpose, setPurpose] = useState('')
-  const [due, setDue] = useState(defaultDue)
+  const [name, setName] = useState(prefill?.name ?? '')
+  const [phone, setPhone] = useState(prefill?.phone ?? '')
+  const [org, setOrg] = useState(prefill?.org ?? '')
+  const [purpose, setPurpose] = useState(prefill?.purpose ?? '')
+  const [due, setDue] = useState(prefill?.due || defaultDue())
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
@@ -235,7 +274,7 @@ function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: 
     try {
       const res = await fetch('/api/loans', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId, borrowerName: name, borrowerPhone: phone, borrowerOrg: org, purpose, dueDate: due }),
+        body: JSON.stringify({ itemId, borrowerName: name, borrowerPhone: phone, borrowerOrg: org, purpose, dueDate: due, requestId }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => null)
@@ -252,9 +291,10 @@ function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: 
   return (
     <div className="ds-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <div className="text-[15px] font-bold">ยืมอุปกรณ์จากคลัง</div>
+        <div className="text-[15px] font-bold">{approving ? '✅ อนุมัติคำขอยืม — เลือกอุปกรณ์ให้ผู้ยืม' : 'ยืมอุปกรณ์จากคลัง'}</div>
         <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
       </div>
+      {approving && <div className="mb-3 text-[12.5px] text-[#5A6B82] bg-[#F0F6FF] border border-[#DCE9FF] rounded-lg px-3 py-2">ข้อมูลผู้ยืมมาจากคำขอ (แก้ไขได้) · เลือกกลุ่ม → รุ่น → Lot → Serial แล้วกดบันทึกเพื่ออนุมัติ</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="md:col-span-2">
@@ -343,11 +383,94 @@ function BorrowForm({ options, onClose, onDone }: { options: Option[]; onClose: 
         <div className="md:col-span-2 flex items-center gap-3">
           <button onClick={submit} disabled={!ready || saving}
             className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60 disabled:cursor-not-allowed">
-            {saving ? 'กำลังบันทึก…' : 'บันทึกการยืม'}
+            {saving ? 'กำลังบันทึก…' : approving ? 'อนุมัติ & บันทึกการยืม' : 'บันทึกการยืม'}
           </button>
           {!ready && !err && <span className="text-[12.5px] text-[#8492A6]">กรอกอุปกรณ์ ชื่อ เบอร์โทร และกำหนดคืนให้ครบก่อน</span>}
           {err && <span className="text-sm text-[#C13540]">{err}</span>}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// One pending public borrow request — staff either approve (pick an item) or reject it.
+function RequestCard({ rq, onApprove, onDone }: { rq: Req; onApprove: () => void; onDone: () => void }) {
+  const [busy, setBusy] = useState(false)
+  async function reject() {
+    if (!window.confirm(`ปฏิเสธคำขอยืมของ ${rq.borrowerName}?`)) return
+    const note = window.prompt('เหตุผล (เว้นว่างได้)') ?? ''
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/borrow-request/${rq.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note }),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => null); window.alert(d?.message || 'ปฏิเสธไม่สำเร็จ'); return }
+      onDone()
+    } finally { setBusy(false) }
+  }
+  return (
+    <div className="rounded-xl border border-[#EEEAE6] bg-[#FBFAF8] px-3.5 py-3 flex flex-wrap items-start gap-x-4 gap-y-1.5">
+      <div className="min-w-[180px] flex-1">
+        <div className="text-[13.5px] font-semibold text-[#1C1917]">{rq.borrowerName}
+          <a href={`tel:${rq.borrowerPhone}`} className="ml-2 text-[12.5px] font-normal text-[#EA580C] hover:underline tnum">{rq.borrowerPhone}</a>
+        </div>
+        {rq.borrowerOrg && <div className="text-[12px] text-[#8492A6]">{rq.borrowerOrg}</div>}
+        {rq.purpose && <div className="text-[12.5px] text-[#5A6B82] mt-0.5">“{rq.purpose}”</div>}
+        <div className="text-[11px] text-[#A8A29E] mt-0.5">
+          ส่งคำขอ {fmt(rq.createdAt)}{rq.dueDate && <> · อยากคืนภายใน {fmt(rq.dueDate)}</>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button onClick={onApprove} disabled={busy}
+          className="bg-[#EA580C] text-white text-[12.5px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">เลือกอุปกรณ์ & อนุมัติ</button>
+        <button onClick={reject} disabled={busy}
+          className="text-[12.5px] font-semibold text-[#C13540] rounded-lg px-3 py-1.5 border border-[#F0D2D2] hover:bg-[#FBE4E4] disabled:opacity-50">ปฏิเสธ</button>
+      </div>
+    </div>
+  )
+}
+
+// QR + link for borrowers to submit a request themselves (no login).
+function QrModal({ onClose }: { onClose: () => void }) {
+  const [url, setUrl] = useState('')
+  const [dataUrl, setDataUrl] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const u = `${window.location.origin}/borrow`
+    setUrl(u)
+    QRCode.toDataURL(u, { width: 480, margin: 1 }).then(setDataUrl).catch(() => setDataUrl(''))
+  }, [])
+
+  function copy() {
+    navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
+  }
+  function print() {
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<html><head><title>QR ขอยืมอุปกรณ์</title></head><body style="text-align:center;font-family:sans-serif;padding:40px">
+      <h2>สแกนเพื่อขอยืมอุปกรณ์ (BMS)</h2><img src="${dataUrl}" style="width:320px;height:320px"/><p style="color:#555">${url}</p></body></html>`)
+    w.document.close(); w.focus(); w.print()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-start justify-center overflow-y-auto" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="mt-10 w-full max-w-sm bg-white rounded-2xl shadow-lg p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[15px] font-bold text-[#1C1917]">QR / ลิงก์ให้ผู้ยืม</div>
+          <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
+        </div>
+        <p className="text-[12.5px] text-[#5A6B82] mb-3">ให้ผู้ยืมสแกน QR หรือเปิดลิงก์นี้เพื่อกรอกคำขอเอง (ไม่ต้อง login) — คำขอจะเข้ามาในคิว “รออนุมัติ”</p>
+        <div className="grid place-items-center mb-3">
+          {dataUrl
+            ? <img src={dataUrl} alt="QR ขอยืม" className="w-56 h-56 rounded-xl border border-[#EEEAE6]" />
+            : <div className="w-56 h-56 grid place-items-center text-[#A8A29E] text-[13px]">กำลังสร้าง QR…</div>}
+        </div>
+        <div className="flex items-center gap-2 border border-[#D6DFEA] rounded-lg px-3 py-2 mb-2">
+          <span className="text-[12.5px] text-[#1C1917] flex-1 truncate tnum">{url}</span>
+          <button onClick={copy} className="text-[12px] font-semibold text-[#EA580C] hover:underline shrink-0">{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</button>
+        </div>
+        <button onClick={print} disabled={!dataUrl} className="w-full text-[13px] font-semibold text-[#1B5FD9] border border-[#1B5FD9] rounded-lg py-2 hover:bg-[#EEF3FA] disabled:opacity-50">🖨️ พิมพ์ QR</button>
       </div>
     </div>
   )

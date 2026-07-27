@@ -37,6 +37,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'unavailable', message: why }, { status: 409 })
   }
 
+  // Optionally approving a public borrow request in the same step.
+  const requestId = str(body.requestId)
+
   // Flip the unit and open the loan together so stock can never show a unit as
   // available while an open loan exists for it (or the reverse).
   const loan = await prisma.$transaction(async (tx) => {
@@ -52,6 +55,10 @@ export async function POST(req: Request) {
       },
     })
     await tx.stockItem.update({ where: { id: item.id }, data: { status: 'BORROWED' } })
+    // Mark the originating request approved (only if still pending).
+    if (requestId) {
+      await tx.loanRequest.updateMany({ where: { id: requestId, status: 'PENDING' }, data: { status: 'APPROVED', loanId: created.id } })
+    }
     return created
   })
 
