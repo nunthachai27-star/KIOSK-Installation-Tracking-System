@@ -138,6 +138,20 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
     } finally { setBusy(false) }
   }
 
+  async function remove() {
+    if (!window.confirm(`ลบรายการยืม-คืนนี้?\n${serialOf(r)} · ผู้ยืม ${r.borrowerName}\n(ลบได้เฉพาะรายการที่คืนแล้ว — ลบแล้วกู้คืนไม่ได้)`)) return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/loans/${r.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        window.alert(d?.message || 'ลบไม่สำเร็จ')
+        return
+      }
+      onDone()
+    } finally { setBusy(false) }
+  }
+
   return (
     <tr className="border-b border-[#F7F8FA] last:border-0 hover:bg-[#FBFAF8]">
       <td className="px-3 py-2 whitespace-nowrap font-bold tnum text-[#1C1917]">{serialOf(r)}</td>
@@ -158,11 +172,14 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
         {r.returnedAt && <div className="text-[10.5px] text-[#A8A29E] mt-0.5">{fmt(r.returnedAt)}</div>}
       </td>
       <td className="px-3 py-2 text-right whitespace-nowrap">
-        {!r.returnedAt && (
+        {!r.returnedAt ? (
           <button onClick={giveBack} disabled={busy}
             className="text-[12px] font-semibold text-[#157F4C] hover:underline disabled:opacity-50">
             {busy ? 'กำลังบันทึก…' : 'รับคืน'}
           </button>
+        ) : (
+          <button onClick={remove} disabled={busy} title="ลบรายการนี้ (คืนแล้ว)"
+            className="w-6 h-6 grid place-items-center rounded-md text-[12px] text-[#C4BFB9] hover:text-[#C13540] hover:bg-[#FBE4E4] disabled:opacity-50">✕</button>
         )}
       </td>
     </tr>
