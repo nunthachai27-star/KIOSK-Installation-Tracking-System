@@ -1,6 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog } from '@/lib/dialog'
 
 type Note = {
   id: string; title: string | null; body: string; color: string; pinned: boolean
@@ -53,7 +54,7 @@ export function NoteBoard({ initial }: { initial: Note[] }) {
     if (res.ok) router.refresh()
   }
   async function remove(n: Note) {
-    if (!window.confirm('ลบโน้ตนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบโน้ต', message: 'ลบโน้ตนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/notes/${n.id}`, { method: 'DELETE' })
     if (res.ok) router.refresh()
   }

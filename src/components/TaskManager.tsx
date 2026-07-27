@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog } from '@/lib/dialog'
 
 type UserOpt = { id: string; name: string }
 type TaskItem = {
@@ -41,7 +42,7 @@ export function TaskManager({ users, kinds, initial, today }: { users: UserOpt[]
   }
 
   async function del(id: string) {
-    if (!window.confirm('ลบงานนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบงาน', message: 'ลบงานนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' })
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }

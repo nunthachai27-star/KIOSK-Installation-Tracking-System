@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { alertDialog } from '@/lib/dialog'
 import type { SerialNumber, SerialType, SerialStatus } from '@prisma/client'
 import { SERIAL_TYPE_LABELS } from '@/lib/serial-types'
 import { addBusinessDays } from '@/lib/workdays'
@@ -76,7 +77,7 @@ export function SerialForm({
       }
       const d = await res.json().catch(() => null)
       if (d?.error === 'ambiguous') { setChoice({ serialId, serialNo, candidates: d.candidates ?? [] }); return }
-      if (d?.message) window.alert(d.message)
+      if (d?.message) await alertDialog(d.message)
     } finally { setDeducting(d => ({ ...d, [serialId]: false })) }
   }
   const router = useRouter()

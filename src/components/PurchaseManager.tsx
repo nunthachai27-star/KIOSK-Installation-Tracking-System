@@ -1,6 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog } from '@/lib/dialog'
 import type { PurchaseStatus } from '@prisma/client'
 import { PURCHASE_STATUS, PURCHASE_STATUS_ORDER, PURCHASE_STEPS } from '@/lib/purchase'
 
@@ -48,7 +49,7 @@ export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDe
     if (res.ok) router.refresh()
   }
   async function remove(id: string) {
-    if (!window.confirm('ลบงานจัดซื้อรายการนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบงานจัดซื้อ', message: 'ลบงานจัดซื้อรายการนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/purchases/${id}`, { method: 'DELETE' })
     if (res.ok) router.refresh()
   }

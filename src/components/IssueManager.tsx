@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog, alertDialog } from '@/lib/dialog'
 import type { IssueStatus, IssueEventType, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { Combobox } from './Combobox'
 import {
@@ -165,7 +166,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
   }
 
   async function remove(id: string) {
-    if (!window.confirm('ลบรายการเคลมนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบรายการเคลม', message: 'ลบรายการเคลมนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/issues/${id}`, { method: 'DELETE' })
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
@@ -180,12 +181,12 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       router.refresh()
     } else {
       const e = await res.json().catch(() => null)
-      alert(e?.message ?? 'เพิ่มอะไหล่ไม่สำเร็จ')
+      await alertDialog(e?.message ?? 'เพิ่มอะไหล่ไม่สำเร็จ')
     }
   }
 
   async function removePart(issueId: string, partId: string) {
-    if (!window.confirm('ลบอะไหล่รายการนี้? (ชิ้นที่ตัดตาม serial จะถูกคืนกลับเข้าคลัง)')) return
+    if (!(await confirmDialog({ title: 'ลบอะไหล่', message: 'ลบอะไหล่รายการนี้?\nชิ้นที่ตัดตาม serial จะถูกคืนกลับเข้าคลัง', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/issues/${issueId}/parts/${partId}`, { method: 'DELETE' })
     if (res.ok) {
       setItems((x) => x.map((it) => (it.id === issueId ? { ...it, parts: it.parts.filter((p) => p.id !== partId) } : it)))
@@ -592,7 +593,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
     } finally { setAddingSol(false) }
   }
   async function delSol(sid: string) {
-    if (!window.confirm('ลบวิธีการแก้ไขรายการนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบวิธีการแก้ไข', message: 'ลบวิธีการแก้ไขรายการนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/issues/${item.id}/solutions/${sid}`, { method: 'DELETE' })
     if (res.ok) setSolEntries((x) => (x ?? []).filter((e) => e.id !== sid))
   }

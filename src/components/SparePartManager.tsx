@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog } from '@/lib/dialog'
 
 type Item = {
   id: string; name: string; category: string | null; stockQty: number
@@ -51,7 +52,7 @@ export function SparePartManager({ initial }: { initial: Item[] }) {
   }
 
   async function remove(id: string) {
-    if (!window.confirm('ลบอะไหล่รายการนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบอะไหล่', message: 'ลบอะไหล่รายการนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/spare-parts/${id}`, { method: 'DELETE' })
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }

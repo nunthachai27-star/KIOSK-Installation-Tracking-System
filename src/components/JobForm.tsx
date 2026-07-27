@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog } from '@/lib/dialog'
 import type { Hospital, User } from '@prisma/client'
 import type { SerializedJob } from '@/lib/serialize'
 import { withCurrent } from '@/lib/options'
@@ -213,8 +214,8 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
     }
   }
 
-  function cancelJob() {
-    if (!window.confirm('ยืนยันยกเลิกรายการนี้?\nงานจะถูกเปลี่ยนสถานะเป็น "ยกเลิก" และซ่อนจากรายการงานปกติ (ดูย้อนหลังได้ที่ "แสดงทั้งหมด")')) return
+  async function cancelJob() {
+    if (!(await confirmDialog({ title: 'ยกเลิกงาน', message: 'ยืนยันยกเลิกรายการนี้?\nงานจะถูกเปลี่ยนสถานะเป็น "ยกเลิก" และซ่อนจากรายการงานปกติ (ดูย้อนหลังได้ที่ "แสดงทั้งหมด")', danger: true, confirmText: 'ยกเลิกงาน', cancelText: 'ไม่' }))) return
     setStatus('CANCELLED', () => router.push('/'))
   }
 

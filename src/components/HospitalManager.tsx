@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog } from '@/lib/dialog'
 
 type Item = { id: string; name: string; province: string; jobCount: number }
 const nf = new Intl.NumberFormat('th-TH')
@@ -133,7 +134,7 @@ function HospitalRow({ item, onSaved, onDeleted, refresh }: {
 
   async function del() {
     if (item.jobCount > 0) return
-    if (!window.confirm(`ลบ "${item.name}" ?`)) return
+    if (!(await confirmDialog({ title: 'ลบโรงพยาบาล', message: `ลบ "${item.name}" ?`, danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/hospitals/${item.id}`, { method: 'DELETE' })
     if (res.ok) { onDeleted(); refresh() }
     else setMsg('ลบไม่สำเร็จ')

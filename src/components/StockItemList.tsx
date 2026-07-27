@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
 import { ScanButton } from './ScanButton'
+import { confirmDialog, alertDialog } from '@/lib/dialog'
 
 type Item = {
   id: string; lotCode: string; seq: number | null; serialBMS: string | null; serialNo: string | null
@@ -61,7 +62,7 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
         setAdding(false)
       } else {
         const d = await res.json().catch(() => null)
-        window.alert(d?.message || 'เพิ่มไม่สำเร็จ')
+        await alertDialog(d?.message || 'เพิ่มไม่สำเร็จ')
       }
     } finally { setAddBusy(false) }
   }
@@ -184,11 +185,11 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
   const canDelete = it.status === 'IN_STOCK' && !(it.serialNo ?? '').trim() && !(it.serialBMS ?? '').trim()
 
   async function remove() {
-    if (!window.confirm(`ลบเครื่องนี้ออกจาก Lot ${it.lotCode}?\nลบได้เฉพาะรายการที่ยังไม่มี Serial NO. และยังไม่จ่ายออก`)) return
+    if (!(await confirmDialog({ title: 'ลบเครื่องออกจาก Lot', message: `ลบเครื่องนี้ออกจาก Lot ${it.lotCode}?\nลบได้เฉพาะรายการที่ยังไม่มี Serial NO. และยังไม่จ่ายออก`, danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/stock/items/${it.id}`, { method: 'DELETE' })
     if (res.ok) { onDeleted(); return }
     const d = await res.json().catch(() => null)
-    window.alert(d?.message || 'ลบไม่สำเร็จ')
+    await alertDialog(d?.message || 'ลบไม่สำเร็จ')
   }
 
   // Returns an error message on failure (e.g. duplicate serial), else null.

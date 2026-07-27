@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import QRCode from 'qrcode'
+import { confirmDialog, promptDialog, alertDialog } from '@/lib/dialog'
 import { LOAN_LEVEL_META, type LoanLevel } from '@/lib/loan'
 
 type Row = {
@@ -160,7 +161,7 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
   const meta = LOAN_LEVEL_META[r.level]
 
   async function giveBack() {
-    const note = window.prompt('รับคืนอุปกรณ์นี้ — บันทึกสภาพของ (เว้นว่างได้)')
+    const note = await promptDialog({ title: 'รับคืนอุปกรณ์', message: 'บันทึกสภาพของ (เว้นว่างได้)', placeholder: 'เช่น สภาพปกติ / มีรอยขีดข่วน', multiline: true, confirmText: 'รับคืน' })
     if (note === null) return // cancelled
     setBusy(true)
     try {
@@ -169,7 +170,7 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => null)
-        window.alert(d?.message || 'รับคืนไม่สำเร็จ')
+        await alertDialog(d?.message || 'รับคืนไม่สำเร็จ')
         return
       }
       onDone()
@@ -177,13 +178,13 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
   }
 
   async function remove() {
-    if (!window.confirm(`ลบรายการยืม-คืนนี้?\n${serialOf(r)} · ผู้ยืม ${r.borrowerName}\n(ลบได้เฉพาะรายการที่คืนแล้ว — ลบแล้วกู้คืนไม่ได้)`)) return
+    if (!(await confirmDialog({ title: 'ลบรายการยืม-คืน', message: `${serialOf(r)} · ผู้ยืม ${r.borrowerName}\nลบได้เฉพาะรายการที่คืนแล้ว — ลบแล้วกู้คืนไม่ได้`, danger: true, confirmText: 'ลบ' }))) return
     setBusy(true)
     try {
       const res = await fetch(`/api/loans/${r.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const d = await res.json().catch(() => null)
-        window.alert(d?.message || 'ลบไม่สำเร็จ')
+        await alertDialog(d?.message || 'ลบไม่สำเร็จ')
         return
       }
       onDone()
@@ -397,14 +398,14 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
 function RequestCard({ rq, onApprove, onDone }: { rq: Req; onApprove: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState(false)
   async function reject() {
-    if (!window.confirm(`ปฏิเสธคำขอยืมของ ${rq.borrowerName}?`)) return
-    const note = window.prompt('เหตุผล (เว้นว่างได้)') ?? ''
+    if (!(await confirmDialog({ title: 'ปฏิเสธคำขอยืม', message: `ปฏิเสธคำขอยืมของ ${rq.borrowerName}?`, danger: true, confirmText: 'ปฏิเสธ' }))) return
+    const note = (await promptDialog({ title: 'เหตุผลการปฏิเสธ', message: 'ระบุเหตุผล (เว้นว่างได้)', multiline: true, confirmText: 'ยืนยัน' })) ?? ''
     setBusy(true)
     try {
       const res = await fetch(`/api/borrow-request/${rq.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note }),
       })
-      if (!res.ok) { const d = await res.json().catch(() => null); window.alert(d?.message || 'ปฏิเสธไม่สำเร็จ'); return }
+      if (!res.ok) { const d = await res.json().catch(() => null); await alertDialog(d?.message || 'ปฏิเสธไม่สำเร็จ'); return }
       onDone()
     } finally { setBusy(false) }
   }
