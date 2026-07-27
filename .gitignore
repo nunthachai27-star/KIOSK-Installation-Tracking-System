@@ -13,3 +13,6 @@ devserver.log
 *.xls
 
 tsconfig.tsbuildinfo
+
+# Uploaded team files (stored on a docker volume in prod)
+/uploads

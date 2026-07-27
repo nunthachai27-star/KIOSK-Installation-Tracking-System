@@ -34,7 +34,11 @@ services:
         condition: service_healthy
     ports:
       - "3100:3000"
+    # Uploaded team files (APK/docs) live here so they survive image rebuilds.
+    volumes:
+      - kiosk_uploads:/app/uploads
     restart: unless-stopped
 
 volumes:
   kiosk_pgdata:
+  kiosk_uploads:

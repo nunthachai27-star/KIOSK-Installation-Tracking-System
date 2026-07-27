@@ -748,6 +748,38 @@ model LoanRequest {
   @@index([ip, createdAt])
 }
 
+// โฟลเดอร์แยกไฟล์ทีมเป็น part (อยู่ในแถบโน้ต) — ทุกคนสร้าง/เปลี่ยนชื่อ/ลบได้.
+model FileFolder {
+  id            String      @id @default(cuid())
+  name          String
+  createdByName String?
+  files         FileAsset[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ไฟล์ฝากของทีม (APK/เอกสาร/ฯลฯ) — ตัวไฟล์เก็บบน disk (volume), ตารางนี้เก็บ metadata.
+// ดาวน์โหลดผ่านลิงก์สาธารณะ /f/<id> ได้ (id เดายาก) แต่การอัป/ลบเฉพาะเจ้าหน้าที่.
+model FileAsset {
+  id             String      @id @default(cuid())
+  folder         FileFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId       String?
+  name           String      // ชื่อที่แสดง (แก้ได้)
+  originalName   String      // ชื่อไฟล์ต้นฉบับ
+  ext            String?     // .apk .pdf .zip ...
+  mimeType       String?
+  size           Int         // bytes
+  note           String?
+  storedPath     String      // ไฟล์จริงบน disk (relative ใต้ uploads)
+  uploadedByName String?
+  downloads      Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([folderId])
+  @@index([createdAt])
+}
+
 // กระดานโน้ตของทีม — ทุกคนเพิ่ม/แก้/ลบได้ เห็นเหมือนกันทั้งหมด.
 // authorId/authorName เป็น snapshot (ไม่ผูก FK) เพื่อไม่กระทบตาราง User.
 model Note {
