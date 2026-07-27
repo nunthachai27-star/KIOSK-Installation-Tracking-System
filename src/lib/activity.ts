@@ -188,6 +188,9 @@ export async function getMonitorQueueForDate(from: Date, to: Date, includeOngoin
   }
 
   for (const a of activities) {
+    // A job already shown as one "ติดตั้ง & ส่งมอบ" ongoing row shouldn't also
+    // appear as its Remote / onsite / handover activity (avoid the duplicate).
+    if (ongoingJobIds.has(a.jobId) && (a.activityType === 'REMOTE' || a.activityType === 'ONSITE' || a.activityType === 'HANDOVER')) continue
     covered.add(`${a.jobId}|${a.activityType}|${ymdKey(a.activityDate)}`)
     items.push({
       id: a.id,
