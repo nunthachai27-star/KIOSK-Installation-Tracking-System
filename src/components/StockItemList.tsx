@@ -44,7 +44,9 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
     setAdding(true)
   }
   async function addUnits() {
-    const target = lots.find((l) => l.lotCode === addLot)
+    // When viewing a specific lot, always add into THAT lot (no cross-lot mistakes).
+    const targetCode = lot || addLot
+    const target = lots.find((l) => l.lotCode === targetCode)
     if (!target || addBusy) return
     const count = Math.min(200, Math.max(1, Math.trunc(Number(addCount) || 1)))
     setAddBusy(true)
@@ -103,7 +105,7 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
         ))}
         {lots.length > 0 && !adding && (
           <button onClick={openAdd} title="เพิ่มเครื่องเข้า Lot ที่มีอยู่ (กรณีสร้างครั้งแรกมาไม่ครบ)"
-            className="ml-auto px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border border-[#EA580C] text-[#EA580C] bg-white hover:bg-[#FFF3EC]">＋ เพิ่มเครื่องใน Lot</button>
+            className="ml-auto px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border border-[#EA580C] text-[#EA580C] bg-white hover:bg-[#FFF3EC]">＋ เพิ่มเครื่องใน Lot{lot ? ` ${lot}` : ''}</button>
         )}
       </div>
 
@@ -111,17 +113,22 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
         <div className="flex items-end gap-2 flex-wrap rounded-xl bg-[#FBFAF8] border border-[#EEEAE6] px-3 py-2.5">
           <div className="flex flex-col gap-1">
             <label className="text-[11.5px] text-[#8492A6]">Lot</label>
-            <select value={addLot} onChange={(e) => setAddLot(e.target.value)}
-              className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C]">
-              {lots.map((l) => <option key={l.id} value={l.lotCode}>Lot {l.lotCode}</option>)}
-            </select>
+            {lot ? (
+              // Locked to the lot currently in view — no cross-lot switching.
+              <div className="border border-[#EEEAE6] rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#1C1917] bg-white">Lot {lot}</div>
+            ) : (
+              <select value={addLot} onChange={(e) => setAddLot(e.target.value)}
+                className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C]">
+                {lots.map((l) => <option key={l.id} value={l.lotCode}>Lot {l.lotCode}</option>)}
+              </select>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11.5px] text-[#8492A6]">จำนวน (เครื่อง)</label>
             <input type="number" min={1} max={200} value={addCount} onChange={(e) => setAddCount(e.target.value)}
               className="w-24 border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] tnum outline-none focus:border-[#EA580C]" />
           </div>
-          <button disabled={addBusy || !addLot} onClick={addUnits}
+          <button disabled={addBusy || !(lot || addLot)} onClick={addUnits}
             className="bg-[#EA580C] text-white text-[12.5px] font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] disabled:opacity-50">
             {addBusy ? 'กำลังเพิ่ม…' : '＋ เพิ่มเข้า Lot'}
           </button>
