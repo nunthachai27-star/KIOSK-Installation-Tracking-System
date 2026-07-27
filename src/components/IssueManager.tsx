@@ -10,6 +10,7 @@ import {
 
 const dFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })
 const fmtDate = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '—' : dFmt.format(d) }
+const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 
 type SerialOpt = { id: string; serialNo: string; hospital: string; jobCode: string; productType: string; warrantyEndDate: string | null }
 type SpareOpt = { id: string; name: string; stockQty: number; sellPrice: number | null }
@@ -547,7 +548,10 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
   onAddPart: (b: { stockProductId: string; qty: number; deductStock: boolean }) => void
   onRemovePart: (partId: string) => void
 }) {
-  const [sol, setSol] = useState(item.solution ?? '')
+  const [solEntries, setSolEntries] = useState<{ id: string; date: string; text: string; authorName: string | null }[] | null>(null)
+  const [newSolDate, setNewSolDate] = useState(todayYmd)
+  const [newSolText, setNewSolText] = useState('')
+  const [addingSol, setAddingSol] = useState(false)
   const [failed, setFailed] = useState(item.failedSerial ?? '')
   const [repl, setRepl] = useState(item.replacementSerial ?? '')
   const [cost, setCost] = useState(item.cost != null ? String(item.cost) : '')
@@ -558,6 +562,29 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
   const [partQty, setPartQty] = useState('1')
   const [copied, setCopied] = useState(false)
   const meta = ISSUE_STATUS[item.status]
+
+  // Load the resolution timeline for this claim when the detail popup opens.
+  useEffect(() => {
+    let ok = true
+    fetch(`/api/issues/${item.id}/solutions`).then((r) => (r.ok ? r.json() : [])).then((d) => { if (ok) setSolEntries(d) }).catch(() => { if (ok) setSolEntries([]) })
+    return () => { ok = false }
+  }, [item.id])
+
+  async function addSol() {
+    const text = newSolText.trim()
+    if (!text || addingSol) return
+    setAddingSol(true)
+    try {
+      const res = await fetch(`/api/issues/${item.id}/solutions`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: newSolDate, text }),
+      })
+      if (res.ok) { const e = await res.json(); setSolEntries((x) => [...(x ?? []), e]); setNewSolText('') }
+    } finally { setAddingSol(false) }
+  }
+  async function delSol(sid: string) {
+    const res = await fetch(`/api/issues/${item.id}/solutions/${sid}`, { method: 'DELETE' })
+    if (res.ok) setSolEntries((x) => (x ?? []).filter((e) => e.id !== sid))
+  }
 
   // Timeline events are loaded on demand the first time the timeline is opened,
   // and refetched if the event count changed (e.g. after a status update).
@@ -579,7 +606,6 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
   }
   const partsTotal = item.parts.reduce((s, p) => s + (p.unitPrice ?? 0) * p.qty, 0)
 
-  const solDirty = (item.solution ?? '') !== sol
   const claimDirty = (item.failedSerial ?? '') !== failed.trim()
     || (item.replacementSerial ?? '') !== repl.trim()
     || (item.cost != null ? String(item.cost) : '') !== cost.trim()
@@ -693,14 +719,29 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
       </>)}
 
       <div className="mt-3">
-        <label className="block text-[12.5px] font-semibold text-[#5A6B82] mb-1">วิธีการแก้ไข</label>
-        <div className="flex gap-2 items-start">
-          <textarea value={sol} onChange={(e) => setSol(e.target.value)} rows={2} placeholder="บันทึกวิธีแก้ไข…"
-            className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#EA580C]" />
-          {solDirty && (
-            <button onClick={() => onPatch({ solution: sol })}
-              className="bg-[#EA580C] text-white text-[13px] font-semibold rounded-lg px-3 py-2 hover:bg-[#C2410C] shrink-0">บันทึก</button>
-          )}
+        <label className="block text-[12.5px] font-semibold text-[#5A6B82] mb-1.5">วิธีการแก้ไข <span className="font-normal text-[#A8A29E]">(บันทึกได้หลายครั้ง · ไทม์ไลน์ติดตาม)</span></label>
+        {/* existing entries — oldest first */}
+        {solEntries && solEntries.length > 0 && (
+          <div className="flex flex-col gap-1.5 mb-2">
+            {solEntries.map((e) => (
+              <div key={e.id} className="flex items-start gap-2 rounded-lg bg-[#FBFAF8] border border-[#EEEAE6] px-2.5 py-1.5">
+                <span className="text-[11px] font-bold text-[#B45309] bg-[#FBEBCB] rounded px-1.5 py-0.5 shrink-0 tnum">{fmt(e.date)}</span>
+                <span className="flex-1 text-[12.5px] text-[#3C4A5E] whitespace-pre-wrap break-words">{e.text}</span>
+                {e.authorName && <span className="text-[10.5px] text-[#A8A29E] shrink-0">{e.authorName}</span>}
+                <button onClick={() => delSol(e.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1 shrink-0" title="ลบรายการนี้">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {solEntries === null && <div className="text-[12px] text-[#A8A29E] mb-2">กำลังโหลด…</div>}
+        {/* add a new step */}
+        <div className="flex items-end gap-2 flex-wrap">
+          <input type="date" value={newSolDate} onChange={(e) => setNewSolDate(e.target.value)}
+            className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+          <textarea value={newSolText} onChange={(e) => setNewSolText(e.target.value)} rows={1} placeholder="พิมพ์วิธีแก้ไข/ความคืบหน้า…"
+            className="flex-1 min-w-[200px] border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#EA580C] resize-y" />
+          <button onClick={addSol} disabled={!newSolText.trim() || addingSol}
+            className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[#C2410C] disabled:opacity-50 shrink-0">＋ เพิ่ม</button>
         </div>
       </div>
 

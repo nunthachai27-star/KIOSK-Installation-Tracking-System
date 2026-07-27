@@ -73,6 +73,8 @@ export async function POST(req: Request) {
           ...(initialSolution ? [{ type: 'SOLUTION_UPDATED' as const, note: initialSolution, actorName }] : []),
         ],
       },
+      // Seed the resolution timeline with the first step, if given at creation.
+      ...(initialSolution ? { solutions: { create: [{ date: new Date(), text: initialSolution, authorName: actorName }] } } : {}),
     },
   })
   await logAction(session.user, 'CREATE', 'แจ้งปัญหา/เคลม', `แจ้ง "${created.title}"`)
