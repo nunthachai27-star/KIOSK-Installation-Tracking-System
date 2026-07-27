@@ -172,7 +172,9 @@ export async function getMonitorQueueForDate(from: Date, to: Date, includeOngoin
       include: { job: { include: { ...jobInclude, handover: { select: { checklistReceivedDate: true } } } } },
     })
     for (const it of ongoing) {
-      if (it.job.currentStatus === 'CANCELLED') continue
+      // Only jobs whose current step IS install & handover — not old jobs that have
+      // moved past it (บิล/ปิดงาน) or never reached it.
+      if (it.job.currentStatus !== 'INSTALLING' && it.job.currentStatus !== 'HANDED_OVER') continue
       if (it.job.handover?.checklistReceivedDate) continue // checklist received → stop showing
       ongoingJobIds.add(it.jobId)
       ongoingItems.push({
