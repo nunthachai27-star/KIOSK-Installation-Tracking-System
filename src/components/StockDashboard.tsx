@@ -10,7 +10,7 @@ type Kpi = { received: number; issued: number; borrowed: number; remaining: numb
 // A unit matched by serial via /api/stock/search.
 type SerialHit = {
   id: string; serialBMS: string | null; serialNo: string | null; color: string | null
-  status: 'IN_STOCK' | 'ISSUED' | 'BORROWED'; lotCode: string; productId: string; productName: string; group: string
+  status: 'IN_STOCK' | 'ISSUED' | 'BORROWED' | 'CLAIM'; lotCode: string; productId: string; productName: string; group: string
   hospitalName: string | null; jobId: string | null; jobCode: string | null
   borrowerName: string | null; borrowerPhone: string | null
 }
@@ -19,6 +19,7 @@ const HIT_STATUS = {
   IN_STOCK: { label: 'ในคลัง', color: '#157F4C', bg: '#E2F3EA' },
   ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
   BORROWED: { label: 'ถูกยืม', color: '#1B5FD9', bg: '#E4EEFF' },
+  CLAIM: { label: 'เคลม', color: '#EA580C', bg: '#FCE7D6' },
 }
 
 export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary[] }) {

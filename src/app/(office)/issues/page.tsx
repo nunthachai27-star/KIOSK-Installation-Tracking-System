@@ -15,7 +15,7 @@ export default async function IssuesPage() {
   for (const [pt, vals] of Object.entries(settingsEquip)) equipmentByProduct[pt] = [...vals]
   for (const r of eqRows) { if (!r.productType || !r.equipment) continue; const a = (equipmentByProduct[r.productType] ??= []); if (!a.includes(r.equipment)) a.push(r.equipment) }
   for (const k of Object.keys(equipmentByProduct)) equipmentByProduct[k].sort((a, b) => a.localeCompare(b, 'th'))
-  const [issues, serials, spareParts, users, stat30] = await Promise.all([
+  const [issues, serials, users, stat30, stockProducts] = await Promise.all([
     prisma.issue.findMany({
       include: {
         job: { include: { hospital: true } },
@@ -35,13 +35,17 @@ export default async function IssuesPage() {
       select: { id: true, serialNo: true, job: { select: { jobCode: true, productType: true, hospital: { select: { name: true } }, invoice: { select: { warrantyEndDate: true } } } } },
       orderBy: { serialNo: 'asc' },
     }),
-    // Spare parts now live in the warehouse (คลังสินค้า → กลุ่มอะไหล่).
-    prisma.stockProduct.findMany({
-      where: { active: true, group: 'อะไหล่' }, orderBy: { name: 'asc' },
-      select: { id: true, name: true, sellPrice: true, lots: { select: { items: { where: { status: 'IN_STOCK' }, select: { id: true } } } } },
-    }),
     prisma.user.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     prisma.issue.groupBy({ by: ['status'], where: { createdAt: { gte: new Date(Date.now() - 30 * 86400000) } }, _count: true }),
+    // Warehouse catalog for the claim parts picker: กลุ่ม → รุ่น → serial (เฉพาะที่ยัง IN_STOCK).
+    prisma.stockProduct.findMany({
+      where: { active: true, serialized: true },
+      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true, group: true, name: true,
+        lots: { select: { items: { where: { status: 'IN_STOCK' }, select: { id: true, serialBMS: true, serialNo: true }, orderBy: [{ serialBMS: 'asc' }, { serialNo: 'asc' }] } } },
+      },
+    }),
   ])
 
   // 30-day claim activity for the helper sidebar.
@@ -54,11 +58,16 @@ export default async function IssuesPage() {
     done: cnt30('DONE'),
   }
 
-  const spareOpts = spareParts.map((s) => ({
-    id: s.id, name: s.name,
-    stockQty: s.lots.reduce((n, l) => n + l.items.length, 0),
-    sellPrice: s.sellPrice ? s.sellPrice.toNumber() : null,
-  }))
+  // กลุ่ม → รุ่น → serial (แสดงเฉพาะรุ่นที่ยังมีชิ้นในคลัง)
+  const catByGroup = new Map<string, { id: string; name: string; items: { id: string; label: string }[] }[]>()
+  for (const p of stockProducts) {
+    const its = p.lots.flatMap((l) => l.items).map((it) => ({ id: it.id, label: it.serialBMS || it.serialNo || '(ไม่มี S/N)' }))
+    if (!its.length) continue
+    const arr = catByGroup.get(p.group) ?? []
+    arr.push({ id: p.id, name: p.name, items: its })
+    catByGroup.set(p.group, arr)
+  }
+  const stockCatalog = [...catByGroup.entries()].map(([group, products]) => ({ group, products }))
 
   const serialOpts = serials.map((s) => ({
     id: s.id,
@@ -88,7 +97,7 @@ export default async function IssuesPage() {
     rating: i.rating,
     assignedToId: i.assignedToId,
     assignedToName: i.assignedTo?.name ?? null,
-    parts: i.parts.map((p) => ({ id: p.id, name: p.name, qty: p.qty, unitPrice: p.unitPrice ? p.unitPrice.toNumber() : null, stockDeducted: p.stockDeducted })),
+    parts: i.parts.map((p) => ({ id: p.id, name: p.name, qty: p.qty, unitPrice: p.unitPrice ? p.unitPrice.toNumber() : null, stockDeducted: p.stockDeducted, serialNo: p.serialNo ?? null })),
     reporter: i.reporter?.name ?? null,
     createdAt: i.createdAt.toISOString(),
     updatedAt: i.updatedAt.toISOString(),
@@ -105,7 +114,7 @@ export default async function IssuesPage() {
         </h1>
         <p className="text-[13px] text-[#8492A6] mt-0.5">รับแจ้งเคลมตาม S/N BMS ของตู้ · ระบบตัดสินประกันอัตโนมัติจากวันเปิดบิล (+1 ปี) · บันทึก serial อุปกรณ์ที่เสีย/ที่ส่งเปลี่ยน วิธีดำเนินการ และค่าใช้จ่าย</p>
       </div>
-      <IssueManager serials={serialOpts} initial={items} spareParts={spareOpts} users={users} stats={stats}
+      <IssueManager serials={serialOpts} initial={items} stockCatalog={stockCatalog} users={users} stats={stats}
         productTypes={[...new Set(items.map((i) => i.productType).filter((p): p is string => !!p))].sort()}
         productTypeOptions={masterProductTypes} equipmentByProduct={equipmentByProduct} />
     </div>

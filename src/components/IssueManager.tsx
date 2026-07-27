@@ -13,9 +13,11 @@ const fmtDate = (iso: string) => { const d = new Date(iso); return isNaN(d.getTi
 const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 
 type SerialOpt = { id: string; serialNo: string; hospital: string; jobCode: string; productType: string; warrantyEndDate: string | null }
-type SpareOpt = { id: string; name: string; stockQty: number; sellPrice: number | null }
+type StockCatItem = { id: string; label: string }
+type StockCatProduct = { id: string; name: string; items: StockCatItem[] }
+type StockCatGroup = { group: string; products: StockCatProduct[] }
 type UserOpt = { id: string; name: string }
-type ClaimPartItem = { id: string; name: string; qty: number; unitPrice: number | null; stockDeducted: boolean }
+type ClaimPartItem = { id: string; name: string; qty: number; unitPrice: number | null; stockDeducted: boolean; serialNo?: string | null }
 type IssueEvt = {
   id: string; type: IssueEventType; fromStatus: IssueStatus | null; toStatus: IssueStatus | null
   note: string | null; actorName: string | null; createdAt: string
@@ -67,7 +69,7 @@ function StatusCard({ active, label, n, color, onClick }: { active: boolean; lab
   )
 }
 
-export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, spareParts, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; spareParts: SpareOpt[]; users: UserOpt[]; stats: ClaimStats }) {
+export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, stockCatalog, users, stats }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; stockCatalog: StockCatGroup[]; users: UserOpt[]; stats: ClaimStats }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   // Keep in sync with the server after router.refresh() so the timeline/claim data reflect updates.
@@ -168,7 +170,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
-  async function addPart(issueId: string, body: { stockProductId: string; qty: number; deductStock: boolean }) {
+  async function addPart(issueId: string, body: { stockItemId: string }) {
     const res = await fetch(`/api/issues/${issueId}/parts`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
@@ -176,10 +178,14 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       const p = await res.json() as ClaimPartItem
       setItems((x) => x.map((it) => (it.id === issueId ? { ...it, parts: [...it.parts, p] } : it)))
       router.refresh()
+    } else {
+      const e = await res.json().catch(() => null)
+      alert(e?.message ?? 'เพิ่มอะไหล่ไม่สำเร็จ')
     }
   }
 
   async function removePart(issueId: string, partId: string) {
+    if (!window.confirm('ลบอะไหล่รายการนี้? (ชิ้นที่ตัดตาม serial จะถูกคืนกลับเข้าคลัง)')) return
     const res = await fetch(`/api/issues/${issueId}/parts/${partId}`, { method: 'DELETE' })
     if (res.ok) {
       setItems((x) => x.map((it) => (it.id === issueId ? { ...it, parts: it.parts.filter((p) => p.id !== partId) } : it)))
@@ -460,7 +466,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
               <div className="font-bold text-[15px] text-[#1C1917]">รายละเอียดเคลม / แก้ไข</div>
               <button type="button" onClick={() => setDetailId(null)} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
             </div>
-            <IssueCard item={detailItem} spareParts={spareParts} users={users} repeatCount={repeatOf(detailItem)}
+            <IssueCard item={detailItem} stockCatalog={stockCatalog} users={users} repeatCount={repeatOf(detailItem)}
               onShowHistory={() => { setSearch(detailItem.serialNo ?? ''); setDetailId(null) }}
               onPatch={(b) => patch(detailItem.id, b)} onDelete={() => { remove(detailItem.id); setDetailId(null) }}
               onAddPart={(b) => addPart(detailItem.id, b)} onRemovePart={(pid) => removePart(detailItem.id, pid)} />
@@ -542,10 +548,10 @@ function IssueRow({ item, onOpen }: { item: Item; onOpen: () => void }) {
   )
 }
 
-function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatch, onDelete, onAddPart, onRemovePart }: {
-  item: Item; spareParts: SpareOpt[]; users: UserOpt[]; repeatCount: number; onShowHistory: () => void
+function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPatch, onDelete, onAddPart, onRemovePart }: {
+  item: Item; stockCatalog: StockCatGroup[]; users: UserOpt[]; repeatCount: number; onShowHistory: () => void
   onPatch: (b: PatchBody) => void; onDelete: () => void
-  onAddPart: (b: { stockProductId: string; qty: number; deductStock: boolean }) => void
+  onAddPart: (b: { stockItemId: string }) => void
   onRemovePart: (partId: string) => void
 }) {
   const [solEntries, setSolEntries] = useState<{ id: string; date: string; text: string; authorName: string | null }[] | null>(null)
@@ -561,8 +567,9 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
   const [openTl, setOpenTl] = useState(false)
   const [events, setEvents] = useState<IssueEvt[] | null>(null)
   const [loadingTl, setLoadingTl] = useState(false)
-  const [partId, setPartId] = useState('')
-  const [partQty, setPartQty] = useState('1')
+  const [pGroup, setPGroup] = useState('')
+  const [pProd, setPProd] = useState('')
+  const [pItem, setPItem] = useState('')
   const [copied, setCopied] = useState(false)
   const meta = ISSUE_STATUS[item.status]
 
@@ -619,6 +626,9 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
     navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
   }
   const partsTotal = item.parts.reduce((s, p) => s + (p.unitPrice ?? 0) * p.qty, 0)
+  // Warehouse picker cascade: กลุ่ม → รุ่น → serial (แสดงเฉพาะที่ยังมีในคลัง)
+  const catProducts = stockCatalog.find((g) => g.group === pGroup)?.products ?? []
+  const catItems = catProducts.find((p) => p.id === pProd)?.items ?? []
 
   const claimDirty = (item.failedSerial ?? '') !== failed.trim()
     || (item.replacementSerial ?? '') !== repl.trim()
@@ -699,18 +709,19 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
         )}
       </div>
 
-      {/* spare parts used on this claim */}
+      {/* อะไหล่/ชิ้นที่ตัดจากคลังมาใช้เคลม — เลือก กลุ่ม → รุ่น → serial → ตัดออก (สถานะในคลังเป็น "เคลม") */}
       <div className="mt-3 rounded-xl bg-[#FBFAF8] border border-[#EEEAE6] px-3 py-2.5">
         <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="text-[12.5px] font-bold text-[#57534E]">📦 อะไหล่ที่ใช้ ({item.parts.length})</span>
-          {partsTotal > 0 && <span className="text-[12px] text-[#5A6B82]">รวมค่าอะไหล่ {baht.format(partsTotal)} บาท</span>}
+          <span className="text-[12.5px] font-bold text-[#57534E]">📦 อะไหล่ที่ตัดจากคลัง ({item.parts.length})</span>
+          {partsTotal > 0 && <span className="text-[12px] text-[#5A6B82]">รวมมูลค่า {baht.format(partsTotal)} บาท</span>}
         </div>
         {item.parts.length > 0 && (
           <div className="flex flex-col gap-1 mb-2">
             {item.parts.map((p) => (
               <div key={p.id} className="flex items-center gap-2 text-[12.5px]">
-                <span className="flex-1 truncate text-[#1C1917]">{p.name} <span className="text-[#8492A6]">× {p.qty}</span>
-                  {p.stockDeducted && <span className="ml-1.5 text-[10.5px] text-[#157F4C]">ตัดสต็อกแล้ว</span>}
+                <span className="flex-1 truncate text-[#1C1917]">{p.name}
+                  {p.serialNo ? <span className="text-[#8492A6]"> · S/N {p.serialNo}</span> : <span className="text-[#8492A6]"> × {p.qty}</span>}
+                  {p.stockDeducted && <span className="ml-1.5 text-[10.5px] font-semibold text-[#EA580C]">ตัดเป็นเคลมจากคลัง</span>}
                   {p.unitPrice != null && <span className="ml-1.5 text-[#8492A6]">({baht.format(p.unitPrice * p.qty)} ฿)</span>}
                 </span>
                 <button onClick={() => onRemovePart(p.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1.5">✕</button>
@@ -718,17 +729,29 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
             ))}
           </div>
         )}
-        <div className="flex items-end gap-2 flex-wrap">
-          <select value={partId} onChange={(e) => setPartId(e.target.value)}
-            className="flex-1 min-w-[180px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[#EA580C]">
-            <option value="">— เลือกอะไหล่จากคลัง —</option>
-            {spareParts.map((s) => <option key={s.id} value={s.id}>{s.name} (คงเหลือ {s.stockQty})</option>)}
-          </select>
-          <input type="number" min={1} value={partQty} onChange={(e) => setPartQty(e.target.value)}
-            className="w-16 border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
-          <button disabled={!partId} onClick={() => { onAddPart({ stockProductId: partId, qty: Math.max(1, Number(partQty) || 1), deductStock: false }); setPartId(''); setPartQty('1') }}
-            className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">＋ เพิ่ม</button>
-        </div>
+        {stockCatalog.length === 0 ? (
+          <div className="text-[12px] text-[#8492A6] py-1">ไม่มีสินค้าคงเหลือในคลังให้เลือก</div>
+        ) : (
+          <div className="flex items-end gap-2 flex-wrap">
+            <select value={pGroup} onChange={(e) => { setPGroup(e.target.value); setPProd(''); setPItem('') }}
+              className="flex-1 min-w-[130px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[#EA580C]">
+              <option value="">— กลุ่มสินค้า —</option>
+              {stockCatalog.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
+            </select>
+            <select value={pProd} disabled={!pGroup} onChange={(e) => { setPProd(e.target.value); setPItem('') }}
+              className="flex-1 min-w-[130px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[#EA580C] disabled:bg-[#F5F5F4]">
+              <option value="">— รุ่น —</option>
+              {catProducts.map((p) => <option key={p.id} value={p.id}>{p.name} (คงเหลือ {p.items.length})</option>)}
+            </select>
+            <select value={pItem} disabled={!pProd} onChange={(e) => setPItem(e.target.value)}
+              className="flex-1 min-w-[150px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[#EA580C] disabled:bg-[#F5F5F4]">
+              <option value="">— เลือก Serial —</option>
+              {catItems.map((it) => <option key={it.id} value={it.id}>{it.label}</option>)}
+            </select>
+            <button disabled={!pItem} onClick={() => { onAddPart({ stockItemId: pItem }); setPGroup(''); setPProd(''); setPItem('') }}
+              className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">＋ ตัดเป็นเคลม</button>
+          </div>
+        )}
       </div>
       </>)}
 

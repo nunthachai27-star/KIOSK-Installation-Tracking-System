@@ -402,6 +402,8 @@ model ClaimPart {
   sparePart     SparePart? @relation(fields: [sparePartId], references: [id], onDelete: SetNull)
   sparePartId   String?
   stockProductId String?   // อะไหล่จากคลังสินค้า (กลุ่มอะไหล่) ที่ตัดออก
+  stockItemId   String?    // ชิ้นเฉพาะ (StockItem) ที่ตัดตาม serial ไปใช้เคลม → พลิกสถานะเป็น CLAIM
+  serialNo      String?    // snapshot serial ของชิ้นที่ตัด (BMS/ผู้ผลิต)
   name          String
   qty           Int        @default(1)
   unitPrice     Decimal?
@@ -617,6 +619,7 @@ enum StockStatus {
   IN_STOCK
   ISSUED
   BORROWED // ถูกยืมออกไป — ยังเป็นของคลัง รอคืน
+  CLAIM    // ตัดออกไปใช้เคลม — ไม่นับเป็นคงเหลือ (คืนได้เมื่อลบรายการเคลม)
 }
 
 // Catalog of trackable stock items (finished goods / equipment).

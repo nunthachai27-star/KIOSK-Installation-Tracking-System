@@ -5,7 +5,7 @@ import { ScanButton } from './ScanButton'
 
 type Item = {
   id: string; lotCode: string; seq: number | null; serialBMS: string | null; serialNo: string | null
-  color: string | null; status: 'IN_STOCK' | 'ISSUED' | 'BORROWED'; receivedDate: string | null; issuedDate: string | null
+  color: string | null; status: 'IN_STOCK' | 'ISSUED' | 'BORROWED' | 'CLAIM'; receivedDate: string | null; issuedDate: string | null
   deliveredDate: string | null; hospitalName: string | null; jobId: string | null; jobCode: string | null
   borrowerName: string | null; borrowerPhone: string | null; dueDate: string | null
 }
@@ -20,6 +20,7 @@ const STATUS = {
   IN_STOCK: { label: 'ในคลัง', color: '#157F4C', bg: '#E2F3EA' },
   ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
   BORROWED: { label: 'ถูกยืม', color: '#1B5FD9', bg: '#E4EEFF' },
+  CLAIM: { label: 'เคลม', color: '#EA580C', bg: '#FCE7D6' },
 }
 
 export function StockItemList({ items: initial, lotCodes, initialLot, initialQ = '' }: { items: Item[]; lotCodes: string[]; initialLot: string; initialQ?: string }) {
@@ -27,7 +28,7 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
   useEffect(() => { setItems(initial) }, [initial])
   const [q, setQ] = useState(initialQ)
   const [lot, setLot] = useState(initialLot)
-  const [status, setStatus] = useState<'' | 'IN_STOCK' | 'ISSUED' | 'BORROWED'>('')
+  const [status, setStatus] = useState<'' | 'IN_STOCK' | 'ISSUED' | 'BORROWED' | 'CLAIM'>('')
   const [page, setPage] = useState(1)
 
   const patchField = (id: string, patch: Partial<Record<EditField, string | null>>) =>
@@ -61,7 +62,7 @@ export function StockItemList({ items: initial, lotCodes, initialLot, initialQ =
           <option value="">ทุก Lot</option>
           {lotCodes.map((l) => <option key={l} value={l}>Lot {l}</option>)}
         </select>
-        {(['', 'IN_STOCK', 'BORROWED', 'ISSUED'] as const).map((s) => (
+        {(['', 'IN_STOCK', 'BORROWED', 'ISSUED', 'CLAIM'] as const).map((s) => (
           <button key={s || 'all'} onClick={() => setStatus(s)}
             className={`px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border ${status === s ? 'bg-[#1C1917] text-white border-[#1C1917]' : 'bg-white text-[#5A6B82] border-[#E1E8F2] hover:bg-[#F6F9FC]'}`}>
             {s === '' ? 'ทั้งหมด' : STATUS[s].label}

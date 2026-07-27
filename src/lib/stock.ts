@@ -22,16 +22,18 @@ export type ProductSummary = {
 export type GroupSummary = { group: string; received: number; issued: number; borrowed: number; remaining: number; products: ProductSummary[] }
 
 export async function getStockSummary() {
-  const [products, lots, issuedByLot, borrowedByLot] = await Promise.all([
+  const [products, lots, issuedByLot, borrowedByLot, claimedByLot] = await Promise.all([
     prisma.stockProduct.findMany({ where: { active: true }, orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }] }),
     prisma.stockLot.findMany({ select: { id: true, productId: true, lotCode: true, receivedQty: true, _count: { select: { items: true } } } }),
     prisma.stockItem.groupBy({ by: ['lotId'], where: { status: 'ISSUED' }, _count: true }),
     prisma.stockItem.groupBy({ by: ['lotId'], where: { status: 'BORROWED' }, _count: true }),
+    prisma.stockItem.groupBy({ by: ['lotId'], where: { status: 'CLAIM' }, _count: true }),
   ])
 
   const serializedOf = new Map(products.map((p) => [p.id, p.serialized]))
   const issuedMap = new Map(issuedByLot.map((g) => [g.lotId, g._count]))
   const borrowedMap = new Map(borrowedByLot.map((g) => [g.lotId, g._count]))
+  const claimedMap = new Map(claimedByLot.map((g) => [g.lotId, g._count]))
   const lotsByProduct = new Map<string, LotSummary[]>()
   for (const l of lots) {
     // Serial products count individual items; quantity-only products (spare parts) use receivedQty.
@@ -40,8 +42,10 @@ export async function getStockSummary() {
     const issued = serialized ? (issuedMap.get(l.id) ?? 0) : 0
     // Units out on loan are still owned but not available to hand out.
     const borrowed = serialized ? (borrowedMap.get(l.id) ?? 0) : 0
+    // Units cut out for a claim leave the available pool.
+    const claimed = serialized ? (claimedMap.get(l.id) ?? 0) : 0
     const arr = lotsByProduct.get(l.productId) ?? []
-    arr.push({ id: l.id, lotCode: l.lotCode, received, issued, borrowed, remaining: received - issued - borrowed })
+    arr.push({ id: l.id, lotCode: l.lotCode, received, issued, borrowed, remaining: received - issued - borrowed - claimed })
     lotsByProduct.set(l.productId, arr)
   }
 
@@ -52,7 +56,8 @@ export async function getStockSummary() {
     const received = plots.reduce((s, l) => s + l.received, 0)
     const issued = plots.reduce((s, l) => s + l.issued, 0)
     const borrowed = plots.reduce((s, l) => s + l.borrowed, 0)
-    const remaining = received - issued - borrowed
+    // Sum lot remainders so claimed units (baked into each lot's remaining) are excluded.
+    const remaining = plots.reduce((s, l) => s + l.remaining, 0)
     const level = stockLevel(remaining, p.lowStockQty)
     kReceived += received; kIssued += issued; kBorrowed += borrowed; kRemaining += remaining
     if (level === 'LOW') kLow++; if (level === 'OUT') kOut++

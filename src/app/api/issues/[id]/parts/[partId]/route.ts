@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// Remove a spare part from a claim — restores stock if it was deducted.
+// Remove a spare part from a claim — returns any cut unit back to the warehouse.
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string; partId: string }> }) {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -10,8 +10,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { partId } = await params
   const part = await prisma.claimPart.findUnique({ where: { id: partId } })
   if (part) {
-    if (part.stockDeducted && part.stockProductId) {
-      // Return the consumed units to the warehouse.
+    if (part.stockItemId) {
+      // Serial unit cut into CLAIM — restore it to IN_STOCK (only if still CLAIM).
+      await prisma.stockItem.updateMany({
+        where: { id: part.stockItemId, status: 'CLAIM' },
+        data: { status: 'IN_STOCK', note: null },
+      })
+    } else if (part.stockDeducted && part.stockProductId) {
+      // Legacy: units that had been deducted from stock (old flow).
       const items = await prisma.stockItem.findMany({
         where: { status: 'ISSUED', note: 'ตัดใช้ในเคลม', lot: { productId: part.stockProductId } }, take: part.qty, select: { id: true },
       })
