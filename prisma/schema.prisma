@@ -740,10 +740,12 @@ model LoanRequest {
   status        LoanRequestStatus @default(PENDING)
   note          String?           // เหตุผลปฏิเสธ / หมายเหตุเจ้าหน้าที่
   loanId        String?           // Loan ที่สร้างเมื่ออนุมัติ (อ้างอิงเฉยๆ)
+  ip            String?           // IP ผู้ส่งคำขอ (audit + rate limit)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
   @@index([status])
+  @@index([ip, createdAt])
 }
 
 // กระดานโน้ตของทีม — ทุกคนเพิ่ม/แก้/ลบได้ เห็นเหมือนกันทั้งหมด.

@@ -9,6 +9,7 @@ export default function BorrowRequestPage() {
   const [org, setOrg] = useState('')
   const [due, setDue] = useState('')
   const [purpose, setPurpose] = useState('')
+  const [website, setWebsite] = useState('') // honeypot — real users leave blank
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const [done, setDone] = useState(false)
@@ -22,7 +23,7 @@ export default function BorrowRequestPage() {
     try {
       const res = await fetch('/api/borrow-request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ borrowerName: name, borrowerPhone: phone, borrowerOrg: org, dueDate: due, purpose }),
+        body: JSON.stringify({ borrowerName: name, borrowerPhone: phone, borrowerOrg: org, dueDate: due, purpose, website }),
       })
       if (!res.ok) { const d = await res.json().catch(() => null); setErr(d?.message || 'ส่งคำขอไม่สำเร็จ'); return }
       setDone(true)
@@ -53,6 +54,10 @@ export default function BorrowRequestPage() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-3.5">
+            {/* Honeypot: hidden from humans; bots that fill it are silently dropped. */}
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+              value={website} onChange={(e) => setWebsite(e.target.value)}
+              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
             <div>
               <label className="block text-[13px] font-semibold text-[#5A6B82] mb-1.5">ชื่อ-นามสกุล {req}</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ชื่อผู้ยืม" className={field} />
