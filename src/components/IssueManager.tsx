@@ -455,8 +455,8 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       {detailItem && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4"
           onMouseDown={(e) => { if (e.target === e.currentTarget) setDetailId(null) }}>
-          <div className="mx-auto my-4 w-full max-w-2xl">
-            <div className="flex items-center justify-between bg-white rounded-t-2xl px-4 py-3 border-b border-[#F1F3F6] shadow-[0_-1px_0_#E7EDF4]">
+          <div className="mx-auto my-4 w-full max-w-2xl ds-card bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#F1F3F6] bg-white sticky top-0 z-10">
               <div className="font-bold text-[15px] text-[#1C1917]">รายละเอียดเคลม / แก้ไข</div>
               <button type="button" onClick={() => setDetailId(null)} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
             </div>
@@ -552,6 +552,9 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
   const [newSolDate, setNewSolDate] = useState(todayYmd)
   const [newSolText, setNewSolText] = useState('')
   const [addingSol, setAddingSol] = useState(false)
+  const [editSolId, setEditSolId] = useState<string | null>(null)
+  const [editSolDate, setEditSolDate] = useState('')
+  const [editSolText, setEditSolText] = useState('')
   const [failed, setFailed] = useState(item.failedSerial ?? '')
   const [repl, setRepl] = useState(item.replacementSerial ?? '')
   const [cost, setCost] = useState(item.cost != null ? String(item.cost) : '')
@@ -582,8 +585,19 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
     } finally { setAddingSol(false) }
   }
   async function delSol(sid: string) {
+    if (!window.confirm('ลบวิธีการแก้ไขรายการนี้?')) return
     const res = await fetch(`/api/issues/${item.id}/solutions/${sid}`, { method: 'DELETE' })
     if (res.ok) setSolEntries((x) => (x ?? []).filter((e) => e.id !== sid))
+  }
+  function startEditSol(e: { id: string; date: string; text: string }) {
+    setEditSolId(e.id); setEditSolText(e.text); setEditSolDate(e.date.slice(0, 10))
+  }
+  async function saveEditSol() {
+    if (!editSolId || !editSolText.trim()) return
+    const res = await fetch(`/api/issues/${item.id}/solutions/${editSolId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: editSolDate, text: editSolText.trim() }),
+    })
+    if (res.ok) { const u = await res.json(); setSolEntries((x) => (x ?? []).map((e) => (e.id === u.id ? u : e))); setEditSolId(null) }
   }
 
   // Timeline events are loaded on demand the first time the timeline is opened,
@@ -611,7 +625,7 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
     || (item.cost != null ? String(item.cost) : '') !== cost.trim()
 
   return (
-    <div className="ds-card p-4">
+    <div className="p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -724,11 +738,25 @@ function IssueCard({ item, spareParts, users, repeatCount, onShowHistory, onPatc
         {solEntries && solEntries.length > 0 && (
           <div className="flex flex-col gap-1.5 mb-2">
             {solEntries.map((e) => (
-              <div key={e.id} className="flex items-start gap-2 rounded-lg bg-[#FBFAF8] border border-[#EEEAE6] px-2.5 py-1.5">
-                <span className="text-[11px] font-bold text-[#B45309] bg-[#FBEBCB] rounded px-1.5 py-0.5 shrink-0 tnum">{fmt(e.date)}</span>
-                <span className="flex-1 text-[12.5px] text-[#3C4A5E] whitespace-pre-wrap break-words">{e.text}</span>
-                {e.authorName && <span className="text-[10.5px] text-[#A8A29E] shrink-0">{e.authorName}</span>}
-                <button onClick={() => delSol(e.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1 shrink-0" title="ลบรายการนี้">✕</button>
+              <div key={e.id} className="rounded-lg bg-[#FBFAF8] border border-[#EEEAE6] px-2.5 py-1.5">
+                {editSolId === e.id ? (
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <input type="date" value={editSolDate} onChange={(ev) => setEditSolDate(ev.target.value)}
+                      className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+                    <textarea value={editSolText} onChange={(ev) => setEditSolText(ev.target.value)} rows={2}
+                      className="flex-1 min-w-[180px] border border-[#D6DFEA] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[#EA580C] resize-y" />
+                    <button onClick={saveEditSol} disabled={!editSolText.trim()} className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[#C2410C] disabled:opacity-50 shrink-0">บันทึก</button>
+                    <button onClick={() => setEditSolId(null)} className="text-[12px] font-semibold text-[#5A6B82] px-2 py-2 shrink-0">ยกเลิก</button>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <span className="text-[11px] font-bold text-[#B45309] bg-[#FBEBCB] rounded px-1.5 py-0.5 shrink-0 tnum">{fmt(e.date)}</span>
+                    <span className="flex-1 text-[12.5px] text-[#3C4A5E] whitespace-pre-wrap break-words">{e.text}</span>
+                    {e.authorName && <span className="text-[10.5px] text-[#A8A29E] shrink-0">{e.authorName}</span>}
+                    <button onClick={() => startEditSol(e)} className="text-[#5A6B82] hover:text-[#EA580C] text-[12px] font-semibold shrink-0" title="แก้ไข">✎</button>
+                    <button onClick={() => delSol(e.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1 shrink-0" title="ลบรายการนี้">✕</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
