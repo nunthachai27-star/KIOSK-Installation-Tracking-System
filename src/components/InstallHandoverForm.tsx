@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import type { InstallationRecord, HandoverRecord, InstallType, InstallStatus, HandoverStatus, DeliveryStatus } from '@prisma/client'
 import type { SerializedJob } from '@/lib/serialize'
@@ -260,11 +261,11 @@ export function InstallHandoverForm({
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">กำหนด Remote</label>
-            <input type="date" value={iForm.remoteDate} onChange={e => setI('remoteDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <DateField value={iForm.remoteDate} onChange={v => setI('remoteDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันนัดติดตั้งหน้างาน</label>
-            <input type="date" value={iForm.onsiteDate} onChange={e => setI('onsiteDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <DateField value={iForm.onsiteDate} onChange={v => setI('onsiteDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
           </div>
           <div className="col-span-2">
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">ผลการติดตั้ง</label>
@@ -308,7 +309,7 @@ export function InstallHandoverForm({
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ได้รับ Checklist</label>
-            <input type="date" value={hForm.checklistReceivedDate} onChange={e => setH('checklistReceivedDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <DateField value={hForm.checklistReceivedDate} onChange={v => setH('checklistReceivedDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะส่งมอบงาน</label>
@@ -320,7 +321,7 @@ export function InstallHandoverForm({
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่แจ้งส่งมอบ</label>
-            <input type="date" value={hForm.handoverDate} onChange={e => setH('handoverDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <DateField value={hForm.handoverDate} onChange={v => setH('handoverDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
           </div>
           <div className="col-span-2">
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">หมายเหตุ</label>

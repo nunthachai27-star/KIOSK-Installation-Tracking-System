@@ -1,5 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { confirmDialog } from '@/lib/dialog'
 
@@ -189,7 +190,7 @@ function NoteForm({ editing, onClose, onDone }: { editing: Note | null; onClose:
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วันเตือน <span className="font-normal text-[#8492A6]">(ไม่บังคับ)</span></label>
-            <input type="date" value={f.remindAt} min={todayYmd()} onChange={(e) => set('remindAt', e.target.value)} className={`${field} tnum`} />
+            <DateField value={f.remindAt} min={todayYmd()} onChange={(v) => set('remindAt', v)} className={`${field} tnum`} />
           </div>
         </div>
         <div>

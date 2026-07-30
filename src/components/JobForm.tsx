@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { confirmDialog } from '@/lib/dialog'
 import type { Hospital, User } from '@prisma/client'
@@ -405,15 +406,15 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#5A6B82] mb-1">กำหนดส่งมอบ</label>
-                  <input type="date" value={form.deliveryDueDate} onChange={e => set('deliveryDueDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+                  <DateField value={form.deliveryDueDate} onChange={v => set('deliveryDueDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่เริ่มสัญญา</label>
-                  <input type="date" value={form.contractStartDate} onChange={e => set('contractStartDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+                  <DateField value={form.contractStartDate} onChange={v => set('contractStartDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่สิ้นสุดสัญญา</label>
-                  <input type="date" value={form.contractEndDate} onChange={e => set('contractEndDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+                  <DateField value={form.contractEndDate} onChange={v => set('contractEndDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
                 </div>
               </>
             )}

@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import type { HandoverStatus, InvoiceStatus } from '@prisma/client'
 import type { SerializedJob, SerializedInvoice } from '@/lib/serialize'
@@ -150,7 +151,7 @@ export function InvoiceForm({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่เปิด</label>
-                <input type="date" value={iForm.invoiceDate} onChange={e => setI('invoiceDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+                <DateField value={iForm.invoiceDate} onChange={v => setI('invoiceDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
                 {warrantyEnd && (
                   <div className="mt-2 rounded-lg bg-[#F3EEFF] text-[#6D28D9] text-[13px] px-3 py-2">
                     🛡 รับประกันถึง <span className="font-bold">{warrantyFmt.format(warrantyEnd)}</span>

@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import type { DeliveryStatus } from '@prisma/client'
 import type { SerializedJob, SerializedDelivery } from '@/lib/serialize'
@@ -173,7 +174,7 @@ export function DeliveryForm({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ขนออก</label>
-            <input type="date" value={dForm.shippedDate} onChange={e => setD('shippedDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <DateField value={dForm.shippedDate} onChange={v => setD('shippedDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
             {callDue && (
               <div className="mt-2 rounded-lg bg-[#FFF3E9] text-[#C2410C] text-[13px] px-3 py-2">
                 📞 โทรนัดโรงพยาบาลเพื่อนัดวันติดตั้ง ภายใน <span className="font-bold">{callFmt.format(callDue)}</span>
@@ -183,7 +184,7 @@ export function DeliveryForm({
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ส่งถึง</label>
-            <input type="date" value={dForm.arrivedDate} onChange={e => setD('arrivedDate', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <DateField value={dForm.arrivedDate} onChange={v => setD('arrivedDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วิธีจัดส่ง</label>

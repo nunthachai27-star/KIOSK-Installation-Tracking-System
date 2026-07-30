@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { ScanButton } from './ScanButton'
 
@@ -138,7 +139,7 @@ export function StockReceiveForm({ products, groups }: { products: ProductOpt[];
           </div>
           <div>
             <label className={label}>วันที่รับเข้า</label>
-            <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} className={field} />
+            <DateField value={receivedDate} onChange={(v) => setReceivedDate(v)} className={field} />
           </div>
           <div>
             <label className={label}>หมายเหตุ (ถ้ามี)</label>

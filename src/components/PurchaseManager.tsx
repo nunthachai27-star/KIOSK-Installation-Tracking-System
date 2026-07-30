@@ -1,5 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { confirmDialog } from '@/lib/dialog'
 import type { PurchaseStatus } from '@prisma/client'
@@ -285,16 +286,16 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วันที่ต้องการใช้</label>
-            <input type="date" value={neededDate} onChange={(e) => setNeededDate(e.target.value)} className={`${field} tnum`} />
+            <DateField value={neededDate} onChange={(v) => setNeededDate(v)} className={`${field} tnum`} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วันสั่งซื้อ</label>
-              <input type="date" value={orderedDate} onChange={(e) => setOrderedDate(e.target.value)} className={`${field} tnum`} />
+              <DateField value={orderedDate} onChange={(v) => setOrderedDate(v)} className={`${field} tnum`} />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วันรับของ</label>
-              <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} className={`${field} tnum`} />
+              <DateField value={receivedDate} onChange={(v) => setReceivedDate(v)} className={`${field} tnum`} />
             </div>
           </div>
           <div className="md:col-span-2">

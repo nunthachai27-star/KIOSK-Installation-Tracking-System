@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, type ReactNode } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 
 type JobOpt = { id: string; label: string; date?: string }
@@ -85,7 +86,7 @@ export function QueueManager({
             </div>
             <div>
               <label className={label}>วันที่</label>
-              <input type="date" value={when} onChange={(e) => setWhen(e.target.value)} className={field} />
+              <DateField value={when} onChange={(v) => setWhen(v)} className={field} />
             </div>
             <div>
               <label className={label}>เวลา</label>
@@ -112,7 +113,7 @@ export function QueueManager({
             <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">📅</span>
             <span className="text-[14px] font-bold">คิววันที่ {date}</span>
           </div>
-          <input type="date" value={date} onChange={(e) => { if (e.target.value) router.push(`/schedule?d=${e.target.value}`) }}
+          <DateField value={date} onChange={(v) => { if (v) router.push(`/schedule?d=${v}`) }}
             className="border border-[#D6DFEA] rounded-lg px-2 py-1 text-[12px] outline-none focus:border-[#EA580C]" aria-label="เลือกวันที่คิว" />
         </div>
         {items.length === 0 ? (

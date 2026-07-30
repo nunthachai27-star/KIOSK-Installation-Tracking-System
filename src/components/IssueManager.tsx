@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { confirmDialog, alertDialog } from '@/lib/dialog'
 import type { IssueStatus, IssueEventType, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
@@ -421,11 +422,11 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
         </button>
         <div className="flex items-center gap-1.5 border border-[#D6DFEA] rounded-lg px-2.5 py-1.5">
           <span className="text-[#A8A29E] text-[13px]">🗓</span>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="ตั้งแต่วันที่"
-            className="text-[12.5px] tnum text-[#3C4A5E] outline-none bg-transparent w-[112px]" />
+          <DateField value={dateFrom} onChange={(v) => setDateFrom(v)} aria-label="ตั้งแต่วันที่"
+            className="text-[12.5px] tnum text-[#3C4A5E] outline-none bg-transparent w-[132px]" />
           <span className="text-[#C4BFB9]">–</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="ถึงวันที่"
-            className="text-[12.5px] tnum text-[#3C4A5E] outline-none bg-transparent w-[112px]" />
+          <DateField value={dateTo} onChange={(v) => setDateTo(v)} aria-label="ถึงวันที่"
+            className="text-[12.5px] tnum text-[#3C4A5E] outline-none bg-transparent w-[132px]" />
           {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo('') }} className="text-[#A8A29E] hover:text-[#C13540] text-[13px]">✕</button>}
         </div>
       </div>
@@ -765,7 +766,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
               <div key={e.id} className="rounded-lg bg-[#FBFAF8] border border-[#EEEAE6] px-2.5 py-1.5">
                 {editSolId === e.id ? (
                   <div className="flex items-end gap-2 flex-wrap">
-                    <input type="date" value={editSolDate} onChange={(ev) => setEditSolDate(ev.target.value)}
+                    <DateField value={editSolDate} onChange={(v) => setEditSolDate(v)}
                       className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
                     <textarea value={editSolText} onChange={(ev) => setEditSolText(ev.target.value)} rows={2}
                       className="flex-1 min-w-[180px] border border-[#D6DFEA] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[#EA580C] resize-y" />
@@ -788,7 +789,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         {solEntries === null && <div className="text-[12px] text-[#A8A29E] mb-2">กำลังโหลด…</div>}
         {/* add a new step */}
         <div className="flex items-end gap-2 flex-wrap">
-          <input type="date" value={newSolDate} onChange={(e) => setNewSolDate(e.target.value)}
+          <DateField value={newSolDate} onChange={(v) => setNewSolDate(v)}
             className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
           <textarea value={newSolText} onChange={(e) => setNewSolText(e.target.value)} rows={1} placeholder="พิมพ์วิธีแก้ไข/ความคืบหน้า…"
             className="flex-1 min-w-[200px] border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#EA580C] resize-y" />

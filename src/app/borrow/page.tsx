@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DateField } from '@/components/DateField'
 
 // Public borrow-request form (no login). Borrowers submit their details only;
 // staff pick the actual item and approve inside the office app.
@@ -73,7 +74,7 @@ export default function BorrowRequestPage() {
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#5A6B82] mb-1.5">กำหนดคืน (ที่ต้องการ)</label>
-              <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={`${field} tnum`} />
+              <DateField value={due} onChange={(v) => setDue(v)} className={`${field} tnum`} />
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#5A6B82] mb-1.5">วัตถุประสงค์ / อุปกรณ์ที่ต้องการ</label>

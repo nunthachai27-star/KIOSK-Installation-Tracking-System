@@ -1,5 +1,6 @@
 'use client'
 import { useState, useMemo, useEffect } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import QRCode from 'qrcode'
 import { confirmDialog, promptDialog, alertDialog } from '@/lib/dialog'
@@ -374,7 +375,7 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">กำหนดคืน {req}</label>
-          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={`${field} tnum`} />
+          <DateField value={due} onChange={(v) => setDue(v)} className={`${field} tnum`} />
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วัตถุประสงค์</label>

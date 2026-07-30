@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { confirmDialog } from '@/lib/dialog'
 
@@ -82,11 +83,11 @@ export function TaskManager({ users, kinds, initial, today }: { users: UserOpt[]
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วันที่เริ่มต้น</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={field} />
+              <DateField value={startDate} onChange={(v) => setStartDate(v)} className={field} />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">วันที่สิ้นสุด</label>
-              <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} className={field} />
+              <DateField value={endDate} min={startDate} onChange={(v) => setEndDate(v)} className={field} />
             </div>
           </div>
         </div>
