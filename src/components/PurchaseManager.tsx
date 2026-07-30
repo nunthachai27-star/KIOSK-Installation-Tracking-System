@@ -216,7 +216,7 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
   // Auto-fill the total from ราคาต่อชิ้น × จำนวน (still editable by hand).
   const totalFrom = (up: string, qty: string) => {
     const u = Number(up), n = Number(qty)
-    return up.trim() !== '' && Number.isFinite(u) && Number.isFinite(n) ? String(Math.round(u * n * 100) / 100) : null
+    return up.trim() !== '' && qty.trim() !== '' && Number.isFinite(u) && Number.isFinite(n) ? String(Math.round(u * n * 100) / 100) : null
   }
   const onUnitPrice = (v: string) => { setUnitPrice(v); const t = totalFrom(v, quantity); if (t != null) setPrice(t) }
   const onQuantity = (v: string) => { setQuantity(v); const t = totalFrom(unitPrice, v); if (t != null) setPrice(t) }
@@ -274,6 +274,7 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
             <div>
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">ราคารวม (บาท)</label>
               <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="รวม" className={`${field} tnum`} />
+              <p className="text-[11px] text-[#8492A6] mt-1">คิดอัตโนมัติ = จำนวน × ราคาต่อชิ้น (แก้เองได้)</p>
             </div>
           </div>
           <div>
