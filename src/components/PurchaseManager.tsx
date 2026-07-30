@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DateField } from './DateField'
 import { useRouter } from 'next/navigation'
 import { confirmDialog } from '@/lib/dialog'
@@ -22,9 +22,10 @@ const money = (n: number | null) => (n == null ? '—' : `${baht.format(n)} ฿`
 
 export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDelete: boolean }) {
   const router = useRouter()
-  // Use the server prop directly so router.refresh() (after add/edit/delete)
-  // shows the fresh list immediately — a useState snapshot would freeze it.
-  const items = initial
+  // Local copy synced with the server prop; optimistic add/delete update it
+  // instantly, then router.refresh() reconciles with the server.
+  const [items, setItems] = useState(initial)
+  useEffect(() => { setItems(initial) }, [initial])
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<'ALL' | PurchaseStatus>('ALL')
   const [formOpen, setFormOpen] = useState(false)
@@ -52,7 +53,7 @@ export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDe
   async function remove(id: string) {
     if (!(await confirmDialog({ title: 'ลบงานจัดซื้อ', message: 'ลบงานจัดซื้อรายการนี้?', danger: true, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/purchases/${id}`, { method: 'DELETE' })
-    if (res.ok) router.refresh()
+    if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
   const openNew = () => { setEditing(null); setFormOpen(true) }
@@ -107,7 +108,8 @@ export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDe
         })}
       </div>
 
-      {formOpen && <PurchaseForm editing={editing} onClose={() => setFormOpen(false)} onDone={() => { setFormOpen(false); router.refresh() }} />}
+      {formOpen && <PurchaseForm editing={editing} onClose={() => setFormOpen(false)}
+        onDone={(created) => { setFormOpen(false); if (created) setItems((x) => [created, ...x]); router.refresh() }} />}
 
       {/* list */}
       <div className="flex flex-col gap-3">
@@ -195,7 +197,7 @@ function PurchaseCard({ item, canDelete, onStatus, onEdit, onDelete }: { item: I
   )
 }
 
-function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onClose: () => void; onDone: () => void }) {
+function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onClose: () => void; onDone: (created?: Item | null) => void }) {
   const iso = (s: string | null) => (s ? s.slice(0, 10) : '')
   const [itemName, setItemName] = useState(editing?.itemName ?? '')
   const [category, setCategory] = useState(editing?.category ?? '')
@@ -232,7 +234,9 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
         method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       if (!res.ok) { const d = await res.json().catch(() => null); setErr(d?.message || 'บันทึกไม่สำเร็จ'); return }
-      onDone()
+      // On add, hand the created row back so the list shows it instantly.
+      const created = editing ? null : (await res.json().catch(() => null) as Item | null)
+      onDone(created)
     } finally { setSaving(false) }
   }
 

@@ -36,7 +36,25 @@ export async function POST(req: Request) {
       receivedDate: dateOrNull(b.receivedDate),
       requestedById: session.user?.id ?? null,
     },
+    include: { requestedBy: { select: { name: true } } },
   })
   await logAction(session.user, 'CREATE', 'งานจัดซื้อ', `เพิ่ม "${itemName}"`)
-  return NextResponse.json({ id: created.id }, { status: 201 })
+  // Return the full row so the client can show it instantly (no refresh needed).
+  return NextResponse.json({
+    id: created.id,
+    itemName: created.itemName,
+    category: created.category,
+    quantity: created.quantity,
+    unit: created.unit,
+    vendor: created.vendor,
+    unitPrice: created.unitPrice ? created.unitPrice.toNumber() : null,
+    price: created.price ? created.price.toNumber() : null,
+    status: created.status,
+    note: created.note,
+    neededDate: created.neededDate ? created.neededDate.toISOString() : null,
+    orderedDate: created.orderedDate ? created.orderedDate.toISOString() : null,
+    receivedDate: created.receivedDate ? created.receivedDate.toISOString() : null,
+    requestedByName: created.requestedBy?.name ?? null,
+    createdAt: created.createdAt.toISOString(),
+  }, { status: 201 })
 }
