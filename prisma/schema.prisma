@@ -186,12 +186,13 @@ model AuditLog {
 }
 
 enum PurchaseStatus {
-  REQUESTED  // ขอซื้อ
-  APPROVED   // อนุมัติแล้ว
-  ORDERED    // สั่งซื้อแล้ว
-  SHIPPING   // กำลังจัดส่ง
-  RECEIVED   // รับของแล้ว
-  CANCELLED  // ยกเลิก
+  REQUESTED           // ขอซื้อ
+  APPROVED            // อนุมัติแล้ว
+  ORDERED             // สั่งซื้อแล้ว
+  PROCESSING_SHIPMENT // กำลังดำเนินการจัดส่ง
+  SHIPPING            // อยู่ระหว่างจัดส่ง
+  RECEIVED            // รับของแล้ว
+  CANCELLED           // ยกเลิก
 }
 
 // งานจัดซื้อ — standalone procurement tracking (ยังไม่ผูกกับคลังสินค้า).

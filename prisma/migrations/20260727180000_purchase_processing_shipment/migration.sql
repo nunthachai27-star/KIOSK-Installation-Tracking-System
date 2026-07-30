@@ -1,0 +1,2 @@
+-- New procurement status between ORDERED and SHIPPING.
+ALTER TYPE "PurchaseStatus" ADD VALUE IF NOT EXISTS 'PROCESSING_SHIPMENT' AFTER 'ORDERED';
