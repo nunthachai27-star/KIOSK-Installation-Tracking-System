@@ -1,22 +1,26 @@
 'use client'
 import Link from 'next/link'
 import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { NAV_ITEMS } from './OfficeNav'
+import { Avatar, type AvatarData } from './Avatar'
+import { AvatarEditor } from './AvatarEditor'
 
 /** Mobile-only header menu: an avatar + hamburger that opens a dropdown with
  * the nav links, "เพิ่มงาน", and sign-out. Hidden from md upwards. */
-export function MobileMenu({ initial }: { initial: string }) {
+export function MobileMenu({ userId, name, avatar }: { userId: string; name: string; avatar: AvatarData }) {
   const [open, setOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
   const path = usePathname()
+  const router = useRouter()
   const close = () => setOpen(false)
 
   return (
     <div className="md:hidden relative flex items-center gap-2">
-      <span className="w-8 h-8 rounded-full bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm ring-1 ring-[#FBD3B4]">
-        {initial}
-      </span>
+      <button onClick={() => setAvatarOpen(true)} title="รูปโปรไฟล์" className="shrink-0">
+        <Avatar user={{ name, ...avatar }} size={32} />
+      </button>
       <button
         type="button"
         aria-label="เมนู"
@@ -60,6 +64,13 @@ export function MobileMenu({ initial }: { initial: string }) {
               )
             })}
             <div className="h-px bg-[#EEF2F8] my-1.5" />
+            <button
+              type="button"
+              onClick={() => { close(); setAvatarOpen(true) }}
+              className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#3C4A5E] hover:bg-[#F6F9FC] text-left"
+            >
+              🖼️ รูปโปรไฟล์
+            </button>
             <Link
               href="/report"
               onClick={close}
@@ -98,6 +109,9 @@ export function MobileMenu({ initial }: { initial: string }) {
           </div>
         </>
       )}
+
+      {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
+        onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
     </div>
   )
 }

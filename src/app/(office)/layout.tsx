@@ -18,7 +18,6 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   const name = session?.user?.name ?? ''
-  const initial = name.trim().charAt(0).toUpperCase() || '?'
   const role = ROLE_LABEL[session?.user?.role ?? ''] ?? 'ผู้ใช้งาน'
 
   // Attention counts for the notification bell + the current user's avatar.
@@ -57,7 +56,8 @@ export default async function OfficeLayout({ children }: { children: React.React
               avatar={{ avatarUrl: me?.avatarUrl, avatarIcon: me?.avatarIcon, avatarColor: me?.avatarColor }} />
           </div>
           {/* mobile menu */}
-          <MobileMenu initial={initial} />
+          <MobileMenu userId={session?.user?.id ?? ''} name={name}
+            avatar={{ avatarUrl: me?.avatarUrl, avatarIcon: me?.avatarIcon, avatarColor: me?.avatarColor }} />
         </div>
       </header>
       {children}
