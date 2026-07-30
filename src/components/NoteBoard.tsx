@@ -102,6 +102,12 @@ export function NoteBoard({ initial }: { initial: Note[] }) {
 function NoteCard({ n, onEdit, onPin, onDelete }: { n: Note; onEdit: () => void; onPin: () => void; onDelete: () => void }) {
   const c = colorOf(n.color)
   const rs = remindState(n.remindAt)
+  const [expanded, setExpanded] = useState(false)
+  // Long notes are collapsed by default so cards line up tidily and stay scannable.
+  const long = n.body.length > 200 || n.body.split('\n').length > 7
+  const clampStyle = long && !expanded
+    ? { display: '-webkit-box', WebkitLineClamp: 7, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }
+    : undefined
   return (
     <div className="rounded-2xl border p-3.5 flex flex-col gap-2 shadow-[0_1px_2px_rgba(18,45,90,.04)]" style={{ background: c.bg, borderColor: c.border }}>
       <div className="flex items-start gap-2">
@@ -111,7 +117,12 @@ function NoteCard({ n, onEdit, onPin, onDelete }: { n: Note; onEdit: () => void;
         <button onClick={onPin} title={n.pinned ? 'เลิกปักหมุด' : 'ปักหมุด'}
           className={`text-[13px] leading-none ${n.pinned ? 'opacity-100' : 'opacity-35 hover:opacity-70'}`}>📌</button>
       </div>
-      <div className="text-[13px] text-[#3C4A5E] whitespace-pre-wrap break-words">{n.body}</div>
+      <div className="text-[13px] text-[#3C4A5E] whitespace-pre-wrap break-words" style={clampStyle}>{n.body}</div>
+      {long && (
+        <button onClick={() => setExpanded((v) => !v)} className="self-start text-[12px] font-semibold text-[#1B5FD9] hover:underline">
+          {expanded ? '▴ ย่อ' : '▾ ดูเพิ่มเติม'}
+        </button>
+      )}
       {rs && <span className="self-start text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ color: rs.color, background: rs.bg }}>{rs.text}</span>}
       {n.link && (
         <a href={n.link} target="_blank" rel="noopener noreferrer"
