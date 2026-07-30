@@ -5,7 +5,7 @@ import { StaffNicknameManager } from '@/components/StaffNicknameManager'
 export default async function SettingsStaffPage() {
   const users = await prisma.user.findMany({
     where: { active: true },
-    select: { id: true, name: true, nickname: true, role: true },
+    select: { id: true, name: true, nickname: true, role: true, avatarUrl: true, avatarIcon: true, avatarColor: true },
     orderBy: [{ role: 'asc' }, { name: 'asc' }],
   })
 

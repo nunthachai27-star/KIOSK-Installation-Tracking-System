@@ -21,12 +21,13 @@ export default async function OfficeLayout({ children }: { children: React.React
   const initial = name.trim().charAt(0).toUpperCase() || '?'
   const role = ROLE_LABEL[session?.user?.role ?? ''] ?? 'ผู้ใช้งาน'
 
-  // Attention counts for the notification bell.
+  // Attention counts for the notification bell + the current user's avatar.
   const now = new Date()
-  const [pendingClaims, overdue, overdueLoans] = await Promise.all([
+  const [pendingClaims, overdue, overdueLoans, me] = await Promise.all([
     prisma.issue.count({ where: { status: 'RECEIVED' } }),
     prisma.job.count({ where: { isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
     prisma.loan.count({ where: { status: 'BORROWED', dueDate: { lt: now } } }),
+    session?.user?.id ? prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true, avatarIcon: true, avatarColor: true } }) : Promise.resolve(null),
   ])
 
   return (
@@ -52,7 +53,8 @@ export default async function OfficeLayout({ children }: { children: React.React
             </Link>
             <NotificationBell pendingClaims={pendingClaims} overdue={overdue} overdueLoans={overdueLoans} />
             <span className="w-px h-6 bg-[#ECEFF3]" />
-            <UserMenu name={name} initial={initial} role={role} />
+            <UserMenu userId={session?.user?.id ?? ''} name={name} role={role}
+              avatar={{ avatarUrl: me?.avatarUrl, avatarIcon: me?.avatarIcon, avatarColor: me?.avatarColor }} />
           </div>
           {/* mobile menu */}
           <MobileMenu initial={initial} />

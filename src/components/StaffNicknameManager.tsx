@@ -1,7 +1,10 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Avatar } from './Avatar'
+import { AvatarEditor } from './AvatarEditor'
 
-type Staff = { id: string; name: string; nickname: string | null; role: string }
+type Staff = { id: string; name: string; nickname: string | null; role: string; avatarUrl: string | null; avatarIcon: string | null; avatarColor: string | null }
 const ROLE_LABEL: Record<string, string> = {
   OFFICE: 'สำนักงาน', FIELD: 'ภาคสนาม', TECHNICIAN: 'ช่างเทคนิค', ADMIN: 'ผู้ดูแล', EXECUTIVE: 'ผู้บริหาร', SYSTEM_ADMIN: 'ผู้ดูแลสูงสุด',
 }
@@ -16,8 +19,10 @@ export function StaffNicknameManager({ initial }: { initial: Staff[] }) {
 }
 
 function Row({ staff }: { staff: Staff }) {
+  const router = useRouter()
   const [nick, setNick] = useState(staff.nickname ?? '')
   const [flash, setFlash] = useState(false)
+  const [editAvatar, setEditAvatar] = useState(false)
   const saved = staff.nickname ?? ''
 
   async function save() {
@@ -30,7 +35,10 @@ function Row({ staff }: { staff: Staff }) {
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-t border-[#F1F3F6] first:border-t-0 hover:bg-[#FBFAF8]">
-      <span className="w-8 h-8 shrink-0 rounded-full bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm">{staff.name.trim().charAt(0) || '?'}</span>
+      <button onClick={() => setEditAvatar(true)} title="เปลี่ยนรูปโปรไฟล์" className="shrink-0 relative group">
+        <Avatar user={staff} size={36} />
+        <span className="absolute inset-0 rounded-full grid place-items-center bg-black/40 text-white text-[11px] opacity-0 group-hover:opacity-100 transition">✎</span>
+      </button>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-[#1C1917] truncate">{staff.name}</div>
         <div className="text-[11.5px] text-[#8492A6]">{ROLE_LABEL[staff.role] ?? staff.role}</div>
@@ -40,6 +48,8 @@ function Row({ staff }: { staff: Staff }) {
         <input value={nick} onChange={(e) => setNick(e.target.value)} onBlur={save} placeholder="เช่น เสือ"
           className={`w-32 border rounded-lg px-2.5 py-1.5 text-[13px] outline-none ${flash ? 'border-[#22A565] bg-[#EAF7EF]' : 'border-[#D6DFEA] focus:border-[#EA580C]'}`} />
       </div>
+      {editAvatar && <AvatarEditor userId={staff.id} name={staff.name} current={staff}
+        onClose={() => setEditAvatar(false)} onSaved={() => { setEditAvatar(false); router.refresh() }} />}
     </div>
   )
 }

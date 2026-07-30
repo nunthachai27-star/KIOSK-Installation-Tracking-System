@@ -154,6 +154,8 @@ model User {
   nickname      String?
   role          Role          @default(FIELD)
   avatarColor   String?
+  avatarIcon    String?       // อีโมจิที่เลือก (ใช้เมื่อไม่มีรูป)
+  avatarUrl     String?       // รูปโปรไฟล์ (data URL ย่อขนาดแล้ว)
   active        Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

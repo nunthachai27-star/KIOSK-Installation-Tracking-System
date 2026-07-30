@@ -1,12 +1,17 @@
 'use client'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import { Avatar, type AvatarData } from './Avatar'
+import { AvatarEditor } from './AvatarEditor'
 
 // Avatar + name + role in the header, opening a dropdown with change-password + sign-out.
-export function UserMenu({ name, initial, role }: { name: string; initial: string; role: string }) {
+export function UserMenu({ userId, name, role, avatar }: { userId: string; name: string; role: string; avatar: AvatarData }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -19,7 +24,7 @@ export function UserMenu({ name, initial, role }: { name: string; initial: strin
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full pl-1 pr-2 py-1 hover:bg-[#F6F9FC]">
-        <span className="w-8 h-8 rounded-full bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm ring-1 ring-[#FBD3B4]">{initial}</span>
+        <Avatar user={{ name, ...avatar }} size={32} />
         <span className="hidden lg:flex flex-col items-start leading-tight">
           <span className="text-[13px] font-semibold text-[#1C1917] max-w-[140px] truncate">{name}</span>
           <span className="text-[11px] text-[#8492A6]">{role}</span>
@@ -44,6 +49,10 @@ export function UserMenu({ name, initial, role }: { name: string; initial: strin
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🧾 Log การใช้งาน
           </Link>
+          <button onClick={() => { setOpen(false); setAvatarOpen(true) }}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            🖼️ รูปโปรไฟล์
+          </button>
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🔑 เปลี่ยนรหัสผ่าน
@@ -56,6 +65,8 @@ export function UserMenu({ name, initial, role }: { name: string; initial: strin
       )}
 
       {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
+      {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
+        onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
     </div>
   )
 }
