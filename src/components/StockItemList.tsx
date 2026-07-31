@@ -22,7 +22,7 @@ const STATUS = {
   IN_STOCK: { label: 'ในคลัง', color: '#157F4C', bg: '#E2F3EA' },
   ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
   BORROWED: { label: 'ถูกยืม', color: '#1B5FD9', bg: '#E4EEFF' },
-  CLAIM: { label: 'เคลม', color: '#EA580C', bg: '#FCE7D6' },
+  CLAIM: { label: 'เคลม', color: 'var(--brand)', bg: '#FCE7D6' },
 }
 
 export function StockItemList({ items: initial, lots, initialLot, initialQ = '' }: { items: Item[]; lots: { id: string; lotCode: string }[]; initialLot: string; initialQ?: string }) {
@@ -90,11 +90,11 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหา serial, โรงพยาบาล, เลขที่งาน…"
-            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
           {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
         </div>
-        <select value={lot} onChange={(e) => setLot(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[#EA580C]">
+        <select value={lot} onChange={(e) => setLot(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[var(--brand)]">
           <option value="">ทุก Lot</option>
           {lotCodes.map((l) => <option key={l} value={l}>Lot {l}</option>)}
         </select>
@@ -106,7 +106,7 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
         ))}
         {lots.length > 0 && !adding && (
           <button onClick={openAdd} title="เพิ่มเครื่องเข้า Lot ที่มีอยู่ (กรณีสร้างครั้งแรกมาไม่ครบ)"
-            className="ml-auto px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border border-[#EA580C] text-[#EA580C] bg-white hover:bg-[#FFF3EC]">＋ เพิ่มเครื่องใน Lot{lot ? ` ${lot}` : ''}</button>
+            className="ml-auto px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border border-[var(--brand)] text-[var(--brand)] bg-white hover:bg-[#FFF3EC]">＋ เพิ่มเครื่องใน Lot{lot ? ` ${lot}` : ''}</button>
         )}
       </div>
 
@@ -119,7 +119,7 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
               <div className="border border-[#EEEAE6] rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#1C1917] bg-white">Lot {lot}</div>
             ) : (
               <select value={addLot} onChange={(e) => setAddLot(e.target.value)}
-                className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C]">
+                className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[var(--brand)]">
                 {lots.map((l) => <option key={l.id} value={l.lotCode}>Lot {l.lotCode}</option>)}
               </select>
             )}
@@ -127,10 +127,10 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
           <div className="flex flex-col gap-1">
             <label className="text-[11.5px] text-[#8492A6]">จำนวน (เครื่อง)</label>
             <input type="number" min={1} max={200} value={addCount} onChange={(e) => setAddCount(e.target.value)}
-              className="w-24 border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] tnum outline-none focus:border-[#EA580C]" />
+              className="w-24 border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] tnum outline-none focus:border-[var(--brand)]" />
           </div>
           <button disabled={addBusy || !(lot || addLot)} onClick={addUnits}
-            className="bg-[#EA580C] text-white text-[12.5px] font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] disabled:opacity-50">
+            className="bg-[var(--brand)] text-white text-[12.5px] font-semibold rounded-lg px-4 py-2 hover:bg-[var(--brand-strong)] disabled:opacity-50">
             {addBusy ? 'กำลังเพิ่ม…' : '＋ เพิ่มเข้า Lot'}
           </button>
           <button onClick={() => setAdding(false)} className="text-[12.5px] text-[#5A6B82] rounded-lg px-3 py-2 hover:bg-[#F0EEEC]">ยกเลิก</button>
@@ -237,11 +237,11 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
             {it.borrowerPhone && <span className="text-[#8492A6] ml-1.5 tnum text-[11.5px]">{it.borrowerPhone}</span>}
           </Link>
         ) : it.status === 'CLAIM' && it.claimIssueId ? (
-          <Link href={`/issues?open=${it.claimIssueId}`} className="text-[#EA580C] hover:underline" title="เปิดรายการเคลมที่ตัดชิ้นนี้ไป">
+          <Link href={`/issues?open=${it.claimIssueId}`} className="text-[var(--brand)] hover:underline" title="เปิดรายการเคลมที่ตัดชิ้นนี้ไป">
             🔧 {it.hospitalName ?? 'ดูรายการเคลม'}
           </Link>
         ) : it.jobId ? (
-          <Link href={`/jobs/${it.jobId}`} className="text-[#EA580C] hover:underline">{it.hospitalName ?? it.jobCode}</Link>
+          <Link href={`/jobs/${it.jobId}`} className="text-[var(--brand)] hover:underline">{it.hospitalName ?? it.jobCode}</Link>
         ) : (it.hospitalName ?? '—')}
       </td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.receivedDate)}</td>
@@ -277,7 +277,7 @@ function EditCell({ value, placeholder, tnum, bold, scan, onSave }: {
 
   const input = (
     <input value={v} onChange={(e) => { setV(e.target.value); if (err) setErr('') }} onBlur={() => commit(v)} placeholder={placeholder}
-      className={`w-full min-w-[80px] bg-transparent border rounded px-2 py-1 text-[13px] outline-none placeholder:text-[#C7CDD6] placeholder:font-normal ${tnum ? 'tnum' : ''} ${bold ? 'font-bold text-[#1C1917]' : 'text-[#3C4A5E]'} ${err ? 'border-[#C13540] bg-[#FBE4E4]' : flash ? 'border-[#22A565] bg-[#EAF7EF]' : 'border-transparent hover:border-[#E1E8F2] focus:border-[#EA580C] focus:bg-white'}`} />
+      className={`w-full min-w-[80px] bg-transparent border rounded px-2 py-1 text-[13px] outline-none placeholder:text-[#C7CDD6] placeholder:font-normal ${tnum ? 'tnum' : ''} ${bold ? 'font-bold text-[#1C1917]' : 'text-[#3C4A5E]'} ${err ? 'border-[#C13540] bg-[#FBE4E4]' : flash ? 'border-[#22A565] bg-[#EAF7EF]' : 'border-transparent hover:border-[#E1E8F2] focus:border-[var(--brand)] focus:bg-white'}`} />
   )
   return (
     <div>

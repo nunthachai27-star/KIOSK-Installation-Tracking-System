@@ -32,10 +32,10 @@ export function ProductBmsCodeManager({ productType, initialCode }: { productTyp
           onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')); setSaved(false) }}
           onKeyDown={(e) => { if (e.key === 'Enter') save() }}
           placeholder="เช่น CIPD"
-          className="w-44 border border-[#D6DFEA] rounded-lg px-3 py-2.5 uppercase tracking-wide outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
+          className="w-44 border border-[#D6DFEA] rounded-lg px-3 py-2.5 uppercase tracking-wide outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition"
         />
         <button onClick={save} disabled={saving}
-          className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+          className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
           {saving ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
         {saved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}

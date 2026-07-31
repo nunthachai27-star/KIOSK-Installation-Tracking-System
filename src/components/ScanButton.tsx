@@ -73,7 +73,7 @@ function ScannerModal({ onClose, onScan }: { onClose: () => void; onScan: (text:
             <>
               <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
               <div className="absolute inset-0 grid place-items-center pointer-events-none">
-                <div className="w-2/3 h-1/3 border-2 border-[#EA580C] rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+                <div className="w-2/3 h-1/3 border-2 border-[var(--brand)] rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
               </div>
             </>
           )}

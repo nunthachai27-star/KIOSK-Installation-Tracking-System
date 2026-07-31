@@ -44,10 +44,10 @@ export function ProductSerialManager({ productType, slots }: { productType: stri
             disabled={busy === s.serialType}
             onClick={() => toggle(s)}
             className={`flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition disabled:opacity-60 ${
-              on ? 'border-[#EA580C] bg-[#FFF3EC]' : 'border-[#E1E8F2] bg-white hover:bg-[#F8FAFD]'
+              on ? 'border-[var(--brand)] bg-[#FFF3EC]' : 'border-[#E1E8F2] bg-white hover:bg-[#F8FAFD]'
             }`}
           >
-            <span className={`w-5 h-5 rounded-md grid place-items-center text-white text-[12px] font-bold ${on ? 'bg-[#EA580C]' : 'bg-[#D6DFEA]'}`}>
+            <span className={`w-5 h-5 rounded-md grid place-items-center text-white text-[12px] font-bold ${on ? 'bg-[var(--brand)]' : 'bg-[#D6DFEA]'}`}>
               {on ? '✓' : ''}
             </span>
             <span className={`text-sm font-medium ${on ? 'text-[#1C1917]' : 'text-[#5A6B82]'}`}>{s.label}</span>

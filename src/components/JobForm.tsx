@@ -305,11 +305,11 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
               <span className="text-[13px] font-semibold text-[#5A6B82]">ประเภทงาน:</span>
               <div className="inline-flex rounded-lg border border-[#D6DFEA] overflow-hidden">
                 <button type="button" onClick={() => set('isPlanned', false)}
-                  className={`px-4 py-1.5 text-[13px] font-semibold ${!form.isPlanned ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+                  className={`px-4 py-1.5 text-[13px] font-semibold ${!form.isPlanned ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
                   เซ็นสัญญาแล้ว
                 </button>
                 <button type="button" onClick={() => set('isPlanned', true)}
-                  className={`px-4 py-1.5 text-[13px] font-semibold ${form.isPlanned ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+                  className={`px-4 py-1.5 text-[13px] font-semibold ${form.isPlanned ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
                   งานตามแผน
                 </button>
               </div>
@@ -438,7 +438,7 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
         {formError && <div className="text-sm text-[#C13540] font-medium">{formError}</div>}
 
         <div className="flex items-center gap-3 flex-wrap">
-          <button type="submit" disabled={saving} className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+          <button type="submit" disabled={saving} className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
             {saving ? 'กำลังบันทึก…' : 'บันทึกข้อมูลงาน'}
           </button>
           {isEdit && report && (

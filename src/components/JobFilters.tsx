@@ -37,7 +37,7 @@ export function JobFilters({
   }
 
   const field =
-    'border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition'
+    'border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition'
 
   return (
     <div className="flex items-center gap-2 flex-wrap">

@@ -24,7 +24,7 @@ export function CalendarSearch({ initial }: { initial: string }) {
   return (
     <div className="relative">
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาโรงพยาบาล…"
-        className="w-44 border border-[#D6DFEA] rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+        className="w-44 border border-[#D6DFEA] rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
     </div>
   )

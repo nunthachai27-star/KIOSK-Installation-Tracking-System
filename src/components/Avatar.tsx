@@ -1,7 +1,7 @@
 // Profile avatar: photo → chosen icon → initial. Presentational, used in the
 // header menu and the staff settings list.
 export const AVATAR_ICONS = ['🙂', '😎', '👷', '🧑‍💼', '👩‍💼', '🧑‍🔧', '👨‍💻', '👩‍💻', '🦊', '🐯', '🐼', '🐱', '🚀', '⭐', '🛠️', '💼']
-export const AVATAR_COLORS = ['#EA580C', '#1B5FD9', '#157F4C', '#6D28D9', '#DB2777', '#0F766E', '#B45309', '#5A6B82']
+export const AVATAR_COLORS = ['var(--brand)', '#1B5FD9', '#157F4C', '#6D28D9', '#DB2777', '#0F766E', '#B45309', '#5A6B82']
 
 // Deterministic fallback colour from the name, so avatars without a set colour
 // still look intentional and stable.

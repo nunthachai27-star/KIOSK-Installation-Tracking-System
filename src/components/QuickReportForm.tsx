@@ -74,7 +74,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
         <p className="mt-1 text-sm text-[#5A6B82]">ส่งข้อมูลให้ธุรการเรียบร้อยแล้ว</p>
         <button
           onClick={() => router.push('/m')}
-          className="mt-6 w-full rounded-xl bg-[#EA580C] text-white font-semibold py-3.5"
+          className="mt-6 w-full rounded-xl bg-[var(--brand)] text-white font-semibold py-3.5"
         >
           กลับหน้างานวันนี้
         </button>
@@ -136,7 +136,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
           onChange={(e) => setNote(e.target.value)}
           rows={4}
           placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
-          className="w-full rounded-xl border border-[#E7EDF4] px-4 py-3 text-sm text-[#1C1917] focus:outline-none focus:border-[#EA580C]"
+          className="w-full rounded-xl border border-[#E7EDF4] px-4 py-3 text-sm text-[#1C1917] focus:outline-none focus:border-[var(--brand)]"
         />
       </div>
 
@@ -146,7 +146,7 @@ export function QuickReportForm({ jobId }: { jobId: string }) {
         type="button"
         onClick={handleSubmit}
         disabled={saving}
-        className="mt-6 w-full rounded-xl bg-[#EA580C] text-white font-bold py-4 text-[15px] disabled:opacity-60"
+        className="mt-6 w-full rounded-xl bg-[var(--brand)] text-white font-bold py-4 text-[15px] disabled:opacity-60"
       >
         {saving ? 'กำลังบันทึก...' : 'บันทึก & ส่งให้ธุรการ'}
       </button>

@@ -52,7 +52,7 @@ export function OfficeNav() {
             href={it.href}
             aria-current={active ? 'page' : undefined}
             className={`flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-xl min-w-[52px] transition-colors ${
-              active ? 'bg-[#FFEDE1] text-[#EA580C]' : 'text-[#6B7686] hover:bg-[#F4F7FB] hover:text-[#3C4A5E]'
+              active ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'text-[#6B7686] hover:bg-[#F4F7FB] hover:text-[#3C4A5E]'
             }`}
           >
             <NavIcon name={it.icon} />

@@ -78,7 +78,7 @@ export function DialogHost() {
         role="dialog" aria-modal="true">
         <div className="p-5">
           <div className="flex items-start gap-3">
-            <span className={`w-9 h-9 shrink-0 rounded-full grid place-items-center text-[16px] ${d.danger ? 'bg-[#FBE4E4] text-[#C13540]' : isAlert ? 'bg-[#FEF0E6] text-[#EA580C]' : 'bg-[#EEF3FA] text-[#1B5FD9]'}`}>
+            <span className={`w-9 h-9 shrink-0 rounded-full grid place-items-center text-[16px] ${d.danger ? 'bg-[#FBE4E4] text-[#C13540]' : isAlert ? 'bg-[#FEF0E6] text-[var(--brand)]' : 'bg-[#EEF3FA] text-[#1B5FD9]'}`}>
               {d.danger ? '🗑️' : isAlert ? '⚠️' : '❓'}
             </span>
             <div className="min-w-0 flex-1">
@@ -90,10 +90,10 @@ export function DialogHost() {
           {isPrompt && (
             d.multiline ? (
               <textarea autoFocus value={val} onChange={(e) => setVal(e.target.value)} rows={3} placeholder={d.placeholder}
-                className="mt-3 w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 resize-none" />
+                className="mt-3 w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 resize-none" />
             ) : (
               <input autoFocus value={val} onChange={(e) => setVal(e.target.value)} placeholder={d.placeholder}
-                className="mt-3 w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+                className="mt-3 w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
             )
           )}
         </div>
@@ -105,7 +105,7 @@ export function DialogHost() {
             </button>
           )}
           <button onClick={ok} autoFocus={isAlert}
-            className={`text-[13px] font-semibold text-white rounded-lg px-4 py-2 ${d.danger ? 'bg-[#C13540] hover:bg-[#A62A33]' : 'bg-[#EA580C] hover:bg-[#C2410C]'}`}>
+            className={`text-[13px] font-semibold text-white rounded-lg px-4 py-2 ${d.danger ? 'bg-[#C13540] hover:bg-[#A62A33]' : 'bg-[var(--brand)] hover:bg-[var(--brand-strong)]'}`}>
             {d.confirmText || (isAlert ? 'รับทราบ' : isPrompt ? 'ตกลง' : 'ยืนยัน')}
           </button>
         </div>

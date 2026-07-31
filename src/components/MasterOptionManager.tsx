@@ -77,10 +77,10 @@ export function MasterOptionManager({
           onChange={(e) => setNewValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
           placeholder="เพิ่มรายการใหม่…"
-          className="flex-1 border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
+          className="flex-1 border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition"
         />
         <button onClick={add} disabled={adding}
-          className="ds-hover bg-[#EA580C] text-white font-semibold rounded-xl px-5 hover:bg-[#C2410C] disabled:opacity-60">
+          className="ds-hover bg-[var(--brand)] text-white font-semibold rounded-xl px-5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
           {adding ? 'กำลังเพิ่ม…' : 'เพิ่ม'}
         </button>
       </div>
@@ -95,19 +95,19 @@ export function MasterOptionManager({
             <>
               <input value={editValue} onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(it.id) }}
-                className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-1.5 outline-none focus:border-[#EA580C]" autoFocus />
-              <button onClick={() => saveEdit(it.id)} className="text-[13px] font-semibold text-[#EA580C]">บันทึก</button>
+                className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-1.5 outline-none focus:border-[var(--brand)]" autoFocus />
+              <button onClick={() => saveEdit(it.id)} className="text-[13px] font-semibold text-[var(--brand)]">บันทึก</button>
               <button onClick={() => setEditId(null)} className="text-[13px] text-[#8492A6]">ยกเลิก</button>
             </>
           ) : (
             <>
               <span className={`flex-1 text-sm ${it.active ? 'text-[#1C1917]' : 'text-[#A2AEC0] line-through'}`}>{it.value}</span>
               {configHrefBase && (
-                <Link href={`${configHrefBase}/${encodeURIComponent(it.value)}`} className="text-[13px] font-semibold text-[#EA580C] hover:underline">
+                <Link href={`${configHrefBase}/${encodeURIComponent(it.value)}`} className="text-[13px] font-semibold text-[var(--brand)] hover:underline">
                   Checklist/Serial ›
                 </Link>
               )}
-              <button onClick={() => { setEditId(it.id); setEditValue(it.value) }} className="text-[13px] text-[#5A6B82] hover:text-[#EA580C]">แก้ไข</button>
+              <button onClick={() => { setEditId(it.id); setEditValue(it.value) }} className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)]">แก้ไข</button>
               <button onClick={() => patch(it.id, { active: !it.active })}
                 className={`text-[12px] font-semibold px-2.5 py-1 rounded-full ${it.active ? 'bg-[#E2F3EA] text-[#157F4C]' : 'bg-[#EEF1F5] text-[#8492A6]'}`}>
                 {it.active ? 'เปิดใช้งาน' : 'ปิด'}

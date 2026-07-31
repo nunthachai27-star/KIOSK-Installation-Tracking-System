@@ -85,11 +85,11 @@ export function PurchaseManager({ initial, canDelete }: { initial: Item[]; canDe
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาสินค้า, ผู้ขาย, หมายเหตุ…"
-            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
           {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
         </div>
-        <button onClick={openNew} className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
+        <button onClick={openNew} className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
           ＋ เพิ่มอุปกรณ์ที่จัดซื้อ
         </button>
       </div>
@@ -182,7 +182,7 @@ function PurchaseCard({ item, canDelete, onStatus, onEdit, onDelete }: { item: I
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className="inline-block px-2.5 py-0.5 rounded-full text-[11.5px] font-bold" style={{ background: st.bg, color: st.color }}>{st.label}</span>
           <select value={item.status} onChange={(e) => onStatus(e.target.value as PurchaseStatus)}
-            className="border border-[#D6DFEA] rounded-lg px-2 py-1 text-[12px] bg-white outline-none focus:border-[#EA580C]">
+            className="border border-[#D6DFEA] rounded-lg px-2 py-1 text-[12px] bg-white outline-none focus:border-[var(--brand)]">
             {PURCHASE_STATUS_ORDER.map((s) => <option key={s} value={s}>{PURCHASE_STATUS[s].label}</option>)}
           </select>
           <div className="flex items-center gap-1.5">
@@ -214,7 +214,7 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]'
 
   // Auto-fill the total from ราคาต่อชิ้น × จำนวน (still editable by hand).
   const totalFrom = (up: string, qty: string) => {
@@ -309,7 +309,7 @@ function PurchaseForm({ editing, onClose, onDone }: { editing: Item | null; onCl
 
           <div className="md:col-span-2 flex items-center gap-3">
             <button type="submit" disabled={saving}
-              className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+              className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
               {saving ? 'กำลังบันทึก…' : editing ? 'บันทึกการแก้ไข' : 'เพิ่มงานจัดซื้อ'}
             </button>
             <button type="button" onClick={onClose} className="text-[13px] font-semibold text-[#5A6B82] px-3 py-2.5 hover:text-[#1C1917]">ยกเลิก</button>

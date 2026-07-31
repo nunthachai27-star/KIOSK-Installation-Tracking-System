@@ -66,7 +66,7 @@ export function MobileTaskCard({
           aria-disabled={!job.contactPhone}
           className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold ${
             job.contactPhone
-              ? 'bg-[#FFEDE1] text-[#EA580C]'
+              ? 'bg-[var(--brand-soft)] text-[var(--brand)]'
               : 'bg-[#F1F5F9] text-[#B7C1CE] pointer-events-none'
           }`}
         >
@@ -77,14 +77,14 @@ export function MobileTaskCard({
           href={mapsUrl(hospital)}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#FFEDE1] text-[#EA580C]"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[var(--brand-soft)] text-[var(--brand)]"
         >
           <span className="text-base">🧭</span>
           นำทาง
         </a>
         <Link
           href={`/m/jobs/${job.id}/report`}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[#EA580C] text-white"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[12px] font-semibold bg-[var(--brand)] text-white"
         >
           <span className="text-base">📝</span>
           บันทึกงาน

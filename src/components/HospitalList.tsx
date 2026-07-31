@@ -15,7 +15,7 @@ export function HospitalList({ items }: { items: Item[] }) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="ค้นหาโรงพยาบาล / จังหวัด…"
-        className="w-full border border-[#D6DFEA] rounded-xl px-4 py-2.5 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
+        className="w-full border border-[#D6DFEA] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition"
       />
       <div className="ds-card overflow-hidden">
         <div className="px-5 pt-4 pb-2 text-[13px] text-[#8492A6]">{filtered.length} โรงพยาบาล</div>
@@ -35,7 +35,7 @@ export function HospitalList({ items }: { items: Item[] }) {
                 <div className="text-sm font-bold text-[#1C1917] tnum">{h.itemCount}</div>
                 <div className="text-[11px] text-[#8492A6]">สินค้า</div>
               </div>
-              <span className="text-[#EA580C] font-semibold">›</span>
+              <span className="text-[var(--brand)] font-semibold">›</span>
             </div>
           </Link>
         ))}

@@ -13,7 +13,7 @@ export default async function StockNewPage() {
   return (
     <div className="p-4 sm:p-6 max-w-[900px] mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm">
-        <Link href="/stock" className="text-[#5A6B82] hover:text-[#EA580C]">‹ คลังสินค้า</Link>
+        <Link href="/stock" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ คลังสินค้า</Link>
         <span className="text-[#C7D2E0]">/</span>
         <h1 className="text-xl font-bold text-[#1C1917]">เพิ่มข้อมูลสินค้า / รับเข้าคลัง</h1>
       </div>

@@ -195,7 +195,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
     }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]'
   const byProduct = productFilter
     ? items.filter((i) => (productFilter === '__NONE__' ? !i.productType : i.productType === productFilter))
     : items
@@ -244,7 +244,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
         </div>
         <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={() => { setIssueType('CLAIM'); setErr(''); setFormOpen(true) }}
-            className="ds-hover bg-[#EA580C] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C]">🔧 ＋ แจ้งเคลมอุปกรณ์</button>
+            className="ds-hover bg-[var(--brand)] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)]">🔧 ＋ แจ้งเคลมอุปกรณ์</button>
           <button type="button" onClick={() => { setIssueType('GENERAL'); setErr(''); setFormOpen(true) }}
             className="ds-hover bg-[#1B5FD9] text-white font-semibold rounded-lg px-4 py-2.5 hover:bg-[#164FB3]">📝 ＋ แจ้งปัญหาทั่วไป</button>
         </div>
@@ -266,7 +266,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
         {/* type toggle: equipment claim vs general problem */}
         <div className="inline-flex rounded-lg border border-[#D6DFEA] overflow-hidden mb-4">
           <button type="button" onClick={() => setIssueType('CLAIM')}
-            className={`px-4 py-2 text-[13px] font-semibold ${isClaim ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+            className={`px-4 py-2 text-[13px] font-semibold ${isClaim ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
             🔧 แจ้งเคลมอุปกรณ์
           </button>
           <button type="button" onClick={() => setIssueType('GENERAL')}
@@ -380,7 +380,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
               ⟳ รีเซ็ต
             </button>
             <button onClick={add} disabled={saving}
-              className={`ds-hover text-white font-semibold rounded-lg px-5 py-2.5 disabled:opacity-60 flex items-center gap-1.5 ${isClaim ? 'bg-[#EA580C] hover:bg-[#C2410C]' : 'bg-[#1B5FD9] hover:bg-[#164FB3]'}`}>
+              className={`ds-hover text-white font-semibold rounded-lg px-5 py-2.5 disabled:opacity-60 flex items-center gap-1.5 ${isClaim ? 'bg-[var(--brand)] hover:bg-[var(--brand-strong)]' : 'bg-[#1B5FD9] hover:bg-[#164FB3]'}`}>
               {saving ? 'กำลังบันทึก…' : (isClaim ? '🗎 บันทึกเคลม' : '🗎 บันทึกปัญหา')}
             </button>
             {err && <span className="w-full text-sm text-[#C13540]">{err}</span>}
@@ -399,7 +399,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
           </button>
         ))}
         <select value={productFilter} onChange={(e) => { setProductFilter(e.target.value); setFilter('ALL') }}
-          className="ml-auto border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[#EA580C]"
+          className="ml-auto border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] bg-white outline-none focus:border-[var(--brand)]"
           aria-label="กรองตามประเภทสินค้า">
           <option value="">ทุกประเภทสินค้า</option>
           {productTypes.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -412,12 +412,12 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
         <div className="relative flex-1 min-w-[220px]">
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="ค้นหา S/N BMS, โรงพยาบาล, อาการ/ปัญหา…"
-            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E]">🔍</span>
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
         </div>
         <button onClick={() => setShowFilters((v) => !v)}
-          className={`flex items-center gap-1.5 border rounded-lg px-3.5 py-2.5 text-[13px] font-semibold ${showFilters ? 'border-[#EA580C] text-[#EA580C] bg-[#FFF7F2]' : 'border-[#D6DFEA] text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
+          className={`flex items-center gap-1.5 border rounded-lg px-3.5 py-2.5 text-[13px] font-semibold ${showFilters ? 'border-[var(--brand)] text-[var(--brand)] bg-[#FFF7F2]' : 'border-[#D6DFEA] text-[#5A6B82] hover:bg-[#F4F3F1]'}`}>
           ⛃ ตัวกรอง
         </button>
         <div className="flex items-center gap-1.5 border border-[#D6DFEA] rounded-lg px-2.5 py-1.5">
@@ -434,7 +434,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       {/* status filter cards */}
       {showFilters && (
         <div className="flex items-stretch gap-2 flex-wrap">
-          <StatusCard active={filter === 'ALL'} label="ทั้งหมด" n={byProduct.length} color="#EA580C" onClick={() => setFilter('ALL')} />
+          <StatusCard active={filter === 'ALL'} label="ทั้งหมด" n={byProduct.length} color="var(--brand)" onClick={() => setFilter('ALL')} />
           <StatusCard active={filter === 'OPEN'} label="กำลังดำเนินการ" n={openCount} color="#1B5FD9" onClick={() => setFilter('OPEN')} />
           {statusChips.map(({ st, n }) => (
             <StatusCard key={st} active={filter === st} label={ISSUE_STATUS[st].label} n={n} color={ISSUE_STATUS[st].color} onClick={() => setFilter(st)} />
@@ -453,7 +453,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
         {visible.map((it) => <IssueRow key={it.id} item={it} onOpen={() => setDetailId(it.id)} />)}
         {sorted.length > limit && (
           <button onClick={() => setLimit((n) => n + 20)}
-            className="ds-card p-3 text-[13px] font-semibold text-[#EA580C] hover:bg-[#FFF7F2] text-center">
+            className="ds-card p-3 text-[13px] font-semibold text-[var(--brand)] hover:bg-[#FFF7F2] text-center">
             แสดงเพิ่มอีก 20 · เหลืออีก {sorted.length - limit} รายการ (แนะนำใช้ช่องค้นหา)
           </button>
         )}
@@ -480,7 +480,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       {/* helper sidebar — warranty rule, 30-day claim activity, workflow steps (คอลัมน์ขวา) */}
       <aside className="ds-card p-5 flex flex-col gap-5 lg:sticky lg:top-4">
         <div className="flex items-center gap-2 pb-3 border-b border-[#F1F3F6]">
-          <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">🛟</span>
+          <span className="w-8 h-8 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center">🛟</span>
           <span className="font-bold text-[15px] text-[#1C1917]">ข้อมูลช่วยเหลือ</span>
         </div>
 
@@ -514,7 +514,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
           <ol className="flex flex-col gap-2.5">
             {['กรอกข้อมูลและบันทึกเคลม', 'รอเจ้าหน้าที่ตรวจสอบ/อนุมัติ', 'ดำเนินการและปิดงาน'].map((t, i) => (
               <li key={i} className="flex items-center gap-2.5">
-                <span className="w-5 h-5 shrink-0 rounded-full bg-[#EA580C] text-white grid place-items-center text-[11px] font-bold tnum">{i + 1}</span>
+                <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--brand)] text-white grid place-items-center text-[11px] font-bold tnum">{i + 1}</span>
                 <span className="text-[12.5px] text-[#3C4A5E]">{t}</span>
               </li>
             ))}
@@ -642,7 +642,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {item.issueType === 'CLAIM'
-              ? <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FFEDE1] text-[#EA580C]">🔧 เคลมอุปกรณ์</span>
+              ? <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--brand-soft)] text-[var(--brand)]">🔧 เคลมอุปกรณ์</span>
               : <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#E4EEFF] text-[#1B5FD9]">📝 ปัญหาทั่วไป</span>}
             {item.serialNo && <span className="tnum text-sm font-bold text-[#1C1917]">{item.serialNo}</span>}
             <span className="text-[12.5px] text-[#8492A6]">{[item.hospital, item.jobCode, item.productType].filter(Boolean).join(' · ')}</span>
@@ -675,14 +675,14 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         <div>
           <label className="block text-[11.5px] font-semibold text-[#5A6B82] mb-1">การรับประกัน</label>
           <select value={item.warrantyState} onChange={(e) => onPatch({ warrantyState: e.target.value as IssueWarranty })}
-            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[#EA580C]">
+            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[var(--brand)]">
             {(Object.keys(ISSUE_WARRANTY) as IssueWarranty[]).map((w) => <option key={w} value={w}>{ISSUE_WARRANTY[w].label}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-[11.5px] font-semibold text-[#5A6B82] mb-1">วิธีดำเนินการ</label>
           <select value={item.method ?? ''} onChange={(e) => onPatch({ method: (e.target.value || null) as IssueMethod | null })}
-            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[#EA580C]">
+            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[var(--brand)]">
             <option value="">— ไม่ระบุ —</option>
             {(Object.keys(ISSUE_METHOD) as IssueMethod[]).map((m) => <option key={m} value={m}>{ISSUE_METHOD[m]}</option>)}
           </select>
@@ -690,24 +690,24 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         <div>
           <label className="block text-[11.5px] font-semibold text-[#5A6B82] mb-1">Serial ที่เสีย</label>
           <input value={failed} onChange={(e) => setFailed(e.target.value)} placeholder="—"
-            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[var(--brand)]" />
         </div>
         <div>
           <label className="block text-[11.5px] font-semibold text-[#5A6B82] mb-1">Serial ที่ส่งเปลี่ยน</label>
           <input value={repl} onChange={(e) => setRepl(e.target.value)} placeholder="—"
-            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+            className="w-full border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[var(--brand)]" />
         </div>
       </div>
       <div className="mt-2 flex items-end gap-3 flex-wrap">
         <div>
           <label className="block text-[11.5px] font-semibold text-[#5A6B82] mb-1">ค่าใช้จ่าย (บาท)</label>
           <input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="—"
-            className="w-40 border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+            className="w-40 border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[var(--brand)]" />
         </div>
         {item.cost != null && !claimDirty && <span className="text-[12.5px] text-[#5A6B82] pb-1.5">= {baht.format(item.cost)} บาท</span>}
         {claimDirty && (
           <button onClick={() => onPatch({ failedSerial: failed.trim() || null, replacementSerial: repl.trim() || null, cost: cost.trim() && !isNaN(Number(cost)) ? Number(cost) : null })}
-            className="bg-[#EA580C] text-white text-[12.5px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C]">บันทึกรายละเอียด</button>
+            className="bg-[var(--brand)] text-white text-[12.5px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[var(--brand-strong)]">บันทึกรายละเอียด</button>
         )}
       </div>
 
@@ -723,7 +723,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
               <div key={p.id} className="flex items-center gap-2 text-[12.5px]">
                 <span className="flex-1 truncate text-[#1C1917]">{p.name}
                   {p.serialNo ? <span className="text-[#8492A6]"> · S/N {p.serialNo}</span> : <span className="text-[#8492A6]"> × {p.qty}</span>}
-                  {p.stockDeducted && <span className="ml-1.5 text-[10.5px] font-semibold text-[#EA580C]">ตัดเป็นเคลมจากคลัง</span>}
+                  {p.stockDeducted && <span className="ml-1.5 text-[10.5px] font-semibold text-[var(--brand)]">ตัดเป็นเคลมจากคลัง</span>}
                   {p.unitPrice != null && <span className="ml-1.5 text-[#8492A6]">({baht.format(p.unitPrice * p.qty)} ฿)</span>}
                 </span>
                 <button onClick={() => onRemovePart(p.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1.5">✕</button>
@@ -736,22 +736,22 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         ) : (
           <div className="flex items-end gap-2 flex-wrap">
             <select value={pGroup} onChange={(e) => { setPGroup(e.target.value); setPProd(''); setPItem('') }}
-              className="flex-1 min-w-[130px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[#EA580C]">
+              className="flex-1 min-w-[130px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[var(--brand)]">
               <option value="">— กลุ่มสินค้า —</option>
               {stockCatalog.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
             </select>
             <select value={pProd} disabled={!pGroup} onChange={(e) => { setPProd(e.target.value); setPItem('') }}
-              className="flex-1 min-w-[130px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[#EA580C] disabled:bg-[#F5F5F4]">
+              className="flex-1 min-w-[130px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[var(--brand)] disabled:bg-[#F5F5F4]">
               <option value="">— รุ่น —</option>
               {catProducts.map((p) => <option key={p.id} value={p.id}>{p.name} (คงเหลือ {p.items.length})</option>)}
             </select>
             <select value={pItem} disabled={!pProd} onChange={(e) => setPItem(e.target.value)}
-              className="flex-1 min-w-[150px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[#EA580C] disabled:bg-[#F5F5F4]">
+              className="flex-1 min-w-[150px] border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] bg-white outline-none focus:border-[var(--brand)] disabled:bg-[#F5F5F4]">
               <option value="">— เลือก Serial —</option>
               {catItems.map((it) => <option key={it.id} value={it.id}>{it.label}</option>)}
             </select>
             <button disabled={!pItem} onClick={() => { onAddPart({ stockItemId: pItem }); setPGroup(''); setPProd(''); setPItem('') }}
-              className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">＋ ตัดเป็นเคลม</button>
+              className="bg-[var(--brand)] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[var(--brand-strong)] disabled:opacity-50">＋ ตัดเป็นเคลม</button>
           </div>
         )}
       </div>
@@ -767,10 +767,10 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
                 {editSolId === e.id ? (
                   <div className="flex items-end gap-2 flex-wrap">
                     <DateField value={editSolDate} onChange={(v) => setEditSolDate(v)}
-                      className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+                      className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[var(--brand)]" />
                     <textarea value={editSolText} onChange={(ev) => setEditSolText(ev.target.value)} rows={2}
-                      className="flex-1 min-w-[180px] border border-[#D6DFEA] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[#EA580C] resize-y" />
-                    <button onClick={saveEditSol} disabled={!editSolText.trim()} className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[#C2410C] disabled:opacity-50 shrink-0">บันทึก</button>
+                      className="flex-1 min-w-[180px] border border-[#D6DFEA] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--brand)] resize-y" />
+                    <button onClick={saveEditSol} disabled={!editSolText.trim()} className="bg-[var(--brand)] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[var(--brand-strong)] disabled:opacity-50 shrink-0">บันทึก</button>
                     <button onClick={() => setEditSolId(null)} className="text-[12px] font-semibold text-[#5A6B82] px-2 py-2 shrink-0">ยกเลิก</button>
                   </div>
                 ) : (
@@ -778,7 +778,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
                     <span className="text-[11px] font-bold text-[#B45309] bg-[#FBEBCB] rounded px-1.5 py-0.5 shrink-0 tnum">{fmt(e.date)}</span>
                     <span className="flex-1 text-[12.5px] text-[#3C4A5E] whitespace-pre-wrap break-words">{e.text}</span>
                     {e.authorName && <span className="text-[10.5px] text-[#A8A29E] shrink-0">{e.authorName}</span>}
-                    <button onClick={() => startEditSol(e)} className="text-[#5A6B82] hover:text-[#EA580C] text-[12px] font-semibold shrink-0" title="แก้ไข">✎</button>
+                    <button onClick={() => startEditSol(e)} className="text-[#5A6B82] hover:text-[var(--brand)] text-[12px] font-semibold shrink-0" title="แก้ไข">✎</button>
                     <button onClick={() => delSol(e.id)} className="text-[#C13540] hover:bg-[#FBE4E4] rounded px-1 shrink-0" title="ลบรายการนี้">✕</button>
                   </div>
                 )}
@@ -790,11 +790,11 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         {/* add a new step */}
         <div className="flex items-end gap-2 flex-wrap">
           <DateField value={newSolDate} onChange={(v) => setNewSolDate(v)}
-            className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[#EA580C]" />
+            className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] tnum outline-none focus:border-[var(--brand)]" />
           <textarea value={newSolText} onChange={(e) => setNewSolText(e.target.value)} rows={1} placeholder="พิมพ์วิธีแก้ไข/ความคืบหน้า…"
-            className="flex-1 min-w-[200px] border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#EA580C] resize-y" />
+            className="flex-1 min-w-[200px] border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[var(--brand)] resize-y" />
           <button onClick={addSol} disabled={!newSolText.trim() || addingSol}
-            className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[#C2410C] disabled:opacity-50 shrink-0">＋ เพิ่ม</button>
+            className="bg-[var(--brand)] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[var(--brand-strong)] disabled:opacity-50 shrink-0">＋ เพิ่ม</button>
         </div>
       </div>
 
@@ -802,7 +802,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
       <div className="mt-3 flex items-center gap-2 flex-wrap">
         <label className="text-[12.5px] font-semibold text-[#5A6B82]">ผู้รับผิดชอบแก้ไข</label>
         <select value={item.assignedToId ?? ''} onChange={(e) => onPatch({ assignedToId: e.target.value || null })}
-          className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[#EA580C]">
+          className="border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[12.5px] outline-none focus:border-[var(--brand)]">
           <option value="">— ยังไม่ระบุ —</option>
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
@@ -819,7 +819,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         ) : (
           <span className="text-[12px] text-[#8492A6]">ยังไม่มีคะแนนประเมิน</span>
         )}
-        <button onClick={copyRateLink} className="text-[12px] font-semibold text-[#EA580C] hover:underline">
+        <button onClick={copyRateLink} className="text-[12px] font-semibold text-[var(--brand)] hover:underline">
           {copied ? '✓ คัดลอกลิงก์แล้ว' : '🔗 คัดลอกลิงก์ให้ รพ. ประเมิน'}
         </button>
       </div>
@@ -830,7 +830,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
         </div>
         {item.eventCount > 0 && (
           <button onClick={toggleTimeline}
-            className="text-[12px] font-semibold text-[#EA580C] hover:underline">
+            className="text-[12px] font-semibold text-[var(--brand)] hover:underline">
             {openTl ? '▾' : '▸'} Timeline การติดตาม ({item.eventCount})
           </button>
         )}

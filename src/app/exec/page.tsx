@@ -10,7 +10,7 @@ function bahtShort(n: number): string {
   if (n >= 1_000_000) return '฿' + (n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2) + ' ล้าน'
   return '฿' + nf.format(Math.round(n))
 }
-const PALETTE = ['#EA580C', '#1B5FD9', '#157F4C', '#9A6B10', '#6D28D9', '#0B7C86', '#B0329A', '#C13540', '#3B45C4', '#B45309']
+const PALETTE = ['var(--brand)', '#1B5FD9', '#157F4C', '#9A6B10', '#6D28D9', '#0B7C86', '#B0329A', '#C13540', '#3B45C4', '#B45309']
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   const w = 120, h = 34
@@ -74,7 +74,7 @@ export default async function ExecPage() {
 
   const bottom = [
     { icon: '✅', tint: '#157F4C', label: 'งานเสร็จตามแผน', value: nf.format(d.dept.closedCount), sub: `${completionRate}% · เป้าหมาย 80%`, spark: d.trend.map((t) => t.jobs), color: '#22A565' },
-    { icon: '📈', tint: '#EA580C', label: 'ยอดขายรวม', value: bahtShort(d.dept.totalSales), sub: `เดือนนี้ ${d.dept.trend.salesPct >= 0 ? '+' : ''}${d.dept.trend.salesPct}%`, spark: d.trend.map((t) => t.sales), color: '#EA580C' },
+    { icon: '📈', tint: 'var(--brand)', label: 'ยอดขายรวม', value: bahtShort(d.dept.totalSales), sub: `เดือนนี้ ${d.dept.trend.salesPct >= 0 ? '+' : ''}${d.dept.trend.salesPct}%`, spark: d.trend.map((t) => t.sales), color: 'var(--brand)' },
     { icon: '⭐', tint: '#D97706', label: 'ความพึงพอใจลูกค้า', value: d.satisfaction.count > 0 ? `${d.satisfaction.avg.toFixed(1)}` : '—', sub: d.satisfaction.count > 0 ? `จาก ${nf.format(d.satisfaction.count)} รีวิว · เต็ม 5` : 'ยังไม่มีรีวิว', color: '#D97706' },
     { icon: '🚚', tint: '#0B7C86', label: 'อัตราส่งตรงเวลา', value: d.efficiency.onTimeRate != null ? `${d.efficiency.onTimeRate}%` : '—', sub: `${nf.format(d.efficiency.onTimeBase)} งานที่มีข้อมูล`, color: '#0B7C86' },
     { icon: '⏱️', tint: '#9A6B10', label: 'เวลาเฉลี่ย รับงาน→ปิด', value: d.efficiency.avgCycleDays != null ? `${d.efficiency.avgCycleDays}` : '—', sub: 'วัน', color: '#9A6B10' },
@@ -86,14 +86,14 @@ export default async function ExecPage() {
       {/* sidebar */}
       <aside className="hidden lg:flex flex-col w-56 shrink-0 bg-white border-r border-[#ECEFF3] sticky top-0 h-screen">
         <div className="flex items-center gap-2.5 px-5 h-16 border-b border-[#F1F3F6]">
-          <span className="w-8 h-8 rounded-lg bg-[#EA580C] text-white grid place-items-center font-bold">K</span>
+          <span className="w-8 h-8 rounded-lg bg-[var(--brand)] text-white grid place-items-center font-bold">K</span>
           <span className="font-bold text-[15px] tracking-tight">KIOSK TRACK</span>
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-0.5">
           <div className="text-[11px] font-semibold text-[#A8A29E] px-3 pt-2 pb-1">เมนูหลัก</div>
           {navItems.map((n) => (
             <a key={n.href} href={n.href}
-              className={`px-3 py-2 rounded-lg text-[13px] font-medium ${n.active ? 'bg-[#FFEDE1] text-[#EA580C] font-semibold' : 'text-[#5A6B82] hover:bg-[#F6F7F9]'}`}>
+              className={`px-3 py-2 rounded-lg text-[13px] font-medium ${n.active ? 'bg-[var(--brand-soft)] text-[var(--brand)] font-semibold' : 'text-[#5A6B82] hover:bg-[#F6F7F9]'}`}>
               {n.label}
             </a>
           ))}
@@ -143,7 +143,7 @@ export default async function ExecPage() {
                     <span className="w-6 h-6 rounded-md bg-[#F1F3F6] text-[#57534E] grid place-items-center text-[11px] font-bold">{i + 1}</span>
                     <span className="font-medium">{s.label}</span>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 rounded-full bg-[#F1F3F6] overflow-hidden"><div className="h-full rounded-full bg-[#EA580C]" style={{ width: `${(s.count / maxStep) * 100}%` }} /></div>
+                      <div className="flex-1 h-2 rounded-full bg-[#F1F3F6] overflow-hidden"><div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${(s.count / maxStep) * 100}%` }} /></div>
                       <span className="text-[11px] text-[#8492A6] w-8 tnum text-right">{s.pct}%</span>
                     </div>
                     <div className="text-right tnum"><span className="font-bold">{nf.format(s.count)}</span>{s.overdue > 0 && <span className="text-[#C13540] font-semibold"> · {s.overdue}</span>}</div>
@@ -287,7 +287,7 @@ export default async function ExecPage() {
                     <div key={c.name} className="flex items-center gap-3">
                       <span className="text-[12px] w-5 shrink-0 tnum text-[#A8A29E]">{i + 1}</span>
                       <span className="text-[12.5px] font-semibold flex-1 truncate">{c.name}</span>
-                      <div className="w-20 h-2 rounded-full bg-[#F1F3F6] overflow-hidden shrink-0"><div className="h-full rounded-full bg-[#EA580C]" style={{ width: `${(c.sales / maxCustomer) * 100}%` }} /></div>
+                      <div className="w-20 h-2 rounded-full bg-[#F1F3F6] overflow-hidden shrink-0"><div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${(c.sales / maxCustomer) * 100}%` }} /></div>
                       <span className="text-[12px] tnum font-bold w-20 text-right shrink-0">{baht(c.sales)}</span>
                     </div>
                   ))}

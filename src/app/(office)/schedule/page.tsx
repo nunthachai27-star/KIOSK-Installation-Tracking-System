@@ -59,7 +59,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
           <p className="text-[13px] text-[#8492A6] mt-0.5">จัดลำดับงานในคิว ตรวจสอบสถานะ และเพิ่มการแจ้งเตือนงานต่างๆ</p>
         </div>
         <Link href="/monitor" target="_blank"
-          className="ds-hover flex items-center gap-1.5 border border-[#FAD3B8] text-[#EA580C] text-[13px] font-semibold rounded-lg px-3.5 py-2 hover:bg-[#FFF7F2]">
+          className="ds-hover flex items-center gap-1.5 border border-[#FAD3B8] text-[var(--brand)] text-[13px] font-semibold rounded-lg px-3.5 py-2 hover:bg-[#FFF7F2]">
           เปิดหน้า Monitor ↗
         </Link>
       </div>

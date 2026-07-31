@@ -52,7 +52,7 @@ export function ProductRegistry({ items }: { items: Item[] }) {
       {/* summary cards by category */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <button onClick={() => setCat('ALL')}
-          className={`ds-card p-4 text-left ${cat === 'ALL' ? 'ring-2 ring-[#EA580C]' : ''}`}>
+          className={`ds-card p-4 text-left ${cat === 'ALL' ? 'ring-2 ring-[var(--brand)]' : ''}`}>
           <div className="text-[12px] font-semibold text-[#8492A6]">📦 ทั้งหมด</div>
           <div className="text-[26px] font-bold tnum text-[#1C1917] mt-1 leading-none">{nf.format(items.length)}</div>
           <div className="text-[11px] text-[#A8A29E] mt-1">เครื่อง (S/N)</div>
@@ -73,7 +73,7 @@ export function ProductRegistry({ items }: { items: Item[] }) {
       </div>
 
       {/* raw product-type breakdown */}
-      <button onClick={() => setShowRaw((v) => !v)} className="self-start text-[12.5px] font-semibold text-[#EA580C] hover:underline">
+      <button onClick={() => setShowRaw((v) => !v)} className="self-start text-[12.5px] font-semibold text-[var(--brand)] hover:underline">
         {showRaw ? '▾' : '▸'} ดูรายละเอียดตามชื่อรุ่นดิบ ({new Set(items.map((i) => i.productType)).size} รุ่น)
       </button>
       {showRaw && (
@@ -87,7 +87,7 @@ export function ProductRegistry({ items }: { items: Item[] }) {
                 <ul className="flex flex-col gap-1">
                   {inner.map(([pt, n]) => (
                     <li key={pt} className="flex items-center justify-between gap-3 text-[12.5px]">
-                      <button onClick={() => { setSearch(pt); setCat('ALL') }} className="text-left text-[#3C4A5E] hover:text-[#EA580C] truncate">{pt}</button>
+                      <button onClick={() => { setSearch(pt); setCat('ALL') }} className="text-left text-[#3C4A5E] hover:text-[var(--brand)] truncate">{pt}</button>
                       <span className="tnum font-semibold text-[#5A6B82] shrink-0">{nf.format(n)}</span>
                     </li>
                   ))}
@@ -102,7 +102,7 @@ export function ProductRegistry({ items }: { items: Item[] }) {
       <div className="relative">
         <input value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="ค้นหา — S/N, โรงพยาบาล, จังหวัด, รุ่น…"
-          className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+          className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E]">🔍</span>
         {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
       </div>
@@ -154,7 +154,7 @@ export function ProductRegistry({ items }: { items: Item[] }) {
       </div>
       {shown.length > limit && (
         <button onClick={() => setLimit((n) => n + 60)}
-          className="ds-card p-3.5 text-[13px] font-semibold text-[#EA580C] hover:bg-[#FFF7F2] text-center">
+          className="ds-card p-3.5 text-[13px] font-semibold text-[var(--brand)] hover:bg-[#FFF7F2] text-center">
           แสดงเพิ่มอีก 60 รายการ · เหลืออีก {nf.format(shown.length - limit)} รายการ (แสดงอยู่ {nf.format(limit)} จาก {nf.format(shown.length)})
         </button>
       )}

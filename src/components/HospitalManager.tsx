@@ -50,15 +50,15 @@ export function HospitalManager({ initial, provinceOptions }: { initial: Item[];
           <div className="flex-1 min-w-[200px]">
             <label className="block text-[12px] font-semibold text-[#5A6B82] mb-1">ชื่อโรงพยาบาล</label>
             <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="เช่น โรงพยาบาลบางปะกอก"
-              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#EA580C]" />
+              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-sm outline-none focus:border-[var(--brand)]" />
           </div>
           <div className="w-48">
             <label className="block text-[12px] font-semibold text-[#5A6B82] mb-1">จังหวัด</label>
             <input value={newProvince} onChange={(e) => setNewProvince(e.target.value)} list="province-list" placeholder="จังหวัด"
-              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#EA580C]" />
+              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2 text-sm outline-none focus:border-[var(--brand)]" />
           </div>
           <button onClick={addHospital} disabled={adding}
-            className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] disabled:opacity-60">
+            className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[var(--brand-strong)] disabled:opacity-60">
             {adding ? 'กำลังเพิ่ม…' : 'เพิ่ม'}
           </button>
         </div>
@@ -68,7 +68,7 @@ export function HospitalManager({ initial, provinceOptions }: { initial: Item[];
       {/* search */}
       <div className="relative">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาโรงพยาบาล / จังหวัด…"
-          className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+          className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E]">🔍</span>
         {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
       </div>
@@ -144,13 +144,13 @@ function HospitalRow({ item, onSaved, onDeleted, refresh }: {
     <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[#F1F3F6] first:border-t-0 hover:bg-[#FBFAF8] flex-wrap">
       <span className="w-8 h-8 shrink-0 rounded-lg bg-[#EEF3FA] text-[#5A6B82] grid place-items-center">🏢</span>
       <input value={name} onChange={(e) => setName(e.target.value)}
-        className="flex-1 min-w-[180px] border border-transparent hover:border-[#E1E8F2] focus:border-[#EA580C] rounded-lg px-2.5 py-1.5 text-sm font-semibold text-[#1C1917] outline-none" />
+        className="flex-1 min-w-[180px] border border-transparent hover:border-[#E1E8F2] focus:border-[var(--brand)] rounded-lg px-2.5 py-1.5 text-sm font-semibold text-[#1C1917] outline-none" />
       <input value={province} onChange={(e) => setProvince(e.target.value)} list="province-list" placeholder="จังหวัด"
-        className="w-40 border border-transparent hover:border-[#E1E8F2] focus:border-[#EA580C] rounded-lg px-2.5 py-1.5 text-[13px] text-[#5A6B82] outline-none" />
+        className="w-40 border border-transparent hover:border-[#E1E8F2] focus:border-[var(--brand)] rounded-lg px-2.5 py-1.5 text-[13px] text-[#5A6B82] outline-none" />
       <span className="text-[11.5px] text-[#A8A29E] tnum w-16 text-right shrink-0">{item.jobCount > 0 ? `${nf.format(item.jobCount)} งาน` : '—'}</span>
       {dirty && (
         <button onClick={save} disabled={saving}
-          className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-60 shrink-0">
+          className="bg-[var(--brand)] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[var(--brand-strong)] disabled:opacity-60 shrink-0">
           {saving ? '…' : 'บันทึก'}
         </button>
       )}

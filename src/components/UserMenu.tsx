@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Avatar, type AvatarData } from './Avatar'
 import { AvatarEditor } from './AvatarEditor'
+import { ThemePicker } from './ThemePicker'
 
 // Avatar + name + role in the header, opening a dropdown with change-password + sign-out.
-export function UserMenu({ userId, name, role, avatar }: { userId: string; name: string; role: string; avatar: AvatarData }) {
+export function UserMenu({ userId, name, role, avatar, theme }: { userId: string; name: string; role: string; avatar: AvatarData; theme: string | null }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -53,6 +55,10 @@ export function UserMenu({ userId, name, role, avatar }: { userId: string; name:
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🖼️ รูปโปรไฟล์
           </button>
+          <button onClick={() => { setOpen(false); setThemeOpen(true) }}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            🎨 ธีมสีเว็บ
+          </button>
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🔑 เปลี่ยนรหัสผ่าน
@@ -67,6 +73,7 @@ export function UserMenu({ userId, name, role, avatar }: { userId: string; name:
       {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
       {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
         onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
+      {themeOpen && <ThemePicker userId={userId} current={theme} onClose={() => setThemeOpen(false)} />}
     </div>
   )
 }
@@ -99,7 +106,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     } finally { setSaving(false) }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15'
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
@@ -114,7 +121,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             <div className="text-sm text-[#157F4C] bg-[#F2FAF5] border border-[#DCF0E4] rounded-lg px-3 py-3">
               ✓ เปลี่ยนรหัสผ่านเรียบร้อย — ครั้งต่อไปให้ใช้รหัสใหม่ล็อกอิน
             </div>
-            <button onClick={onClose} className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C]">ปิด</button>
+            <button onClick={onClose} className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)]">ปิด</button>
           </div>
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-3">
@@ -135,7 +142,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             {err && <div className="text-sm text-[#C13540]">{err}</div>}
             <div className="flex items-center gap-2 mt-1">
               <button type="submit" disabled={!ready || saving}
-                className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60 disabled:cursor-not-allowed">
+                className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60 disabled:cursor-not-allowed">
                 {saving ? 'กำลังบันทึก…' : 'บันทึกรหัสผ่านใหม่'}
               </button>
               <button type="button" onClick={onClose} className="text-[13px] font-semibold text-[#5A6B82] px-3 py-2.5 hover:text-[#1C1917]">ยกเลิก</button>

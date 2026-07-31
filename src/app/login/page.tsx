@@ -33,7 +33,7 @@ export default function LoginPage() {
           value={username}
           onChange={e => setU(e.target.value)}
           autoComplete="username"
-          className="w-full border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 mb-4 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
+          className="w-full border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 mb-4 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition"
         />
         <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">รหัสผ่าน</label>
         <input
@@ -41,10 +41,10 @@ export default function LoginPage() {
           value={password}
           onChange={e => setP(e.target.value)}
           autoComplete="current-password"
-          className="w-full border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 mb-4 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
+          className="w-full border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 mb-4 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition"
         />
         {err && <div className="text-[#C13540] text-sm mb-3">{err}</div>}
-        <button className="ds-hover w-full bg-[#EA580C] text-white rounded-xl py-3 font-semibold hover:bg-[#C2410C] shadow-[0_10px_24px_-10px_rgba(234,88,12,0.6)]">
+        <button className="ds-hover w-full bg-[var(--brand)] text-white rounded-xl py-3 font-semibold hover:bg-[var(--brand-strong)] shadow-[0_10px_24px_-10px_rgba(234,88,12,0.6)]">
           เข้าสู่ระบบ
         </button>
       </form>

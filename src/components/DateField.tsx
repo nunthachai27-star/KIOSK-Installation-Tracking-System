@@ -58,7 +58,7 @@ export function DateField({ value, onChange, className = '', min, max, placehold
         onChange={(e) => onText(e.target.value)} onBlur={onBlur}
         className={`${className} pr-8`} {...rest} />
       <button type="button" onClick={openPicker} tabIndex={-1} aria-label="เปิดปฏิทิน"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[13px] leading-none text-[#8492A6] hover:text-[#EA580C]">📅</button>
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[13px] leading-none text-[#8492A6] hover:text-[var(--brand)]">📅</button>
       {/* Hidden native picker — opened programmatically; still stores ISO. */}
       <input ref={nativeRef} type="date" value={value || ''} min={min} max={max} tabIndex={-1} aria-hidden="true"
         onChange={(e) => { onChange(e.target.value); setText(toDisplay(e.target.value)) }}

@@ -44,7 +44,7 @@ export function ProductComponentManager({ productType, initial }: { productType:
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
-  const field = 'border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition'
+  const field = 'border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition'
 
   return (
     <div className="ds-card overflow-hidden">
@@ -56,7 +56,7 @@ export function ProductComponentManager({ productType, initial }: { productType:
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
           placeholder="จำนวน" className={`w-20 ${field}`} />
         <button onClick={add} disabled={adding}
-          className="ds-hover bg-[#EA580C] text-white font-semibold rounded-xl px-5 hover:bg-[#C2410C] disabled:opacity-60">
+          className="ds-hover bg-[var(--brand)] text-white font-semibold rounded-xl px-5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
           {adding ? '…' : 'เพิ่ม'}
         </button>
       </div>

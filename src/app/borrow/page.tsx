@@ -31,14 +31,14 @@ export default function BorrowRequestPage() {
     } finally { setSaving(false) }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15'
   const req = <span className="text-[#C13540]">*</span>
 
   return (
     <div className="min-h-screen bg-[#EEF2F7] px-4 py-8 flex justify-center">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2.5 mb-5">
-          <span className="w-11 h-11 rounded-2xl bg-[#EA580C] text-white grid place-items-center text-[18px] font-bold shrink-0">K</span>
+          <span className="w-11 h-11 rounded-2xl bg-[var(--brand)] text-white grid place-items-center text-[18px] font-bold shrink-0">K</span>
           <div>
             <div className="text-[18px] font-bold text-[#1C1917] leading-tight">ขอยืมอุปกรณ์</div>
             <div className="text-[12.5px] text-[#8492A6]">BMS · กรอกข้อมูลเพื่อส่งคำขอ เจ้าหน้าที่จะติดต่อกลับ</div>
@@ -51,7 +51,7 @@ export default function BorrowRequestPage() {
             <div className="text-[17px] font-bold text-[#157F4C] mb-1">ส่งคำขอเรียบร้อย</div>
             <p className="text-[13.5px] text-[#5A6B82]">เจ้าหน้าที่ได้รับคำขอของคุณแล้ว จะเลือกอุปกรณ์และติดต่อกลับตามเบอร์ที่ให้ไว้ครับ</p>
             <button onClick={() => { setDone(false); setName(''); setPhone(''); setOrg(''); setDue(''); setPurpose('') }}
-              className="mt-5 text-[13px] font-semibold text-[#EA580C] hover:underline">ส่งคำขออีกรายการ</button>
+              className="mt-5 text-[13px] font-semibold text-[var(--brand)] hover:underline">ส่งคำขออีกรายการ</button>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-3.5">
@@ -84,7 +84,7 @@ export default function BorrowRequestPage() {
             {err && <div className="text-[13px] text-[#C13540] bg-[#FBE4E4] rounded-lg px-3 py-2">{err}</div>}
 
             <button onClick={submit} disabled={!ready || saving}
-              className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-3 text-[15px] hover:bg-[#C2410C] disabled:opacity-60 disabled:cursor-not-allowed">
+              className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-3 text-[15px] hover:bg-[var(--brand-strong)] disabled:opacity-60 disabled:cursor-not-allowed">
               {saving ? 'กำลังส่ง…' : 'ส่งคำขอยืม'}
             </button>
             {!ready && <p className="text-[12px] text-[#8492A6] text-center">กรอกชื่อและเบอร์โทรให้ครบก่อนส่ง · การเลือกรุ่น/serial เจ้าหน้าที่จะเป็นผู้เลือกให้</p>}

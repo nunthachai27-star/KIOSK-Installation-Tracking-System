@@ -57,7 +57,7 @@ export function SparePartManager({ initial }: { initial: Item[] }) {
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]'
   const shown = q.trim() ? items.filter((i) => (i.name + ' ' + (i.category ?? '')).toLowerCase().includes(q.trim().toLowerCase())) : items
   const lowStock = items.filter((i) => i.stockQty <= 0).length
 
@@ -94,12 +94,12 @@ export function SparePartManager({ initial }: { initial: Item[] }) {
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm font-semibold text-[#5A6B82]">
-            <input type="checkbox" checked={requiresOnsite} onChange={(e) => setRequiresOnsite(e.target.checked)} className="w-4 h-4 accent-[#EA580C]" />
+            <input type="checkbox" checked={requiresOnsite} onChange={(e) => setRequiresOnsite(e.target.checked)} className="w-4 h-4 accent-[var(--brand)]" />
             บังคับช่างเข้าหน้างานเปลี่ยน
           </label>
           <div className="md:col-span-2 flex items-center gap-3">
             <button onClick={add} disabled={saving}
-              className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+              className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
               {saving ? 'กำลังบันทึก…' : 'เพิ่มอะไหล่'}
             </button>
             {err && <span className="text-sm text-[#C13540]">{err}</span>}
@@ -114,7 +114,7 @@ export function SparePartManager({ initial }: { initial: Item[] }) {
           {lowStock > 0 && <span className="ml-2 text-[#C13540] font-semibold">· สต็อกหมด {lowStock} รายการ</span>}
         </div>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาอะไหล่…"
-          className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#EA580C] w-full sm:w-64" />
+          className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[var(--brand)] w-full sm:w-64" />
       </div>
 
       {/* list */}
@@ -136,7 +136,7 @@ function PartCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: PatchB
   const [requiresOnsite, setRequiresOnsite] = useState(item.requiresOnsite)
 
   const low = item.stockQty <= 0
-  const inp = 'border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[13px] tnum outline-none focus:border-[#EA580C]'
+  const inp = 'border border-[#D6DFEA] rounded-lg px-2 py-1.5 text-[13px] tnum outline-none focus:border-[var(--brand)]'
 
   function save() {
     onPatch({ name: name.trim() || item.name, category: category.trim() || null, sellPrice: sellPrice.trim() === '' ? null : Number(sellPrice), serviceFee1: serviceFee1.trim() === '' ? null : Number(serviceFee1), serviceFee2: serviceFee2.trim() === '' ? null : Number(serviceFee2), requiresOnsite })
@@ -181,11 +181,11 @@ function PartCard({ item, onPatch, onDelete }: { item: Item; onPatch: (b: PatchB
             <input type="number" min={0} step="0.01" value={serviceFee2} onChange={(e) => setServiceFee2(e.target.value)} placeholder="ค่าช่าง 2 คน" className={inp} />
           </div>
           <label className="flex items-center gap-2 text-[13px] font-semibold text-[#5A6B82]">
-            <input type="checkbox" checked={requiresOnsite} onChange={(e) => setRequiresOnsite(e.target.checked)} className="w-4 h-4 accent-[#EA580C]" />
+            <input type="checkbox" checked={requiresOnsite} onChange={(e) => setRequiresOnsite(e.target.checked)} className="w-4 h-4 accent-[var(--brand)]" />
             บังคับช่างเข้าหน้างาน
           </label>
           <div className="md:col-span-2">
-            <button onClick={save} className="bg-[#EA580C] text-white text-[13px] font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C]">บันทึก</button>
+            <button onClick={save} className="bg-[var(--brand)] text-white text-[13px] font-semibold rounded-lg px-4 py-2 hover:bg-[var(--brand-strong)]">บันทึก</button>
           </div>
         </div>
       )}

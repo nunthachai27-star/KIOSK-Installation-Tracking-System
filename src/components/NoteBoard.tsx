@@ -65,12 +65,12 @@ export function NoteBoard({ initial }: { initial: Note[] }) {
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาโน้ต, ผู้เขียน…"
-            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
           {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
         </div>
         <button onClick={() => { setEditing(null); setFormOpen(true) }}
-          className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
+          className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
           ＋ เพิ่มโน้ต
         </button>
       </div>
@@ -131,7 +131,7 @@ function NoteCard({ n, onEdit, onPin, onDelete }: { n: Note; onEdit: () => void;
       )}
       <div className="flex items-center gap-2 mt-1 pt-2 border-t" style={{ borderColor: c.border }}>
         <span className="text-[11px] text-[#8492A6] flex-1 truncate">{n.authorName ?? '—'} · {fmt(n.createdAt)}</span>
-        <button onClick={onEdit} className="text-[12px] font-semibold text-[#5A6B82] hover:text-[#EA580C]">✎ แก้ไข</button>
+        <button onClick={onEdit} className="text-[12px] font-semibold text-[#5A6B82] hover:text-[var(--brand)]">✎ แก้ไข</button>
         <button onClick={onDelete} className="text-[12px] font-semibold text-[#C13540] hover:underline">✕ ลบ</button>
       </div>
     </div>
@@ -146,7 +146,7 @@ function NoteForm({ editing, onClose, onDone }: { editing: Note | null; onClose:
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }))
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]'
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -198,11 +198,11 @@ function NoteForm({ editing, onClose, onDone }: { editing: Note | null; onClose:
           <input value={f.link} onChange={(e) => set('link', e.target.value)} placeholder="https://…" className={field} />
         </div>
         <label className="flex items-center gap-2 text-sm text-[#3C4A5E]">
-          <input type="checkbox" checked={f.pinned} onChange={(e) => set('pinned', e.target.checked)} className="w-4 h-4 accent-[#EA580C]" />
+          <input type="checkbox" checked={f.pinned} onChange={(e) => set('pinned', e.target.checked)} className="w-4 h-4 accent-[var(--brand)]" />
           📌 ปักหมุดขึ้นบนสุด
         </label>
         <div className="flex items-center gap-3 mt-1">
-          <button type="submit" disabled={saving} className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+          <button type="submit" disabled={saving} className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
             {saving ? 'กำลังบันทึก…' : editing ? 'บันทึกการแก้ไข' : 'เพิ่มโน้ต'}
           </button>
           <button type="button" onClick={onClose} className="text-[13px] font-semibold text-[#5A6B82] px-3 py-2.5 hover:text-[#1C1917]">ยกเลิก</button>

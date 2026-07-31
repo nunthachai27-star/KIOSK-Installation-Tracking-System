@@ -16,7 +16,7 @@ export default async function EquipmentSettingsPage() {
   return (
     <div className="p-6 max-w-[720px] mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm">
-        <Link href="/settings" className="text-[#5A6B82] hover:text-[#EA580C]">‹ ตั้งค่า</Link>
+        <Link href="/settings" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ ตั้งค่า</Link>
         <span className="text-[#C7D2E0]">/</span>
         <h1 className="text-xl font-bold text-[#1C1917]">รายการอุปกรณ์ (เคลม)</h1>
       </div>
@@ -29,7 +29,7 @@ export default async function EquipmentSettingsPage() {
             className="ds-hover flex items-center gap-3 px-4 py-3 border-t border-[#EEF2F8] first:border-t-0 hover:bg-[#F8FAFD]">
             <span className="flex-1 text-[14px] font-semibold text-[#1C1917]">{t}</span>
             <span className="text-[12.5px] text-[#8492A6]">{countByType.get(t) ?? 0} รายการ</span>
-            <span className="text-[12.5px] font-semibold text-[#EA580C]">จัดการ ›</span>
+            <span className="text-[12.5px] font-semibold text-[var(--brand)]">จัดการ ›</span>
           </Link>
         ))}
       </div>

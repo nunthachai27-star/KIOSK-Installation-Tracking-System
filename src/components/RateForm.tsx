@@ -46,10 +46,10 @@ export function RateForm({ id, initialRating, initialComment }: { id: string; in
       </div>
       <div className="h-5 text-[15px] font-semibold text-[#D97706]">{labels[hover || rating]}</div>
       <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="ความคิดเห็นเพิ่มเติม (ถ้ามี)…"
-        className="w-full border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+        className="w-full border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
       {err && <div className="text-sm text-[#C13540] font-medium">{err}</div>}
       <button onClick={submit} disabled={saving || rating === 0}
-        className="w-full bg-[#EA580C] text-white font-bold rounded-xl px-5 py-3 hover:bg-[#C2410C] disabled:opacity-50 text-[15px]">
+        className="w-full bg-[var(--brand)] text-white font-bold rounded-xl px-5 py-3 hover:bg-[var(--brand-strong)] disabled:opacity-50 text-[15px]">
         {saving ? 'กำลังส่ง…' : 'ส่งคะแนนประเมิน'}
       </button>
     </div>

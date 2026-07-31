@@ -161,7 +161,7 @@ export function DeliveryForm({
             </select>
           </div>
           <button type="button" disabled={instSaving} onClick={saveInstaller}
-            className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+            className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
             {instSaving ? 'กำลังบันทึก…' : 'บันทึกผู้รับผิดชอบ'}
           </button>
           {instSaved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
@@ -176,7 +176,7 @@ export function DeliveryForm({
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ขนออก</label>
             <DateField value={dForm.shippedDate} onChange={v => setD('shippedDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
             {callDue && (
-              <div className="mt-2 rounded-lg bg-[#FFF3E9] text-[#C2410C] text-[13px] px-3 py-2">
+              <div className="mt-2 rounded-lg bg-[#FFF3E9] text-[var(--brand-strong)] text-[13px] px-3 py-2">
                 📞 โทรนัดโรงพยาบาลเพื่อนัดวันติดตั้ง ภายใน <span className="font-bold">{callFmt.format(callDue)}</span>
                 <span className="text-[#B0754A]"> · ภายใน 2 วันทำการจากวันขนออก</span>
               </div>
@@ -227,7 +227,7 @@ export function DeliveryForm({
             type="button"
             disabled={dSaving}
             onClick={saveDelivery}
-            className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60"
+            className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60"
           >
             {dSaving ? 'กำลังบันทึก…' : 'บันทึกการจัดส่ง'}
           </button>

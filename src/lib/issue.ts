@@ -8,7 +8,7 @@ export const ISSUE_STATUS: Record<IssueStatus, { label: string; color: string; b
   SENT_TO_SUPPLIER: { label: 'ส่งซัพแก้ไข/เคลม', color: '#0B7C86', bg: '#E2F5F6' },
   SHIPPING_TO_CUSTOMER: { label: 'จัดส่งอุปกรณ์ให้ลูกค้า', color: '#1B5FD9', bg: '#E4EEFF' },
   WAIT_ONSITE: { label: 'รอเข้าติดตั้ง/แก้ไข', color: '#3B45C4', bg: '#E9EAFB' },
-  QUOTATION: { label: 'ออกใบเสนอราคา', color: '#C2410C', bg: '#FFEDE1' },
+  QUOTATION: { label: 'ออกใบเสนอราคา', color: 'var(--brand-strong)', bg: 'var(--brand-soft)' },
   DONE: { label: 'ดำเนินการเรียบร้อย', color: '#157F4C', bg: '#E2F3EA' },
   REJECTED: { label: 'ยกเลิก/ไม่ประสงค์ซ่อม', color: '#C13540', bg: '#FBE4E4' },
 }
@@ -47,6 +47,6 @@ export const ISSUE_EVENT: Record<IssueEventType, { label: string; icon: string; 
   STATUS_CHANGED: { label: 'เปลี่ยนสถานะ', icon: '🔄', color: '#1B5FD9' },
   SOLUTION_UPDATED: { label: 'บันทึกวิธีแก้ไข', icon: '🛠️', color: '#157F4C' },
   WARRANTY_SET: { label: 'ระบุการรับประกัน', icon: '🛡️', color: '#6D28D9' },
-  PART_USED: { label: 'ใช้อะไหล่', icon: '📦', color: '#C2410C' },
+  PART_USED: { label: 'ใช้อะไหล่', icon: '📦', color: 'var(--brand-strong)' },
   RATED: { label: 'โรงพยาบาลให้คะแนน', icon: '⭐', color: '#D97706' },
 }

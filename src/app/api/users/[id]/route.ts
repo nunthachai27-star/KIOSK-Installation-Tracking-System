@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logAction } from '@/lib/audit'
+import { isThemeKey } from '@/lib/themes'
 
 // Edit a staff member's nickname (ชื่อเล่น) or profile avatar (icon/photo/colour).
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +14,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const body = await req.json()
-  const data: { nickname?: string | null; avatarIcon?: string | null; avatarColor?: string | null; avatarUrl?: string | null } = {}
+  const data: { nickname?: string | null; avatarIcon?: string | null; avatarColor?: string | null; avatarUrl?: string | null; theme?: string | null } = {}
+  if (body.theme !== undefined) data.theme = isThemeKey(body.theme) ? body.theme : null
   if (body.nickname !== undefined) data.nickname = typeof body.nickname === 'string' && body.nickname.trim() ? body.nickname.trim() : null
   if (body.avatarIcon !== undefined) data.avatarIcon = typeof body.avatarIcon === 'string' && body.avatarIcon.trim() ? body.avatarIcon.trim().slice(0, 16) : null
   if (body.avatarColor !== undefined) data.avatarColor = typeof body.avatarColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(body.avatarColor) ? body.avatarColor : null

@@ -74,7 +74,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   }
 
   const viewBtn = (active: boolean) =>
-    `flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-lg ${active ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`
+    `flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-lg ${active ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:bg-[#F4F3F1]'}`
 
   return (
     <div className="p-4 sm:p-6 max-w-[1220px] mx-auto flex flex-col gap-4">
@@ -92,9 +92,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               ⛃ ตัวกรอง{kind && <span className="w-1.5 h-1.5 rounded-full" style={{ background: KIND_META[kind].color }} />}
             </summary>
             <div className="absolute right-0 mt-2 w-56 bg-white border border-[#ECEFF3] rounded-xl shadow-[0_12px_40px_-12px_rgba(18,45,90,0.3)] p-1.5 z-20">
-              <Link href={buildHref({ kind: '' })} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] ${!kind ? 'bg-[#FFEDE1] text-[#EA580C] font-semibold' : 'text-[#5A6B82] hover:bg-[#F6F4F2]'}`}>ทุกประเภท</Link>
+              <Link href={buildHref({ kind: '' })} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] ${!kind ? 'bg-[var(--brand-soft)] text-[var(--brand)] font-semibold' : 'text-[#5A6B82] hover:bg-[#F6F4F2]'}`}>ทุกประเภท</Link>
               {KIND_ORDER.map((k) => (
-                <Link key={k} href={buildHref({ kind: k })} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] ${kind === k ? 'bg-[#FFEDE1] text-[#EA580C] font-semibold' : 'text-[#5A6B82] hover:bg-[#F6F4F2]'}`}>
+                <Link key={k} href={buildHref({ kind: k })} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] ${kind === k ? 'bg-[var(--brand-soft)] text-[var(--brand)] font-semibold' : 'text-[#5A6B82] hover:bg-[#F6F4F2]'}`}>
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: KIND_META[k].color }} />{KIND_META[k].label}
                 </Link>
               ))}
@@ -162,7 +162,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                   return (
                     <div key={i} className={`min-h-[104px] border-b border-r border-[#F1F5F9] p-1.5 ${inMonth ? 'bg-white' : 'bg-[#FBFCFE]'} ${i % 7 === 6 ? 'border-r-0' : ''}`}>
                       <div className="flex justify-end">
-                        <span className={`text-[12px] w-6 h-6 grid place-items-center rounded-full ${isToday ? 'bg-[#EA580C] text-white font-bold' : inMonth ? 'text-[#1C1917]' : 'text-[#B7C1CE]'}`}>{d.getUTCDate()}</span>
+                        <span className={`text-[12px] w-6 h-6 grid place-items-center rounded-full ${isToday ? 'bg-[var(--brand)] text-white font-bold' : inMonth ? 'text-[#1C1917]' : 'text-[#B7C1CE]'}`}>{d.getUTCDate()}</span>
                       </div>
                       <div className="flex flex-col gap-1 mt-0.5">
                         {dayEvents.slice(0, 3).map((e, j) => {
@@ -221,7 +221,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                     <Link key={j} href={`/jobs/${e.jobId}`} className="flex items-start gap-2.5 group">
                       <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: meta.color }} />
                       <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-semibold text-[#1C1917] truncate group-hover:text-[#EA580C]">{e.hospital}</div>
+                        <div className="text-[13px] font-semibold text-[#1C1917] truncate group-hover:text-[var(--brand)]">{e.hospital}</div>
                         <div className="text-[11.5px] text-[#8492A6] mt-0.5">📅 {shortDate.format(e.date)}</div>
                       </div>
                       <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap" style={{ background: badge.b, color: badge.c }}>{badge.t}</span>

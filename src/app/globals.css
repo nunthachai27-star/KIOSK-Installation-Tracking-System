@@ -16,6 +16,18 @@
   --brand-gradient: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
 }
 
+/* Per-user colour themes (applied via <html data-theme="..."> from the user's saved choice).
+   Each theme swaps only the brand accent + page background; neutrals/text stay readable. */
+:root[data-theme="ocean"]{--brand:#1B5FD9;--brand-strong:#1749AE;--brand-soft:#E4EEFF;--bg:#EEF3FB;--brand-gradient:linear-gradient(135deg,#1B5FD9,#3B82F6)}
+:root[data-theme="teal"]{--brand:#0F766E;--brand-strong:#0B5A54;--brand-soft:#D6F0EC;--bg:#ECF4F2;--brand-gradient:linear-gradient(135deg,#0F766E,#14B8A6)}
+:root[data-theme="violet"]{--brand:#6D28D9;--brand-strong:#5B21B6;--brand-soft:#EFE9FC;--bg:#F2EFFB;--brand-gradient:linear-gradient(135deg,#6D28D9,#8B5CF6)}
+:root[data-theme="sand"]{--brand:#B4530A;--brand-strong:#8F3F06;--brand-soft:#F3E7D6;--bg:#F5F1EA;--brand-gradient:linear-gradient(135deg,#B4530A,#D97706)}
+:root[data-theme="rose"]{--brand:#DB2777;--brand-strong:#BE185D;--brand-soft:#FCE7F0;--bg:#FBEFF5;--brand-gradient:linear-gradient(135deg,#DB2777,#F472B6)}
+:root[data-theme="indigo"]{--brand:#4F46E5;--brand-strong:#4338CA;--brand-soft:#E7E6FD;--bg:#EEF0FB;--brand-gradient:linear-gradient(135deg,#4F46E5,#818CF8)}
+:root[data-theme="forest"]{--brand:#15803D;--brand-strong:#166534;--brand-soft:#DCF3E3;--bg:#EDF5EE;--brand-gradient:linear-gradient(135deg,#15803D,#22C55E)}
+:root[data-theme="cyan"]{--brand:#0891B2;--brand-strong:#0E7490;--brand-soft:#D5F1F7;--bg:#ECF6F9;--brand-gradient:linear-gradient(135deg,#0891B2,#22D3EE)}
+:root[data-theme="graphite"]{--brand:#475569;--brand-strong:#334155;--brand-soft:#E7ECF2;--bg:#EEF1F5;--brand-gradient:linear-gradient(135deg,#475569,#64748B)}
+
 html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

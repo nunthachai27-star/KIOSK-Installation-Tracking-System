@@ -45,7 +45,7 @@ export default async function HospitalDetailPage({ params }: { params: Promise<{
   return (
     <div className="p-4 sm:p-6 max-w-[1000px] mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm">
-        <Link href="/hospitals" className="text-[#5A6B82] hover:text-[#EA580C]">‹ โรงพยาบาล</Link>
+        <Link href="/hospitals" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ โรงพยาบาล</Link>
       </div>
       <div>
         <h1 className="text-xl font-bold text-[#1C1917]">{hospital.name}</h1>

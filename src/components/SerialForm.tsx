@@ -220,12 +220,12 @@ export function SerialForm({
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addBms() } }}
               placeholder="S/N BMS เช่น BMS-KI69-001" className={inputCls} />
             <button type="button" disabled={saving['newbms']} onClick={addBms}
-              className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+              className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
               {saving['newbms'] ? '…' : 'เพิ่มเครื่อง'}
             </button>
           </div>
           {bmsCode && (
-            <button type="button" onClick={generateBms} className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[#EA580C] hover:underline">
+            <button type="button" onClick={generateBms} className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--brand)] hover:underline">
               ⚙ ออกเลขอัตโนมัติ
             </button>
           )}
@@ -238,7 +238,7 @@ export function SerialForm({
           </span>
           {quantity - units.length > 0 && (
             <button type="button" onClick={fillUnits} disabled={filling}
-              className="ds-hover bg-[#FFEDE1] text-[#EA580C] text-[13px] font-semibold rounded-lg px-3.5 py-1.5 hover:bg-[#FBD3B4] disabled:opacity-60">
+              className="ds-hover bg-[var(--brand-soft)] text-[var(--brand)] text-[13px] font-semibold rounded-lg px-3.5 py-1.5 hover:bg-[#FBD3B4] disabled:opacity-60">
               {filling ? 'กำลังสร้าง…' : `＋ สร้างเครื่องตามจำนวน (อีก ${quantity - units.length})`}
             </button>
           )}
@@ -263,7 +263,7 @@ export function SerialForm({
         <div key={unit.id} className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <div className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm">{idx + 1}</span>
+              <span className="w-7 h-7 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center font-bold text-sm">{idx + 1}</span>
               <span className="text-[15px] font-bold tnum">{unit.serialNo}</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -275,7 +275,7 @@ export function SerialForm({
               )}
               {inStockKids.length > 0 && (
                 <button type="button" onClick={() => inStockKids.forEach(s => deduct(s.id, s.serialNo))}
-                  className="bg-[#EA580C] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C]">
+                  className="bg-[var(--brand)] text-white text-[12px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[var(--brand-strong)]">
                   ＋ ตัดสต็อกที่เหลือ ({inStockKids.length})
                 </button>
               )}
@@ -308,7 +308,7 @@ export function SerialForm({
                             <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold whitespace-nowrap" style={{ background: b.bg, color: b.color }}>{b.label}</span>
                             {st === 'IN_STOCK' && (
                               <button type="button" disabled={deducting[s.id]} onClick={() => deduct(s.id, s.serialNo)}
-                                className="px-2 py-0.5 rounded text-[10.5px] font-bold whitespace-nowrap bg-[#EA580C] text-white hover:bg-[#C2410C] disabled:opacity-60">
+                                className="px-2 py-0.5 rounded text-[10.5px] font-bold whitespace-nowrap bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)] disabled:opacity-60">
                                 {deducting[s.id] ? '…' : 'ตัดสต็อก'}
                               </button>
                             )}
@@ -377,7 +377,7 @@ export function SerialForm({
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">เจ้าหน้าที่ผู้บันทึก</label>
             <select value={staffId} onChange={e => { setStaffId(e.target.value); setRecSaved(false) }}
-              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]">
+              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]">
               <option value="">— ไม่ระบุ —</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
@@ -385,7 +385,7 @@ export function SerialForm({
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">สถานะ</label>
             <select value={recStatus} onChange={e => { setRecStatus(e.target.value as SerialStatus); setRecSaved(false) }}
-              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]">
+              className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]">
               {REC_STATUS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
@@ -400,7 +400,7 @@ export function SerialForm({
         )}
         <div className="flex items-center gap-3 mt-4">
           <button type="button" disabled={recSaving} onClick={saveRecord}
-            className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+            className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
             {recSaving ? 'กำลังบันทึก…' : 'บันทึกการลง Serial'}
           </button>
           {recSaved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
@@ -423,7 +423,7 @@ function DeductPicker({ serialNo, candidates, busy, onCancel, onPick }: {
     a.group.localeCompare(b.group, 'th') || a.product.localeCompare(b.product, 'th') || a.lotCode.localeCompare(b.lotCode, 'th'))
 
   return (
-    <div className="bg-white border-2 border-[#EA580C] rounded-2xl p-5 shadow-[0_12px_40px_-16px_rgba(234,88,12,0.5)]">
+    <div className="bg-white border-2 border-[var(--brand)] rounded-2xl p-5 shadow-[0_12px_40px_-16px_rgba(234,88,12,0.5)]">
       <div className="flex items-start justify-between gap-3 mb-1">
         <div className="text-[15px] font-bold text-[#1C1917]">เลือกรายการที่จะตัดสต็อก</div>
         <button type="button" onClick={onCancel} className="w-7 h-7 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
@@ -436,14 +436,14 @@ function DeductPicker({ serialNo, candidates, busy, onCancel, onPick }: {
       <div className="flex flex-col gap-2">
         {sorted.map((c) => (
           <button key={c.stockItemId} type="button" disabled={busy} onClick={() => onPick(c.stockItemId)}
-            className="flex items-center justify-between gap-3 border border-[#E1E8F2] rounded-lg px-3.5 py-3 text-left hover:bg-[#FFF7ED] hover:border-[#EA580C] disabled:opacity-60 transition">
+            className="flex items-center justify-between gap-3 border border-[#E1E8F2] rounded-lg px-3.5 py-3 text-left hover:bg-[#FFF7ED] hover:border-[var(--brand)] disabled:opacity-60 transition">
             <span className="min-w-0">
               <span className="block text-[13.5px] font-semibold text-[#1C1917] truncate">{c.product}</span>
               <span className="block text-[12px] text-[#8492A6] mt-0.5">
                 {c.group} · Lot {c.lotCode}{c.color ? ` · ${c.color}` : ''} · คงเหลือ {c.remaining}
               </span>
             </span>
-            <span className="text-[12.5px] font-bold text-white bg-[#EA580C] rounded-lg px-3 py-1.5 shrink-0">{busy ? '…' : 'ตัดสต็อก'}</span>
+            <span className="text-[12.5px] font-bold text-white bg-[var(--brand)] rounded-lg px-3 py-1.5 shrink-0">{busy ? '…' : 'ตัดสต็อก'}</span>
           </button>
         ))}
       </div>

@@ -61,7 +61,7 @@ export function AvatarEditor({ userId, name, current, onClose, onSaved }: {
         <div className="flex items-center gap-3 mb-4">
           <Avatar user={preview} size={64} />
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12.5px] font-semibold text-[#EA580C] hover:underline cursor-pointer">
+            <label className="text-[12.5px] font-semibold text-[var(--brand)] hover:underline cursor-pointer">
               ⬆️ อัปโหลดรูป
               <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
             </label>
@@ -75,7 +75,7 @@ export function AvatarEditor({ userId, name, current, onClose, onSaved }: {
         <div className="grid grid-cols-8 gap-1.5 mb-4">
           {AVATAR_ICONS.map((ic) => (
             <button key={ic} onClick={() => { setIcon(ic); setUrl(null) }}
-              className={`aspect-square rounded-lg text-[18px] grid place-items-center border ${icon === ic && !url ? 'border-[#EA580C] bg-[#FFF3EC]' : 'border-[#ECEFF3] hover:bg-[#F6F9FC]'}`}>{ic}</button>
+              className={`aspect-square rounded-lg text-[18px] grid place-items-center border ${icon === ic && !url ? 'border-[var(--brand)] bg-[#FFF3EC]' : 'border-[#ECEFF3] hover:bg-[#F6F9FC]'}`}>{ic}</button>
           ))}
         </div>
 
@@ -89,7 +89,7 @@ export function AvatarEditor({ userId, name, current, onClose, onSaved }: {
 
         <div className="flex items-center gap-2">
           <button onClick={save} disabled={busy}
-            className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+            className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
             {busy ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
           <button onClick={onClose} className="text-[13px] font-semibold text-[#5A6B82] px-3 py-2.5 hover:text-[#1C1917]">ยกเลิก</button>

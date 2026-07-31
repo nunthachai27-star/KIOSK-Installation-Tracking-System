@@ -19,7 +19,7 @@ const HIT_STATUS = {
   IN_STOCK: { label: 'ในคลัง', color: '#157F4C', bg: '#E2F3EA' },
   ISSUED: { label: 'จ่ายออกแล้ว', color: '#6D28D9', bg: '#F3EEFF' },
   BORROWED: { label: 'ถูกยืม', color: '#1B5FD9', bg: '#E4EEFF' },
-  CLAIM: { label: 'เคลม', color: '#EA580C', bg: '#FCE7D6' },
+  CLAIM: { label: 'เคลม', color: 'var(--brand)', bg: '#FCE7D6' },
 }
 
 export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary[] }) {
@@ -100,11 +100,11 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหารุ่น/อุปกรณ์ หรือ Serial No. / S/N BMS…"
-            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
           {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
         </div>
-        <select value={group} onChange={(e) => setGroup(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[#EA580C]">
+        <select value={group} onChange={(e) => setGroup(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[var(--brand)]">
           <option value="">ทุกกลุ่มสินค้า</option>
           {groups.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
         </select>
@@ -162,12 +162,12 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
                           {h.status === 'BORROWED' && h.borrowerName
                             ? <Link href="/loans" className="text-[#1B5FD9] hover:underline">🤝 {h.borrowerName}</Link>
                             : h.jobId
-                              ? <Link href={`/jobs/${h.jobId}`} className="text-[#EA580C] hover:underline">{h.hospitalName ?? h.jobCode}</Link>
+                              ? <Link href={`/jobs/${h.jobId}`} className="text-[var(--brand)] hover:underline">{h.hospitalName ?? h.jobCode}</Link>
                               : <span className="text-[#5A6B82]">{h.hospitalName ?? '—'}</span>}
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           <Link href={`/stock/${h.productId}?lot=${encodeURIComponent(h.lotCode)}&q=${encodeURIComponent(h.serialNo ?? h.serialBMS ?? '')}`}
-                            className="text-[12px] font-semibold text-[#EA580C] hover:underline">เปิดในคลัง →</Link>
+                            className="text-[12px] font-semibold text-[var(--brand)] hover:underline">เปิดในคลัง →</Link>
                         </td>
                       </tr>
                     )
@@ -189,7 +189,7 @@ export function StockDashboard({ kpi, groups }: { kpi: Kpi; groups: GroupSummary
           <div className="px-4 md:px-5 pt-3.5 pb-3 bg-[#FBFAF8] border-b border-[#F1F3F6]">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2.5">
-                <span className="w-1.5 h-5 rounded-full bg-[#EA580C]" />
+                <span className="w-1.5 h-5 rounded-full bg-[var(--brand)]" />
                 <span className="text-[14px] font-bold text-[#1C1917]">{g.group}</span>
                 <span className="text-[11px] font-semibold text-[#5A6B82] bg-white border border-[#EEF1F5] rounded-full px-2 py-0.5">{g.products.length} รุ่น</span>
               </div>
@@ -233,7 +233,7 @@ function ProductRow({ p }: { p: ProductSummary }) {
       {open && (
         <div className="bg-[#FBFAF8] px-5 pb-3 pt-1">
           <div className="flex justify-end mb-1">
-            <Link href={`/stock/${p.id}`} className="text-[12px] font-semibold text-[#EA580C] hover:underline">ดูรายการเครื่องทั้งหมด ({nf.format(p.received)}) →</Link>
+            <Link href={`/stock/${p.id}`} className="text-[12px] font-semibold text-[var(--brand)] hover:underline">ดูรายการเครื่องทั้งหมด ({nf.format(p.received)}) →</Link>
           </div>
           <div className="hidden md:grid grid-cols-[1fr_84px_84px_84px_120px] gap-2 px-2 py-1 text-[11px] text-[#A8A29E]">
             <div className="pl-5">Lot</div><div className="text-right">รับ</div><div className="text-right">จ่าย</div><div className="text-right">เหลือ</div><div />

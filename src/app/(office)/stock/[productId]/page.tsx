@@ -77,7 +77,7 @@ export default async function StockProductPage({ params, searchParams }: {
   return (
     <div className="p-4 sm:p-6 max-w-[1160px] mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm">
-        <Link href="/stock" className="text-[#5A6B82] hover:text-[#EA580C]">‹ คลังสินค้า</Link>
+        <Link href="/stock" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ คลังสินค้า</Link>
         <span className="text-[#C7D2E0]">/</span>
         <span className="text-[#8492A6]">{product.group}</span>
       </div>
@@ -91,7 +91,7 @@ export default async function StockProductPage({ params, searchParams }: {
           { label: 'รับเข้ารวม', value: received, color: '#1C1917' },
           { label: 'จ่ายออกแล้ว', value: issued, color: '#6D28D9' },
           ...(borrowed > 0 ? [{ label: 'ถูกยืม', value: borrowed, color: '#1B5FD9' }] : []),
-          ...(claimed > 0 ? [{ label: 'เคลม', value: claimed, color: '#EA580C' }] : []),
+          ...(claimed > 0 ? [{ label: 'เคลม', value: claimed, color: 'var(--brand)' }] : []),
           { label: 'คงเหลือ', value: remaining, color: stockLevel(remaining, product.lowStockQty) === 'OUT' ? '#C13540' : stockLevel(remaining, product.lowStockQty) === 'LOW' ? '#B45309' : '#157F4C' },
         ].map((c) => (
           <div key={c.label} className="ds-card px-4 py-3">

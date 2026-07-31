@@ -129,7 +129,7 @@ export function QcForm({
     }
   }
 
-  const selCls = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
+  const selCls = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]'
 
   if (units.length === 0) {
     return (
@@ -154,14 +154,14 @@ export function QcForm({
           <div className="h-[42px] flex items-center gap-2">
             <input value={hCode} onChange={e => { setHCode(e.target.value); setHSaved(false) }}
               placeholder="เช่น 10715" onBlur={() => { if ((hCode.trim() || null) !== (hospital.code ?? null)) saveHospitalCode() }}
-              className="w-40 border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
+              className="w-40 border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] tnum" />
             {hSaving ? <span className="text-[12px] text-[#8492A6]">กำลังบันทึก…</span>
               : hSaved ? <span className="text-[12px] font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span> : null}
           </div>
           <div className="text-[11.5px] text-[#A8A29E] mt-1">ใช้ร่วมทุกงานของโรงพยาบาลนี้</div>
         </div>
         <button type="button" onClick={downloadReport}
-          className="ml-auto self-end flex items-center gap-1.5 bg-[#EA580C] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[#C2410C]">
+          className="ml-auto self-end flex items-center gap-1.5 bg-[var(--brand)] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)]">
           📄 ดึงรายงานขอออก License Key
         </button>
       </div>
@@ -171,7 +171,7 @@ export function QcForm({
         return (
           <div key={unit.id} className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
             <div className="flex items-center gap-2.5 mb-4">
-              <span className="w-7 h-7 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center font-bold text-sm">{idx + 1}</span>
+              <span className="w-7 h-7 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center font-bold text-sm">{idx + 1}</span>
               <span className="text-[15px] font-bold tnum">{unit.serialNo}</span>
             </div>
 
@@ -239,21 +239,21 @@ export function QcForm({
               <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">Key ID / MAC Address</label>
               <input value={st.keyId} onChange={e => patch(unit.id, { keyId: e.target.value })}
                 placeholder="เช่น 00:1A:2B:3C:4D:5E หรือ Key ID ของเครื่อง"
-                className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
+                className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] tnum" />
               <label className="block text-sm font-semibold text-[#5A6B82] mt-3 mb-1.5">License Key</label>
               <input value={st.licenseKey} onChange={e => patch(unit.id, { licenseKey: e.target.value })}
                 placeholder="License Key ของเครื่อง"
-                className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] tnum" />
+                className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] tnum" />
               <label className="mt-2.5 flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" checked={st.memoLicense} onChange={e => patch(unit.id, { memoLicense: e.target.checked })}
-                  className="w-4 h-4 accent-[#EA580C]" />
+                  className="w-4 h-4 accent-[var(--brand)]" />
                 <span className="text-sm font-semibold text-[#5A6B82]">ขอเปิด MEMO License แล้ว</span>
               </label>
             </div>
 
             <div className="flex items-center gap-3 mt-4">
               <button type="button" disabled={saving[unit.id]} onClick={() => save(unit.id)}
-                className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+                className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
                 {saving[unit.id] ? 'กำลังบันทึก…' : 'บันทึก QC เครื่องนี้'}
               </button>
               {saved[unit.id] && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}

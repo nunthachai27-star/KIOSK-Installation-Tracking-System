@@ -10,7 +10,7 @@ export const CATEGORY_META: Record<ProductCategory, { color: string; bg: string;
   'ชุดปิดสิทธิ':      { color: '#6D28D9', bg: '#F3EEFF', icon: '🪪' },
   'รถเข็น':         { color: '#9A6B10', bg: '#FAF0D8', icon: '🛒' },
   'QR / Payment':  { color: '#157F4C', bg: '#E2F3EA', icon: '💳' },
-  'IPD / Consent': { color: '#C2410C', bg: '#FFEDE1', icon: '📋' },
+  'IPD / Consent': { color: 'var(--brand-strong)', bg: 'var(--brand-soft)', icon: '📋' },
   'อื่นๆ':          { color: '#5A6B82', bg: '#EDF0F4', icon: '📦' },
 }
 

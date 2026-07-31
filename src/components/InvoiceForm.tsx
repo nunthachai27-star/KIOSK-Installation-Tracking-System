@@ -180,7 +180,7 @@ export function InvoiceForm({
                 type="button"
                 disabled={iSaving}
                 onClick={saveInvoice}
-                className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60"
+                className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60"
               >
                 {iSaving ? 'กำลังบันทึก…' : 'บันทึกใบแจ้งหนี้'}
               </button>
@@ -243,7 +243,7 @@ export function InvoiceForm({
               type="button"
               disabled={!readiness.ok || closing}
               onClick={closeJob}
-              className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {closing ? 'กำลังปิดงาน…' : 'ปิดงาน'}
             </button>

@@ -80,7 +80,7 @@ export function LoanManager({ rows, options, requests, outCount, overdueCount, a
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหา Serial, ชื่อผู้ยืม, เบอร์โทร…"
-            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+            className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
           {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
         </div>
@@ -96,7 +96,7 @@ export function LoanManager({ rows, options, requests, outCount, overdueCount, a
           🔗 QR ให้ผู้ยืม
         </button>
         <button onClick={() => { setApproving(null); setOpen((v) => !v) }} disabled={options.length === 0}
-          className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[#C2410C] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-[var(--brand-strong)] disabled:opacity-50 disabled:cursor-not-allowed"
           title={options.length === 0 ? 'ไม่มีอุปกรณ์ว่างในคลัง' : undefined}>
           ＋ ยืมของ
         </button>
@@ -109,7 +109,7 @@ export function LoanManager({ rows, options, requests, outCount, overdueCount, a
         <div className="ds-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[14px] font-bold text-[#1C1917]">📥 คำขอยืมรออนุมัติ</span>
-            <span className="px-2 py-0.5 rounded-full bg-[#FCE7D6] text-[#EA580C] text-[12px] font-bold tnum">{nf.format(requests.length)}</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#FCE7D6] text-[var(--brand)] text-[12px] font-bold tnum">{nf.format(requests.length)}</span>
           </div>
           <div className="flex flex-col gap-2">
             {requests.map((rq) => (
@@ -201,7 +201,7 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
         {r.borrowerOrg && <div className="text-[11.5px] text-[#8492A6]">{r.borrowerOrg}</div>}
       </td>
       <td className="px-3 py-2 tnum whitespace-nowrap">
-        <a href={`tel:${r.borrowerPhone}`} className="text-[#EA580C] hover:underline">{r.borrowerPhone}</a>
+        <a href={`tel:${r.borrowerPhone}`} className="text-[var(--brand)] hover:underline">{r.borrowerPhone}</a>
       </td>
       <td className="px-3 py-2 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(r.borrowedAt)}</td>
       <td className="px-3 py-2 text-[11.5px] whitespace-nowrap" style={{ color: r.level === 'OVERDUE' ? '#C13540' : '#5A6B82', fontWeight: r.level === 'OVERDUE' ? 700 : 400 }}>
@@ -287,7 +287,7 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
     } finally { setSaving(false) }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C]'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]'
   const req = <span className="text-[#C13540]">*</span>
 
   return (
@@ -304,7 +304,7 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
           {chosen ? (
             <div className="flex items-center gap-2 border border-[#D6DFEA] rounded-lg px-3 py-2.5 bg-[#F8FAFD]">
               <span className="text-sm text-[#1C1917] flex-1 truncate">{labelOf(chosen)}</span>
-              <button onClick={() => { setItemId(''); setPick('') }} className="text-[12px] font-semibold text-[#EA580C] hover:underline shrink-0">เปลี่ยน</button>
+              <button onClick={() => { setItemId(''); setPick('') }} className="text-[12px] font-semibold text-[var(--brand)] hover:underline shrink-0">เปลี่ยน</button>
             </div>
           ) : (
             <div className="border border-[#EEF2F8] rounded-xl p-3 bg-[#FBFCFE] flex flex-col gap-2.5">
@@ -384,7 +384,7 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
 
         <div className="md:col-span-2 flex items-center gap-3">
           <button onClick={submit} disabled={!ready || saving}
-            className="bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60 disabled:cursor-not-allowed">
+            className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60 disabled:cursor-not-allowed">
             {saving ? 'กำลังบันทึก…' : approving ? 'อนุมัติ & บันทึกการยืม' : 'บันทึกการยืม'}
           </button>
           {!ready && !err && <span className="text-[12.5px] text-[#8492A6]">กรอกอุปกรณ์ ชื่อ เบอร์โทร และกำหนดคืนให้ครบก่อน</span>}
@@ -414,7 +414,7 @@ function RequestCard({ rq, onApprove, onDone }: { rq: Req; onApprove: () => void
     <div className="rounded-xl border border-[#EEEAE6] bg-[#FBFAF8] px-3.5 py-3 flex flex-wrap items-start gap-x-4 gap-y-1.5">
       <div className="min-w-[180px] flex-1">
         <div className="text-[13.5px] font-semibold text-[#1C1917]">{rq.borrowerName}
-          <a href={`tel:${rq.borrowerPhone}`} className="ml-2 text-[12.5px] font-normal text-[#EA580C] hover:underline tnum">{rq.borrowerPhone}</a>
+          <a href={`tel:${rq.borrowerPhone}`} className="ml-2 text-[12.5px] font-normal text-[var(--brand)] hover:underline tnum">{rq.borrowerPhone}</a>
         </div>
         {rq.borrowerOrg && <div className="text-[12px] text-[#8492A6]">{rq.borrowerOrg}</div>}
         {rq.purpose && <div className="text-[12.5px] text-[#5A6B82] mt-0.5">“{rq.purpose}”</div>}
@@ -424,7 +424,7 @@ function RequestCard({ rq, onApprove, onDone }: { rq: Req; onApprove: () => void
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <button onClick={onApprove} disabled={busy}
-          className="bg-[#EA580C] text-white text-[12.5px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[#C2410C] disabled:opacity-50">เลือกอุปกรณ์ & อนุมัติ</button>
+          className="bg-[var(--brand)] text-white text-[12.5px] font-semibold rounded-lg px-3 py-1.5 hover:bg-[var(--brand-strong)] disabled:opacity-50">เลือกอุปกรณ์ & อนุมัติ</button>
         <button onClick={reject} disabled={busy}
           className="text-[12.5px] font-semibold text-[#C13540] rounded-lg px-3 py-1.5 border border-[#F0D2D2] hover:bg-[#FBE4E4] disabled:opacity-50">ปฏิเสธ</button>
       </div>
@@ -470,7 +470,7 @@ function QrModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex items-center gap-2 border border-[#D6DFEA] rounded-lg px-3 py-2 mb-2">
           <span className="text-[12.5px] text-[#1C1917] flex-1 truncate tnum">{url}</span>
-          <button onClick={copy} className="text-[12px] font-semibold text-[#EA580C] hover:underline shrink-0">{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</button>
+          <button onClick={copy} className="text-[12px] font-semibold text-[var(--brand)] hover:underline shrink-0">{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</button>
         </div>
         <button onClick={print} disabled={!dataUrl} className="w-full text-[13px] font-semibold text-[#1B5FD9] border border-[#1B5FD9] rounded-lg py-2 hover:bg-[#EEF3FA] disabled:opacity-50">🖨️ พิมพ์ QR</button>
       </div>

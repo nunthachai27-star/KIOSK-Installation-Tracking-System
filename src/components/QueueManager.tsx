@@ -51,7 +51,7 @@ export function QueueManager({
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition'
   const label = 'block text-[13px] font-semibold text-[#5A6B82] mb-1.5'
 
   return (
@@ -60,7 +60,7 @@ export function QueueManager({
       <div className="flex flex-col gap-4 min-w-0">
         <div className="ds-card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">📅</span>
+            <span className="w-8 h-8 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center">📅</span>
             <span className="text-[15px] font-bold">เพิ่มคิวงาน</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -94,7 +94,7 @@ export function QueueManager({
             </div>
             <div className="flex items-end">
               <button onClick={add} disabled={saving}
-                className="ds-hover w-full bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+                className="ds-hover w-full bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
                 {saving ? 'กำลังเพิ่ม…' : '＋ เพิ่มเข้าคิว'}
               </button>
             </div>
@@ -110,11 +110,11 @@ export function QueueManager({
       <div className="ds-card overflow-hidden">
         <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3 border-b border-[#F1F3F6]">
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-[#FFEDE1] text-[#EA580C] grid place-items-center">📅</span>
+            <span className="w-8 h-8 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center">📅</span>
             <span className="text-[14px] font-bold">คิววันที่ {date}</span>
           </div>
           <DateField value={date} onChange={(v) => { if (v) router.push(`/schedule?d=${v}`) }}
-            className="border border-[#D6DFEA] rounded-lg px-2 py-1 text-[12px] outline-none focus:border-[#EA580C]" aria-label="เลือกวันที่คิว" />
+            className="border border-[#D6DFEA] rounded-lg px-2 py-1 text-[12px] outline-none focus:border-[var(--brand)]" aria-label="เลือกวันที่คิว" />
         </div>
         {items.length === 0 ? (
           <div className="grid place-items-center text-center py-16 px-5">
@@ -125,7 +125,7 @@ export function QueueManager({
         ) : (
           items.map((it) => (
             <div key={it.id} className="flex gap-3 px-4 py-3 border-t border-[#F1F3F6] first:border-t-0 hover:bg-[#FBFAF8]">
-              <div className="w-14 shrink-0 text-[13px] font-bold tnum text-[#EA580C]">{it.time}</div>
+              <div className="w-14 shrink-0 text-[13px] font-bold tnum text-[var(--brand)]">{it.time}</div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-semibold text-[#1C1917] truncate">{it.typeLabel}</div>
                 <div className="text-[11.5px] text-[#8492A6] truncate">{[it.hospital, it.product].filter(Boolean).join(' · ')}</div>

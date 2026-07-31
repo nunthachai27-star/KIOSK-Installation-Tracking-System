@@ -48,7 +48,7 @@ export function TaskManager({ users, kinds, initial, today }: { users: UserOpt[]
     if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
   }
 
-  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition'
+  const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition'
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,7 +93,7 @@ export function TaskManager({ users, kinds, initial, today }: { users: UserOpt[]
         </div>
         {err && <div className="text-sm text-[#C13540] mt-2">{err}</div>}
         <button onClick={add} disabled={saving}
-          className="ds-hover mt-4 bg-[#EA580C] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60">
+          className="ds-hover mt-4 bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
           {saving ? 'กำลังบันทึก…' : '＋ เพิ่มการแจ้งเตือนงาน'}
         </button>
       </div>

@@ -117,7 +117,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
               <ol className="flex flex-col gap-3">
                 {staff.lines.map((l, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span className="shrink-0 w-6 h-6 rounded-md bg-[#FFEDE1] text-[#EA580C] grid place-items-center text-[12.5px] font-bold tnum">{i + 1}</span>
+                    <span className="shrink-0 w-6 h-6 rounded-md bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center text-[12.5px] font-bold tnum">{i + 1}</span>
                     <div className="min-w-0">
                       <div className="text-[14px] font-bold text-[#1C1917]">{l.heading}</div>
                       <div className="text-[13.5px] text-[#3C4A5E] mt-0.5 leading-relaxed">{l.text}</div>

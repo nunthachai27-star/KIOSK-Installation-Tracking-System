@@ -24,23 +24,23 @@ export default async function SettingsPage() {
           <Link key={c.key} href={`/settings/${c.key}`} className="ds-card ds-hover ds-lift p-5">
             <div className="font-bold text-[15px] text-[#1C1917]">{c.label}</div>
             <div className="text-[13px] text-[#8492A6] mt-1">{countMap.get(c.key) ?? 0} รายการที่เปิดใช้งาน</div>
-            <div className="text-[12.5px] font-semibold text-[#EA580C] mt-3">จัดการ ›</div>
+            <div className="text-[12.5px] font-semibold text-[var(--brand)] mt-3">จัดการ ›</div>
           </Link>
         ))}
         <Link href="/settings/equipment" className="ds-card ds-hover ds-lift p-5">
           <div className="font-bold text-[15px] text-[#1C1917] flex items-center gap-1.5">🔧 รายการอุปกรณ์ (เคลม)</div>
           <div className="text-[13px] text-[#8492A6] mt-1">{eqItemCount} รายการ · {eqTypeCount} ประเภทสินค้า</div>
-          <div className="text-[12.5px] font-semibold text-[#EA580C] mt-3">จัดการแยกตามประเภท ›</div>
+          <div className="text-[12.5px] font-semibold text-[var(--brand)] mt-3">จัดการแยกตามประเภท ›</div>
         </Link>
         <Link href="/settings/hospitals" className="ds-card ds-hover ds-lift p-5">
           <div className="font-bold text-[15px] text-[#1C1917] flex items-center gap-1.5">🏥 โรงพยาบาล</div>
           <div className="text-[13px] text-[#8492A6] mt-1">{hospitalCount} แห่งในระบบ</div>
-          <div className="text-[12.5px] font-semibold text-[#EA580C] mt-3">แก้ไขชื่อ/จังหวัด ›</div>
+          <div className="text-[12.5px] font-semibold text-[var(--brand)] mt-3">แก้ไขชื่อ/จังหวัด ›</div>
         </Link>
         <Link href="/settings/staff" className="ds-card ds-hover ds-lift p-5">
           <div className="font-bold text-[15px] text-[#1C1917] flex items-center gap-1.5">👤 เจ้าหน้าที่</div>
           <div className="text-[13px] text-[#8492A6] mt-1">ชื่อเล่นสำหรับรายงาน</div>
-          <div className="text-[12.5px] font-semibold text-[#EA580C] mt-3">ตั้งชื่อเล่น ›</div>
+          <div className="text-[12.5px] font-semibold text-[var(--brand)] mt-3">ตั้งชื่อเล่น ›</div>
         </Link>
       </div>
       <p className="text-[12.5px] text-[#8492A6] -mt-1">

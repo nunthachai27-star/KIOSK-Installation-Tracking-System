@@ -110,7 +110,7 @@ export default async function Home({
           <nav aria-label="จัดกลุ่มตามขั้นตอนงาน" className="ds-card p-3">
             <div className="flex items-center justify-between px-1 pb-2 mb-1 border-b border-[#F1F3F6]">
               <span className="text-[12.5px] font-bold text-[#57534E]">ขั้นตอนการทำงาน</span>
-              <span className="min-w-[24px] text-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tnum bg-[#FFEDE1] text-[#EA580C]">{formatQty(openFiltered.length)}</span>
+              <span className="min-w-[24px] text-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tnum bg-[var(--brand-soft)] text-[var(--brand)]">{formatQty(openFiltered.length)}</span>
             </div>
             <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible">
               <StepLink href={buildHref({ step: 0, page: 1, closed: false })} active={!closedMode && stepNum === 0} label="ทั้งหมด" count={openFiltered.length} />
@@ -122,7 +122,7 @@ export default async function Home({
               <StepLink href={buildHref({ page: 1, closed: true })} active={closedMode} icon="✅" label="ปิดงานแล้ว" count={closed} />
             </div>
           </nav>
-          <Link href="/monitor" className="ds-card ds-hover p-3 flex items-center justify-center gap-2 text-[13px] font-semibold text-[#EA580C] hover:bg-[#FFF7F2]">
+          <Link href="/monitor" className="ds-card ds-hover p-3 flex items-center justify-center gap-2 text-[13px] font-semibold text-[var(--brand)] hover:bg-[#FFF7F2]">
             📊 ดู Pipeline ทั้งหมด
           </Link>
         </div>
@@ -150,7 +150,7 @@ export default async function Home({
               </div>
             )}
             {planned > 0 && (
-              <Link href="/planned" className="ml-auto text-[12.5px] font-semibold text-[#EA580C] hover:underline">
+              <Link href="/planned" className="ml-auto text-[12.5px] font-semibold text-[var(--brand)] hover:underline">
                 งานตามแผน {formatQty(planned)} รายการ ›
               </Link>
             )}
@@ -211,7 +211,7 @@ export default async function Home({
 }
 
 const tab = (active: boolean) =>
-  `px-3 py-1.5 rounded-full text-[12.5px] font-semibold ${active ? 'bg-[#FFEDE1] text-[#EA580C]' : 'text-[#5A6B82] hover:bg-[#F6F9FC]'}`
+  `px-3 py-1.5 rounded-full text-[12.5px] font-semibold ${active ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'text-[#5A6B82] hover:bg-[#F6F9FC]'}`
 
 // Compact page list with ellipses (e.g. 1 … 4 5 6 … 12). 0 marks an ellipsis slot.
 function pageNumbers(cur: number, total: number): number[] {
@@ -229,7 +229,7 @@ function pageNumbers(cur: number, total: number): number[] {
 function PageLink({ href, active, disabled, children }: { href: string; active?: boolean; disabled?: boolean; children: ReactNode }) {
   if (disabled) return <span className="min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] text-[#D4CFC9]">{children}</span>
   return (
-    <Link href={href} prefetch={false} className={`min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] font-semibold tnum ${active ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
+    <Link href={href} prefetch={false} className={`min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] font-semibold tnum ${active ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
       {children}
     </Link>
   )
@@ -239,13 +239,13 @@ function StepLink({ href, active, n, icon, label, count }: { href: string; activ
   return (
     <Link href={href} prefetch={false} aria-current={active ? 'page' : undefined}
       className={`shrink-0 md:shrink flex items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors border-l-[3px] ${
-        active ? 'bg-[#FFF4EC] text-[#EA580C] border-[#EA580C]' : 'text-[#57534E] border-transparent hover:bg-[#F6F4F2]'}`}>
+        active ? 'bg-[#FFF4EC] text-[var(--brand)] border-[var(--brand)]' : 'text-[#57534E] border-transparent hover:bg-[#F6F4F2]'}`}>
       {n != null ? (
-        <span className={`w-5 h-5 shrink-0 rounded-md grid place-items-center text-[11px] font-bold tnum ${active ? 'bg-[#EA580C] text-white' : 'bg-[#ECEAE8] text-[#A8A29E]'}`}>{n}</span>
+        <span className={`w-5 h-5 shrink-0 rounded-md grid place-items-center text-[11px] font-bold tnum ${active ? 'bg-[var(--brand)] text-white' : 'bg-[#ECEAE8] text-[#A8A29E]'}`}>{n}</span>
       ) : null}
       {icon && <span className="text-[13px]">{icon}</span>}
       <span className="flex-1">{label}</span>
-      <span className={`min-w-[22px] text-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tnum ${active ? 'bg-[#FBD9C4] text-[#C2410C]' : 'bg-[#ECEAE8] text-[#78716C]'}`}>{formatQty(count)}</span>
+      <span className={`min-w-[22px] text-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tnum ${active ? 'bg-[#FBD9C4] text-[var(--brand-strong)]' : 'bg-[#ECEAE8] text-[#78716C]'}`}>{formatQty(count)}</span>
     </Link>
   )
 }

@@ -26,7 +26,7 @@ export default async function OfficeLayout({ children }: { children: React.React
     prisma.issue.count({ where: { status: 'RECEIVED' } }),
     prisma.job.count({ where: { isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
     prisma.loan.count({ where: { status: 'BORROWED', dueDate: { lt: now } } }),
-    session?.user?.id ? prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true, avatarIcon: true, avatarColor: true } }) : Promise.resolve(null),
+    session?.user?.id ? prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true, avatarIcon: true, avatarColor: true, theme: true } }) : Promise.resolve(null),
   ])
 
   return (
@@ -46,17 +46,17 @@ export default async function OfficeLayout({ children }: { children: React.React
           <div className="hidden md:flex items-center gap-2.5">
             <Link
               href="/jobs/new"
-              className="ds-hover bg-[#EA580C] text-white text-sm font-semibold rounded-[10px] px-4 py-2 hover:bg-[#C2410C] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]"
+              className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-[10px] px-4 py-2 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]"
             >
               ＋ เพิ่มงาน
             </Link>
             <NotificationBell pendingClaims={pendingClaims} overdue={overdue} overdueLoans={overdueLoans} />
             <span className="w-px h-6 bg-[#ECEFF3]" />
-            <UserMenu userId={session?.user?.id ?? ''} name={name} role={role}
+            <UserMenu userId={session?.user?.id ?? ''} name={name} role={role} theme={me?.theme ?? null}
               avatar={{ avatarUrl: me?.avatarUrl, avatarIcon: me?.avatarIcon, avatarColor: me?.avatarColor }} />
           </div>
           {/* mobile menu */}
-          <MobileMenu userId={session?.user?.id ?? ''} name={name}
+          <MobileMenu userId={session?.user?.id ?? ''} name={name} theme={me?.theme ?? null}
             avatar={{ avatarUrl: me?.avatarUrl, avatarIcon: me?.avatarIcon, avatarColor: me?.avatarColor }} />
         </div>
       </header>

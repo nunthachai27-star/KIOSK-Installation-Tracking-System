@@ -69,7 +69,7 @@ export function JobRow({ job }: { job: JobRowData }) {
         <span
           key={i}
           className="w-2.5 h-2.5 rounded-full"
-          style={{ background: i <= step ? (isBad ? '#C13540' : '#EA580C') : '#E1E9F3' }}
+          style={{ background: i <= step ? (isBad ? '#C13540' : 'var(--brand)') : '#E1E9F3' }}
         />
       ))}
     </div>
@@ -123,7 +123,7 @@ export function JobRow({ job }: { job: JobRowData }) {
         </div>
         <div className="flex items-center gap-2.5">{dots}<StatusBadge status={job.currentStatus} /></div>
         <div className="text-[10.5px] text-[#A8A29E] leading-tight">{formatThaiDate(job.updatedAt)}</div>
-        <div className="text-[#C4BFB9] text-lg leading-none text-center group-hover:text-[#EA580C]">⋮</div>
+        <div className="text-[#C4BFB9] text-lg leading-none text-center group-hover:text-[var(--brand)]">⋮</div>
       </div>
 
       {/* milestone strip (both layouts) */}

@@ -46,7 +46,7 @@ function Row({ staff }: { staff: Staff }) {
       <div className="flex items-center gap-2 shrink-0">
         <label className="text-[12px] text-[#8492A6]">ชื่อเล่น</label>
         <input value={nick} onChange={(e) => setNick(e.target.value)} onBlur={save} placeholder="เช่น เสือ"
-          className={`w-32 border rounded-lg px-2.5 py-1.5 text-[13px] outline-none ${flash ? 'border-[#22A565] bg-[#EAF7EF]' : 'border-[#D6DFEA] focus:border-[#EA580C]'}`} />
+          className={`w-32 border rounded-lg px-2.5 py-1.5 text-[13px] outline-none ${flash ? 'border-[#22A565] bg-[#EAF7EF]' : 'border-[#D6DFEA] focus:border-[var(--brand)]'}`} />
       </div>
       {editAvatar && <AvatarEditor userId={staff.id} name={staff.name} current={staff}
         onClose={() => setEditAvatar(false)} onSaved={() => { setEditAvatar(false); router.refresh() }} />}

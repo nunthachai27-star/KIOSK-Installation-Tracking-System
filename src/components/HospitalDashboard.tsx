@@ -100,7 +100,7 @@ export function HospitalDashboard({ items, stats, overview, topProvinces, topPro
     { key: 'NORMAL', label: 'ติดตั้งแล้ว', icon: '✅', n: counts.NORMAL },
   ]
 
-  const sel = 'border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[#EA580C]'
+  const sel = 'border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-[var(--brand)]'
 
   return (
     <div className="flex flex-col gap-4">
@@ -125,7 +125,7 @@ export function HospitalDashboard({ items, stats, overview, topProvinces, topPro
           <div className="flex items-center gap-2.5 flex-wrap">
             <div className="relative flex-1 min-w-[220px]">
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาโรงพยาบาล จังหวัด หรือรหัสงาน…"
-                className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15" />
+                className="w-full border border-[#D6DFEA] rounded-lg pl-9 pr-9 py-2 text-[13px] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15" />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">🔍</span>
               {q && <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#C13540]">✕</button>}
             </div>
@@ -151,9 +151,9 @@ export function HospitalDashboard({ items, stats, overview, topProvinces, topPro
           <div className="flex items-center gap-2 flex-wrap">
             {tabs.map((t) => (
               <button key={t.key} onClick={() => setStatus(t.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold border ${status === t.key ? 'bg-[#FFEDE1] text-[#EA580C] border-[#FAD3B8]' : 'bg-white text-[#5A6B82] border-[#E1E8F2] hover:bg-[#F6F9FC]'}`}>
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold border ${status === t.key ? 'bg-[var(--brand-soft)] text-[var(--brand)] border-[#FAD3B8]' : 'bg-white text-[#5A6B82] border-[#E1E8F2] hover:bg-[#F6F9FC]'}`}>
                 <span>{t.icon}</span>{t.label}
-                <span className={`min-w-[20px] text-center rounded-full px-1 text-[11px] font-bold tnum ${status === t.key ? 'bg-[#FBD9C4] text-[#C2410C]' : 'bg-[#ECEAE8] text-[#78716C]'}`}>{nf.format(t.n)}</span>
+                <span className={`min-w-[20px] text-center rounded-full px-1 text-[11px] font-bold tnum ${status === t.key ? 'bg-[#FBD9C4] text-[var(--brand-strong)]' : 'bg-[#ECEAE8] text-[#78716C]'}`}>{nf.format(t.n)}</span>
               </button>
             ))}
           </div>
@@ -189,7 +189,7 @@ export function HospitalDashboard({ items, stats, overview, topProvinces, topPro
                       <td className="px-4 py-2.5"><span className="inline-block px-2 py-0.5 rounded-md text-[11.5px] font-semibold bg-[#F3EEFF] text-[#6D28D9] tnum">{nf.format(h.itemCount)} ชิ้น</span></td>
                       <td className="px-4 py-2.5"><span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11.5px] font-semibold" style={{ background: st.bg, color: st.color }}><span className="w-1.5 h-1.5 rounded-full" style={{ background: st.dot }} />{st.label}</span></td>
                       <td className="px-4 py-2.5 text-[11px] text-[#A8A29E] whitespace-nowrap">{fmtWhen(h.updatedAt)}</td>
-                      <td className="px-4 py-2.5 text-right whitespace-nowrap"><Link href={`/hospitals/${h.id}`} className="text-[12.5px] font-semibold text-[#EA580C] hover:underline">ดูรายละเอียด ›</Link></td>
+                      <td className="px-4 py-2.5 text-right whitespace-nowrap"><Link href={`/hospitals/${h.id}`} className="text-[12.5px] font-semibold text-[var(--brand)] hover:underline">ดูรายละเอียด ›</Link></td>
                     </tr>
                   )
                 })}
@@ -236,7 +236,7 @@ export function HospitalDashboard({ items, stats, overview, topProvinces, topPro
                 ))}
               </div>
             </div>
-            <Link href="/report" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#EA580C] hover:underline">ดูรายงานสรุปทั้งหมด →</Link>
+            <Link href="/report" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--brand)] hover:underline">ดูรายงานสรุปทั้งหมด →</Link>
           </div>
 
           <div className="ds-card p-5">
@@ -264,7 +264,7 @@ export function HospitalDashboard({ items, stats, overview, topProvinces, topPro
                 </div>
               ))}
             </div>
-            <Link href="/products" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#EA580C] hover:underline">ดูทั้งหมด →</Link>
+            <Link href="/products" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--brand)] hover:underline">ดูทั้งหมด →</Link>
           </div>
         </div>
       </div>
@@ -284,7 +284,7 @@ function pageList(cur: number, total: number): number[] {
 function Pg({ onClick, active, disabled, children }: { onClick: () => void; active?: boolean; disabled?: boolean; children: ReactNode }) {
   return (
     <button onClick={onClick} disabled={disabled}
-      className={`min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] font-semibold tnum disabled:text-[#D4CFC9] ${active ? 'bg-[#EA580C] text-white' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
+      className={`min-w-[30px] h-[30px] grid place-items-center rounded-lg text-[13px] font-semibold tnum disabled:text-[#D4CFC9] ${active ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:bg-[#F0EEEC]'}`}>
       {children}
     </button>
   )

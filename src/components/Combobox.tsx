@@ -95,7 +95,7 @@ export function Combobox({
         onFocus={() => { setOpen(true); setQuery(''); setHi(0) }}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); setHi(0) }}
         onKeyDown={onKeyDown}
-        className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/15 transition"
+        className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition"
       />
       {open && (
         <div className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-xl border border-[#E1E8F2] bg-white shadow-[0_16px_40px_-12px_rgba(18,45,90,0.35)]">
@@ -109,7 +109,7 @@ export function Combobox({
               onMouseEnter={() => setHi(i)}
               className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 ${
                 i === hi ? 'bg-[#FFF3EC]' : 'hover:bg-[#F6F9FC]'
-              } ${o.id === value ? 'font-semibold text-[#EA580C]' : 'text-[#1C1917]'}`}
+              } ${o.id === value ? 'font-semibold text-[var(--brand)]' : 'text-[#1C1917]'}`}
             >
               <span className="text-sm truncate">{o.label}</span>
               {o.sub && <span className="text-[12px] text-[#8492A6] shrink-0">{o.sub}</span>}
@@ -126,7 +126,7 @@ export function Combobox({
               onMouseDown={(e) => e.preventDefault()}
               onClick={create}
               disabled={creating}
-              className="w-full text-left px-3 py-2.5 border-t border-[#EEF2F8] text-sm font-semibold text-[#EA580C] hover:bg-[#FFF3EC] disabled:opacity-60"
+              className="w-full text-left px-3 py-2.5 border-t border-[#EEF2F8] text-sm font-semibold text-[var(--brand)] hover:bg-[#FFF3EC] disabled:opacity-60"
             >
               {creating ? 'กำลังเพิ่ม…' : createLabel(trimmed)}
             </button>

@@ -26,7 +26,7 @@ export default async function RatePage({ params }: { params: Promise<{ id: strin
     <div className="min-h-screen bg-[#F1F3F6] grid place-items-center p-5">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-5">
-          <span className="w-9 h-9 rounded-xl bg-[#EA580C] text-white grid place-items-center font-bold">K</span>
+          <span className="w-9 h-9 rounded-xl bg-[var(--brand)] text-white grid place-items-center font-bold">K</span>
           <span className="font-bold text-[16px] tracking-tight text-[#1C1917]">KIOSK · BMS</span>
         </div>
         <div className="bg-white rounded-2xl border border-[#ECEFF3] shadow-[0_10px_40px_-12px_rgba(18,45,90,0.25)] p-6">

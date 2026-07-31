@@ -213,7 +213,7 @@ export function InstallHandoverForm({
           </div>
           {delivery && (
             <div className="text-[13px] text-[#5A6B82]">
-              สถานะจัดส่ง: <span className="font-semibold text-[#C2410C]">{DELIVERY_STATUS_LABEL[delivery.status]}</span>
+              สถานะจัดส่ง: <span className="font-semibold text-[var(--brand-strong)]">{DELIVERY_STATUS_LABEL[delivery.status]}</span>
               {' · '}ขนออก {fmtSummaryDate(delivery.shippedDate)}
               {delivery.arrivedDate ? ` · ถึง ${fmtSummaryDate(delivery.arrivedDate)}` : ''}
             </div>
@@ -226,12 +226,12 @@ export function InstallHandoverForm({
           <span className="text-[#5A6B82]">🏥 <span className="font-semibold text-[#1C1917]">{hospital.name}</span> · {hospital.province}</span>
           {(job.contactName || job.contactPhone) && (
             <span className="text-[#5A6B82]">ผู้ติดต่อ: <span className="font-semibold text-[#1C1917]">{job.contactName || '—'}</span>
-              {job.contactPhone && <> · <a href={`tel:${job.contactPhone}`} className="font-semibold text-[#C2410C] hover:underline">📞 {job.contactPhone}</a></>}
+              {job.contactPhone && <> · <a href={`tel:${job.contactPhone}`} className="font-semibold text-[var(--brand-strong)] hover:underline">📞 {job.contactPhone}</a></>}
             </span>
           )}
           {(job.supplyContactName || job.supplyContactPhone) && (
             <span className="text-[#5A6B82]">พัสดุ: <span className="font-semibold text-[#1C1917]">{job.supplyContactName || '—'}</span>
-              {job.supplyContactPhone && <> · <a href={`tel:${job.supplyContactPhone}`} className="font-semibold text-[#C2410C] hover:underline">📞 {job.supplyContactPhone}</a></>}
+              {job.supplyContactPhone && <> · <a href={`tel:${job.supplyContactPhone}`} className="font-semibold text-[var(--brand-strong)] hover:underline">📞 {job.supplyContactPhone}</a></>}
             </span>
           )}
           {!job.contactName && !job.contactPhone && !job.supplyContactName && !job.supplyContactPhone && (
@@ -288,7 +288,7 @@ export function InstallHandoverForm({
             type="button"
             disabled={iSaving}
             onClick={saveInstallation}
-            className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60"
+            className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60"
           >
             {iSaving ? 'กำลังบันทึก…' : 'บันทึกการติดตั้ง'}
           </button>
@@ -336,7 +336,7 @@ export function InstallHandoverForm({
             type="button"
             disabled={hSaving}
             onClick={saveHandover}
-            className="bg-[#EA580C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#C2410C] disabled:opacity-60"
+            className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60"
           >
             {hSaving ? 'กำลังบันทึก…' : 'บันทึกการส่งมอบ'}
           </button>

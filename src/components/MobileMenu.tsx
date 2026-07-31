@@ -6,12 +6,14 @@ import { signOut } from 'next-auth/react'
 import { NAV_ITEMS } from './OfficeNav'
 import { Avatar, type AvatarData } from './Avatar'
 import { AvatarEditor } from './AvatarEditor'
+import { ThemePicker } from './ThemePicker'
 
 /** Mobile-only header menu: an avatar + hamburger that opens a dropdown with
  * the nav links, "เพิ่มงาน", and sign-out. Hidden from md upwards. */
-export function MobileMenu({ userId, name, avatar }: { userId: string; name: string; avatar: AvatarData }) {
+export function MobileMenu({ userId, name, avatar, theme }: { userId: string; name: string; avatar: AvatarData; theme: string | null }) {
   const [open, setOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
   const path = usePathname()
   const router = useRouter()
   const close = () => setOpen(false)
@@ -56,7 +58,7 @@ export function MobileMenu({ userId, name, avatar }: { userId: string; name: str
                   href={it.href}
                   onClick={close}
                   className={`px-3.5 py-2.5 rounded-xl text-sm font-semibold ${
-                    active ? 'bg-[#FFEDE1] text-[#EA580C]' : 'text-[#3C4A5E] hover:bg-[#F6F9FC]'
+                    active ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'text-[#3C4A5E] hover:bg-[#F6F9FC]'
                   }`}
                 >
                   {it.label}
@@ -70,6 +72,13 @@ export function MobileMenu({ userId, name, avatar }: { userId: string; name: str
               className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#3C4A5E] hover:bg-[#F6F9FC] text-left"
             >
               🖼️ รูปโปรไฟล์
+            </button>
+            <button
+              type="button"
+              onClick={() => { close(); setThemeOpen(true) }}
+              className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#3C4A5E] hover:bg-[#F6F9FC] text-left"
+            >
+              🎨 ธีมสีเว็บ
             </button>
             <Link
               href="/report"
@@ -95,7 +104,7 @@ export function MobileMenu({ userId, name, avatar }: { userId: string; name: str
             <Link
               href="/jobs/new"
               onClick={close}
-              className="px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-[#EA580C] text-white text-center hover:bg-[#C2410C]"
+              className="px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--brand)] text-white text-center hover:bg-[var(--brand-strong)]"
             >
               ＋ เพิ่มงาน
             </Link>
@@ -112,6 +121,7 @@ export function MobileMenu({ userId, name, avatar }: { userId: string; name: str
 
       {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
         onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
+      {themeOpen && <ThemePicker userId={userId} current={theme} onClose={() => setThemeOpen(false)} />}
     </div>
   )
 }

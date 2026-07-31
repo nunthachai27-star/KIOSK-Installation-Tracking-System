@@ -17,7 +17,7 @@ export default async function SettingsCategoryPage({ params }: { params: Promise
   return (
     <div className="p-6 max-w-[720px] mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm">
-        <Link href="/settings" className="text-[#5A6B82] hover:text-[#EA580C]">‹ ตั้งค่า</Link>
+        <Link href="/settings" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ ตั้งค่า</Link>
         <span className="text-[#C7D2E0]">/</span>
         <h1 className="text-xl font-bold text-[#1C1917]">{categoryLabel(category)}</h1>
       </div>
