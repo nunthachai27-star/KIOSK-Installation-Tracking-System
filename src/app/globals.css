@@ -31,13 +31,38 @@
 html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  background: var(--bg); /* base colour behind the dynamic bg layer */
 }
 
 body {
-  background: var(--bg);
+  background: transparent; /* let #app-bg show through */
   color: var(--ink);
   font-family: 'Sarabun', system-ui, sans-serif;
 }
+
+/* Dynamic background layer (fixed, behind all content). Style chosen per user via
+   <html data-bg="...">. Content containers must stay transparent for it to show. */
+#app-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+#app-bg span { display: none; }
+
+:root[data-bg="mesh"] #app-bg {
+  background-image:
+    radial-gradient(38% 42% at 10% 6%,  color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%),
+    radial-gradient(34% 40% at 94% 2%,  color-mix(in srgb, var(--brand-strong) 13%, transparent), transparent 70%),
+    radial-gradient(44% 46% at 82% 98%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 72%),
+    radial-gradient(38% 42% at 4% 96%,  color-mix(in srgb, var(--brand) 10%, transparent), transparent 72%);
+}
+
+:root[data-bg="time"] #app-bg { background-image: var(--timewash, none); }
+
+:root[data-bg="aurora"] #app-bg span { display: block; position: absolute; border-radius: 50%; filter: blur(64px); }
+:root[data-bg="aurora"] #app-bg span:nth-child(1) { width: 52%; height: 60%; left: -12%; top: -22%; background: var(--brand); opacity: .20; animation: auroraA 26s ease-in-out infinite alternate; }
+:root[data-bg="aurora"] #app-bg span:nth-child(2) { width: 46%; height: 56%; right: -12%; top: -14%; background: var(--brand-strong); opacity: .18; animation: auroraB 32s ease-in-out infinite alternate; }
+:root[data-bg="aurora"] #app-bg span:nth-child(3) { width: 56%; height: 62%; left: 28%; bottom: -32%; background: var(--brand); opacity: .14; animation: auroraC 29s ease-in-out infinite alternate; }
+@keyframes auroraA { to { transform: translate(14%, 12%) scale(1.15); } }
+@keyframes auroraB { to { transform: translate(-13%, 16%) scale(1.10); } }
+@keyframes auroraC { to { transform: translate(-10%, -14%) scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { :root[data-bg="aurora"] #app-bg span { animation: none; } }
 
 ::selection {
   background: color-mix(in srgb, var(--brand) 22%, transparent);

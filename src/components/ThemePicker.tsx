@@ -1,23 +1,24 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { THEMES } from '@/lib/themes'
+import { THEMES, BACKGROUNDS } from '@/lib/themes'
 import { alertDialog } from '@/lib/dialog'
 
-// Pick a personal colour theme. Previews instantly by stamping data-theme on
-// <html>; saves the choice to the user (per-user, no effect on others).
-export function ThemePicker({ userId, current, onClose }: { userId: string; current: string | null; onClose: () => void }) {
+// Pick a personal colour theme + background style. Previews instantly by stamping
+// data-theme / data-bg on <html>; saves per-user (no effect on others).
+export function ThemePicker({ userId, current, currentBg, onClose }: { userId: string; current: string | null; currentBg: string | null; onClose: () => void }) {
   const router = useRouter()
-  const orig = current || 'orange'
-  const [sel, setSel] = useState(orig)
+  const origT = current || 'orange'
+  const origBg = currentBg || 'plain'
+  const [sel, setSel] = useState(origT)
+  const [selBg, setSelBg] = useState(origBg)
   const [busy, setBusy] = useState(false)
 
-  function preview(key: string) {
-    setSel(key)
-    document.documentElement.dataset.theme = key
-  }
+  function previewTheme(key: string) { setSel(key); document.documentElement.dataset.theme = key }
+  function previewBg(key: string) { setSelBg(key); document.documentElement.dataset.bg = key }
   function cancel() {
-    document.documentElement.dataset.theme = orig
+    document.documentElement.dataset.theme = origT
+    document.documentElement.dataset.bg = origBg
     onClose()
   }
   async function save() {
@@ -25,25 +26,26 @@ export function ThemePicker({ userId, current, onClose }: { userId: string; curr
     setBusy(true)
     try {
       const res = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ theme: sel }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ theme: sel, bg: selBg }),
       })
-      if (!res.ok) { await alertDialog('บันทึกธีมไม่สำเร็จ'); return }
+      if (!res.ok) { await alertDialog('บันทึกไม่สำเร็จ'); return }
       onClose(); router.refresh()
     } finally { setBusy(false) }
   }
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) cancel() }}>
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-5">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-5 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
           <div className="text-[16px] font-bold text-[#1C1917]">🎨 ธีมสีเว็บ</div>
           <button type="button" onClick={cancel} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
         </div>
-        <p className="text-[12.5px] text-[#8492A6] mb-3">เลือกสีของคุณเอง (ไม่กระทบผู้ใช้อื่น) · แตะเพื่อดูตัวอย่างทันที</p>
+        <p className="text-[12.5px] text-[#8492A6] mb-3">เลือกของคุณเอง (ไม่กระทบผู้ใช้อื่น) · แตะเพื่อดูตัวอย่างทันที</p>
 
+        <div className="text-[12.5px] font-semibold text-[#5A6B82] mb-1.5">สีธีม</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
           {THEMES.map((t) => (
-            <button key={t.key} onClick={() => preview(t.key)}
+            <button key={t.key} onClick={() => previewTheme(t.key)}
               className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition ${sel === t.key ? 'border-[var(--brand)] bg-[var(--brand-soft)]' : 'border-[#ECEFF3] hover:bg-[#F6F9FC]'}`}>
               <span className="w-7 h-7 rounded-lg shrink-0" style={{ background: t.swatch, boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.5)' }} />
               <span className="text-[12.5px] font-semibold text-[#1C1917] leading-tight">{t.label}</span>
@@ -52,10 +54,24 @@ export function ThemePicker({ userId, current, onClose }: { userId: string; curr
           ))}
         </div>
 
+        <div className="text-[12.5px] font-semibold text-[#5A6B82] mb-1.5">พื้นหลัง</div>
+        <div className="grid grid-cols-2 gap-2 mb-5">
+          {BACKGROUNDS.map((b) => (
+            <button key={b.key} onClick={() => previewBg(b.key)}
+              className={`rounded-xl border-2 px-3 py-2.5 text-left transition ${selBg === b.key ? 'border-[var(--brand)] bg-[var(--brand-soft)]' : 'border-[#ECEFF3] hover:bg-[#F6F9FC]'}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-[12.5px] font-semibold text-[#1C1917]">{b.label}</span>
+                {selBg === b.key && <span className="ml-auto text-[var(--brand)] text-[13px] font-bold">✓</span>}
+              </div>
+              <div className="text-[11px] text-[#8492A6] mt-0.5">{b.hint}</div>
+            </button>
+          ))}
+        </div>
+
         <div className="flex items-center gap-2">
           <button onClick={save} disabled={busy}
             className="bg-[var(--brand)] text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
-            {busy ? 'กำลังบันทึก…' : 'ใช้ธีมนี้'}
+            {busy ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
           <button onClick={cancel} className="text-[13px] font-semibold text-[#5A6B82] px-3 py-2.5 hover:text-[#1C1917]">ยกเลิก</button>
         </div>

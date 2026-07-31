@@ -21,3 +21,18 @@ export const DEFAULT_THEME: ThemeKey = 'orange'
 export function isThemeKey(v: unknown): v is ThemeKey {
   return typeof v === 'string' && (THEME_KEYS as string[]).includes(v)
 }
+
+// Dynamic background styles (applied via <html data-bg="...">).
+export type BgKey = 'plain' | 'aurora' | 'mesh' | 'time'
+export const BACKGROUNDS: { key: BgKey; label: string; hint: string }[] = [
+  { key: 'plain', label: 'เรียบ', hint: 'พื้นสีเดียว' },
+  { key: 'aurora', label: 'Aurora', hint: 'ก้อนสีเคลื่อนไหวช้าๆ' },
+  { key: 'mesh', label: 'Mesh', hint: 'ไล่เฉดสีนิ่งๆ' },
+  { key: 'time', label: 'ตามช่วงเวลา', hint: 'อุ่น/เย็นตามเวลา' },
+]
+export const BG_KEYS = BACKGROUNDS.map((b) => b.key)
+export const DEFAULT_BG: BgKey = 'plain'
+
+export function isBgKey(v: unknown): v is BgKey {
+  return typeof v === 'string' && (BG_KEYS as string[]).includes(v)
+}

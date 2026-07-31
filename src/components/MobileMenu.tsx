@@ -10,7 +10,7 @@ import { ThemePicker } from './ThemePicker'
 
 /** Mobile-only header menu: an avatar + hamburger that opens a dropdown with
  * the nav links, "เพิ่มงาน", and sign-out. Hidden from md upwards. */
-export function MobileMenu({ userId, name, avatar, theme }: { userId: string; name: string; avatar: AvatarData; theme: string | null }) {
+export function MobileMenu({ userId, name, avatar, theme, bg }: { userId: string; name: string; avatar: AvatarData; theme: string | null; bg: string | null }) {
   const [open, setOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
@@ -121,7 +121,7 @@ export function MobileMenu({ userId, name, avatar, theme }: { userId: string; na
 
       {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
         onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
-      {themeOpen && <ThemePicker userId={userId} current={theme} onClose={() => setThemeOpen(false)} />}
+      {themeOpen && <ThemePicker userId={userId} current={theme} currentBg={bg} onClose={() => setThemeOpen(false)} />}
     </div>
   )
 }

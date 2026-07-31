@@ -8,7 +8,7 @@ import { AvatarEditor } from './AvatarEditor'
 import { ThemePicker } from './ThemePicker'
 
 // Avatar + name + role in the header, opening a dropdown with change-password + sign-out.
-export function UserMenu({ userId, name, role, avatar, theme }: { userId: string; name: string; role: string; avatar: AvatarData; theme: string | null }) {
+export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: string; name: string; role: string; avatar: AvatarData; theme: string | null; bg: string | null }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
@@ -73,7 +73,7 @@ export function UserMenu({ userId, name, role, avatar, theme }: { userId: string
       {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
       {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
         onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
-      {themeOpen && <ThemePicker userId={userId} current={theme} onClose={() => setThemeOpen(false)} />}
+      {themeOpen && <ThemePicker userId={userId} current={theme} currentBg={bg} onClose={() => setThemeOpen(false)} />}
     </div>
   )
 }

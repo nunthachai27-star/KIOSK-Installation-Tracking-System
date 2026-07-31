@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from "./providers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { TimeWash } from "@/components/TimeWash";
 
 export const metadata: Metadata = {
   title: "KIOSK Tracking",
@@ -14,13 +15,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Apply the signed-in user's colour theme app-wide (no flash — set on <html> server-side).
+  // Apply the signed-in user's colour theme + background style app-wide
+  // (no flash — set on <html> server-side).
   const session = await auth()
-  const theme = session?.user?.id
-    ? (await prisma.user.findUnique({ where: { id: session.user.id }, select: { theme: true } }))?.theme ?? undefined
-    : undefined
+  const me = session?.user?.id
+    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { theme: true, bg: true } })
+    : null
+  const theme = me?.theme ?? undefined
+  const bg = me?.bg ?? undefined
   return (
-    <html lang="th" data-theme={theme} className="h-full antialiased">
+    <html lang="th" data-theme={theme} data-bg={bg} className="h-full antialiased">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -30,6 +34,8 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <div id="app-bg" aria-hidden="true"><span></span><span></span><span></span></div>
+        <TimeWash />
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -157,6 +157,7 @@ model User {
   avatarIcon    String?       // อีโมจิที่เลือก (ใช้เมื่อไม่มีรูป)
   avatarUrl     String?       // รูปโปรไฟล์ (data URL ย่อขนาดแล้ว)
   theme         String?       // ธีมสีเว็บที่ผู้ใช้เลือก (null = ส้ม BMS ค่าเริ่มต้น)
+  bg            String?       // สไตล์พื้นหลัง: plain(เรียบ)/aurora/mesh/time (null = เรียบ)
   active        Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
