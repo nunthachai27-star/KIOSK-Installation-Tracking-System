@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Avatar, AVATAR_ICONS, AVATAR_COLORS, type AvatarData } from './Avatar'
 import { alertDialog } from '@/lib/dialog'
 
@@ -50,7 +51,7 @@ export function AvatarEditor({ userId, name, current, onClose, onSaved }: {
 
   const preview: AvatarData = { name, avatarUrl: url, avatarIcon: url ? null : icon, avatarColor: color }
 
-  return (
+  const modal = (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-5">
         <div className="flex items-center justify-between mb-4">
@@ -97,4 +98,5 @@ export function AvatarEditor({ userId, name, current, onClose, onSaved }: {
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }

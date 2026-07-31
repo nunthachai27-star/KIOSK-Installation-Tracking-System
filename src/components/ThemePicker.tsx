@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { THEMES, BACKGROUNDS } from '@/lib/themes'
 import { alertDialog } from '@/lib/dialog'
@@ -33,7 +34,7 @@ export function ThemePicker({ userId, current, currentBg, onClose }: { userId: s
     } finally { setBusy(false) }
   }
 
-  return (
+  const modal = (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) cancel() }}>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-5 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
@@ -78,4 +79,5 @@ export function ThemePicker({ userId, current, currentBg, onClose }: { userId: s
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }

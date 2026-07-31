@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Avatar, type AvatarData } from './Avatar'
@@ -108,7 +109,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
   const field = 'w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15'
 
-  return (
+  const modal = (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6">
         <div className="flex items-center justify-between mb-4">
@@ -152,4 +153,5 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }
