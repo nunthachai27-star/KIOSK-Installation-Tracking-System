@@ -1,9 +1,19 @@
 import type { ActivityType, Role } from '@prisma/client'
 import { prisma } from './prisma'
 import { ACTIVITY_LABEL } from './activity'
+import { ISSUE_STATUS, ISSUE_METHOD, ISSUE_WARRANTY } from './issue'
 
 export type SummaryLine = { heading: string; text: string; items: string[] }
-export type IssueDetail = { hospital: string; product: string; problem: string; solution: string }
+export type IssueStep = { date: string; text: string }
+export type IssueDetail = {
+  issueType: 'GENERAL' | 'CLAIM'
+  hospital: string; product: string; problem: string
+  status: string; method: string | null; warranty: string | null
+  serialNo: string | null; failedSerial: string | null; replacementSerial: string | null
+  cost: number | null; parts: string[]
+  solution: string        // legacy single field (fallback)
+  steps: IssueStep[]      // timeline entries recorded today
+}
 export type StaffSummary = {
   staffId: string; name: string; nickname: string | null; role: Role
   total: number; issueDetails: IssueDetail[]; lines: SummaryLine[]; rating: number; ratingCount: number
@@ -19,7 +29,15 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     prisma.serialRecord.findMany({ where: { staffId: { not: null }, updatedAt: inDay }, select: { staffId: true, job: { select: jobSel } } }),
     prisma.unitQc.findMany({ where: { updatedAt: inDay }, select: { staffId: true, checklist: true, serial: { select: { serialNo: true, job: { select: { hospital: { select: { name: true } }, productType: true } } } } } }),
     prisma.jobActivity.findMany({ where: { responsibleUserId: { not: null }, activityDate: inDay }, select: { responsibleUserId: true, activityType: true, job: { select: { hospital: { select: { name: true } }, productType: true } } } }),
-    prisma.issue.findMany({ where: { updatedAt: inDay }, select: { assignedToId: true, reporterId: true, issueType: true, title: true, solution: true, productType: true, machineSerial: true, hospitalName: true, serial: { select: { serialNo: true } }, job: { select: { productType: true, hospital: { select: { name: true } } } } } }),
+    prisma.issue.findMany({ where: { updatedAt: inDay }, select: {
+      assignedToId: true, reporterId: true, issueType: true, title: true, solution: true,
+      status: true, method: true, warrantyState: true, failedSerial: true, replacementSerial: true, cost: true,
+      productType: true, machineSerial: true, hospitalName: true,
+      serial: { select: { serialNo: true } },
+      job: { select: { productType: true, hospital: { select: { name: true } } } },
+      solutions: { where: { createdAt: inDay }, orderBy: { date: 'asc' }, select: { date: true, text: true } },
+      parts: { select: { name: true, qty: true, serialNo: true } },
+    } }),
     prisma.deliveryRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     prisma.installationRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     prisma.handoverRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
@@ -36,14 +54,14 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   const fromMs = from.getTime(), toMs = to.getTime()
 
   type Acc = {
-    jobs: string[]; serials: string[]; qc: string[]; issueDetails: IssueDetail[]; claims: string[]
+    jobs: string[]; serials: string[]; qc: string[]; issueDetails: IssueDetail[]
     delivery: string[]; install: string[]; handover: string[]; invoice: string[]
     act: Partial<Record<ActivityType, string[]>>
   }
   const map = new Map<string, Acc>()
   const acc = (id: string): Acc => {
     let a = map.get(id)
-    if (!a) { a = { jobs: [], serials: [], qc: [], issueDetails: [], claims: [], delivery: [], install: [], handover: [], invoice: [], act: {} }; map.set(id, a) }
+    if (!a) { a = { jobs: [], serials: [], qc: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], act: {} }; map.set(id, a) }
     return a
   }
 
@@ -72,11 +90,20 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     if (!actor) continue
     const hospital = i.job?.hospital.name ?? i.hospitalName ?? '—'
     const product = i.job?.productType ?? i.productType ?? ''
-    if (i.issueType === 'GENERAL') {
-      acc(actor).issueDetails.push({ hospital, product, problem: i.title, solution: (i.solution ?? '').trim() })
-    } else {
-      acc(actor).claims.push(`${i.serial?.serialNo ?? i.machineSerial ?? '—'} · ${hospital} · ${i.title}`)
-    }
+    acc(actor).issueDetails.push({
+      issueType: i.issueType === 'GENERAL' ? 'GENERAL' : 'CLAIM',
+      hospital, product, problem: i.title,
+      status: ISSUE_STATUS[i.status]?.label ?? '',
+      method: i.method ? (ISSUE_METHOD[i.method] ?? null) : null,
+      warranty: i.warrantyState && i.warrantyState !== 'UNKNOWN' ? (ISSUE_WARRANTY[i.warrantyState]?.label ?? null) : null,
+      serialNo: i.serial?.serialNo ?? i.machineSerial ?? null,
+      failedSerial: i.failedSerial ?? null,
+      replacementSerial: i.replacementSerial ?? null,
+      cost: i.cost ? i.cost.toNumber() : null,
+      parts: i.parts.map((p) => `${p.name}${p.serialNo ? ` (S/N ${p.serialNo})` : p.qty > 1 ? ` ×${p.qty}` : ''}`),
+      solution: (i.solution ?? '').trim(),
+      steps: i.solutions.map((s) => ({ date: s.date.toISOString(), text: s.text })),
+    })
   }
   for (const d of deliveries) if (d.recordedById) acc(d.recordedById).delivery.push(jobDesc(d.job))
   for (const it of installs) if (it.recordedById) acc(it.recordedById).install.push(jobDesc(it.job))
@@ -98,7 +125,6 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     if (a.install.length) lines.push({ heading: 'งานติดตั้งระบบและอุปกรณ์', text: `ดำเนินการติดตั้งระบบและอุปกรณ์ให้แก่หน่วยงานหรือสถานที่ที่ได้รับมอบหมาย จำนวน ${a.install.length} งาน พร้อมบันทึกรายละเอียดการติดตั้งและผลการดำเนินงานเรียบร้อยแล้ว`, items: a.install })
     if (a.handover.length) lines.push({ heading: 'งานส่งมอบงานและอบรมการใช้งาน', text: `ดำเนินการส่งมอบงานและอบรมการใช้งานให้แก่หน่วยงานที่เกี่ยวข้อง จำนวน ${a.handover.length} งาน พร้อมบันทึกรายละเอียดการส่งมอบเรียบร้อยแล้ว`, items: a.handover })
     if (a.invoice.length) lines.push({ heading: 'งานจัดทำเอกสารใบแจ้งหนี้/ใบเสร็จ', text: `ดำเนินการจัดทำและบันทึกเอกสารใบแจ้งหนี้/ใบเสร็จ จำนวน ${a.invoice.length} งาน เรียบร้อยแล้ว`, items: a.invoice })
-    if (a.claims.length) lines.push({ heading: 'งานรับแจ้ง/เคลมสินค้า', text: `ดำเนินการรับแจ้งและจัดการเคลมสินค้า จำนวน ${a.claims.length} รายการ พร้อมบันทึกรายละเอียดและติดตามผลเรียบร้อยแล้ว`, items: a.claims })
     for (const [type, list] of Object.entries(a.act)) {
       if (!list || !list.length) continue
       const label = ACTIVITY_LABEL[type as ActivityType] ?? 'งานอื่นๆ'
