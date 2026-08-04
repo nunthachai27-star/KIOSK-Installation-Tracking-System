@@ -38,7 +38,7 @@ type ClaimStats = { total: number; received: number; inProgress: number; done: n
 type PatchBody = {
   status?: IssueStatus; solution?: string | null; warrantyState?: IssueWarranty
   method?: IssueMethod | null; failedSerial?: string | null; replacementSerial?: string | null; cost?: number | null
-  assignedToId?: string | null
+  assignedToId?: string | null; issueType?: IssueType
 }
 
 const dtFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -636,6 +636,15 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
     || (item.replacementSerial ?? '') !== repl.trim()
     || (item.cost != null ? String(item.cost) : '') !== cost.trim()
 
+  async function convert() {
+    const toClaim = item.issueType !== 'CLAIM'
+    const ok = await confirmDialog(toClaim
+      ? { title: 'แปลงเป็นงานเคลม', message: 'เปลี่ยนรายการนี้เป็น "เคลมอุปกรณ์"?\nข้อมูลและไทม์ไลน์เดิมอยู่ครบ · ระบบจะเติมสถานะประกันให้อัตโนมัติ', confirmText: 'แปลงเป็นเคลม' }
+      : { title: 'แปลงกลับเป็นแจ้งปัญหาทั่วไป', message: 'เปลี่ยนรายการนี้กลับเป็น "แจ้งปัญหาทั่วไป"?', confirmText: 'แปลงกลับ' })
+    if (!ok) return
+    onPatch({ issueType: toClaim ? 'CLAIM' : 'GENERAL' })
+  }
+
   return (
     <div className="p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -644,6 +653,11 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
             {item.issueType === 'CLAIM'
               ? <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--brand-soft)] text-[var(--brand)]">🔧 เคลมอุปกรณ์</span>
               : <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#E4EEFF] text-[#1B5FD9]">📝 ปัญหาทั่วไป</span>}
+            <button type="button" onClick={convert}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border border-[#D6DFEA] text-[#5A6B82] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+              title={item.issueType === 'CLAIM' ? 'แปลงกลับเป็นแจ้งปัญหาทั่วไป' : 'ตรวจแล้วต้องเคลม — แปลงเป็นงานเคลมอุปกรณ์'}>
+              {item.issueType === 'CLAIM' ? '↩ กลับเป็นทั่วไป' : '🔧 แปลงเป็นเคลม'}
+            </button>
             {item.serialNo && <span className="tnum text-sm font-bold text-[#1C1917]">{item.serialNo}</span>}
             <span className="text-[12.5px] text-[#8492A6]">{[item.hospital, item.jobCode, item.productType].filter(Boolean).join(' · ')}</span>
             {item.issueType === 'CLAIM' && <WarrantyBadge w={item.warrantyState} />}

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logAction } from '@/lib/audit'
-import { IssueStatus, IssueMethod, IssueWarranty } from '@prisma/client'
-import { ISSUE_WARRANTY } from '@/lib/issue'
+import { IssueStatus, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
+import { ISSUE_WARRANTY, warrantyStateFrom } from '@/lib/issue'
 
 const VALID = new Set<string>(Object.values(IssueStatus))
 const METHODS = new Set<string>(Object.values(IssueMethod))
@@ -29,7 +29,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params
   const existing = await prisma.issue.findUnique({
     where: { id },
-    select: { id: true, status: true, solution: true, warrantyState: true },
+    select: { id: true, status: true, solution: true, warrantyState: true, issueType: true, title: true,
+      serial: { select: { job: { select: { invoice: { select: { warrantyEndDate: true } } } } } } },
   })
   if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
@@ -39,7 +40,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     warrantyState?: IssueWarranty; method?: IssueMethod | null
     failedSerial?: string | null; replacementSerial?: string | null; cost?: number | null
     assignedToId?: string | null; productType?: string | null; equipment?: string | null
+    issueType?: IssueType
   } = {}
+  // Convert between แจ้งปัญหาทั่วไป (GENERAL) and เคลมอุปกรณ์ (CLAIM) in place.
+  if (body.issueType === 'GENERAL' || body.issueType === 'CLAIM') data.issueType = body.issueType
+  // When turning a general report into a claim, auto-fill warranty from the unit's
+  // invoice if it hasn't been set yet.
+  if (data.issueType === 'CLAIM' && existing.warrantyState === 'UNKNOWN' && body.warrantyState === undefined) {
+    data.warrantyState = warrantyStateFrom(existing.serial?.job?.invoice?.warrantyEndDate?.toISOString() ?? null)
+  }
   if (body.productType !== undefined) data.productType = typeof body.productType === 'string' && body.productType.trim() ? body.productType.trim() : null
   if (body.equipment !== undefined) data.equipment = typeof body.equipment === 'string' && body.equipment.trim() ? body.equipment.trim() : null
   if (body.assignedToId !== undefined) data.assignedToId = typeof body.assignedToId === 'string' && body.assignedToId ? body.assignedToId : null
@@ -69,7 +78,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id },
     data: { ...data, ...(events.length ? { events: { create: events } } : {}) },
   })
-  await logAction(session.user, 'UPDATE', 'แจ้งปัญหา/เคลม', `แก้ไข "${updated.title}"`)
+  const convertNote = data.issueType && data.issueType !== existing.issueType
+    ? (data.issueType === 'CLAIM' ? ' — แปลงเป็นงานเคลม' : ' — แปลงกลับเป็นแจ้งปัญหาทั่วไป') : ''
+  await logAction(session.user, 'UPDATE', 'แจ้งปัญหา/เคลม', `แก้ไข "${updated.title}"${convertNote}`)
   return NextResponse.json(updated)
 }
 
