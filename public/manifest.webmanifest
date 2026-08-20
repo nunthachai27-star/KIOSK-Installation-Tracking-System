@@ -1,0 +1,17 @@
+{
+  "name": "KIOSK",
+  "short_name": "KIOSK",
+  "description": "ระบบติดตามงานติดตั้งและคลังข้อมูล KIOSK",
+  "lang": "th",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF2F7",
+  "theme_color": "#EA580C",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
