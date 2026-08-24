@@ -1,0 +1,56 @@
+name: Build Android APK (KIOSK)
+
+# Run manually from the Actions tab → "Build Android APK (KIOSK)" → Run workflow.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli@1.22.0
+
+      - name: Point Bubblewrap at the runner's JDK + Android SDK
+        run: |
+          mkdir -p ~/.bubblewrap
+          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
+          cat ~/.bubblewrap/config.json
+
+      - name: Create a signing key
+        env:
+          KS_PASS: kioskbms2569
+        run: |
+          keytool -genkeypair -v -keystore android.keystore -alias android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$KS_PASS" -keypass "$KS_PASS" \
+            -dname "CN=KIOSK, O=BMS, L=Bangkok, C=TH"
+
+      - name: Build the APK
+        env:
+          KS_PASS: kioskbms2569
+        run: |
+          bubblewrap build --skipPwaValidation <<EOF
+          $KS_PASS
+          $KS_PASS
+          EOF
+
+      - name: Upload APK + keystore
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiosk-android
+          path: |
+            app-release-signed.apk
+            android.keystore
+          if-no-files-found: warn
