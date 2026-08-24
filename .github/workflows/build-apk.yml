@@ -46,11 +46,31 @@ jobs:
           $KS_PASS
           EOF
 
-      - name: Upload APK + keystore
+      - name: Generate assetlinks.json (for full-screen, no URL bar)
+        env:
+          KS_PASS: kioskbms2569
+        run: |
+          FP=$(keytool -list -v -keystore android.keystore -alias android -storepass "$KS_PASS" \
+            | grep -i "SHA256:" | head -1 | sed 's/.*SHA256: //' | tr -d ' ')
+          echo "SHA256 fingerprint: $FP"
+          cat > assetlinks.json <<EOF
+          [{
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+              "namespace": "android_app",
+              "package_name": "th.in.bmscloud.kiosktrack",
+              "sha256_cert_fingerprints": ["$FP"]
+            }
+          }]
+          EOF
+          cat assetlinks.json
+
+      - name: Upload APK + keystore + assetlinks
         uses: actions/upload-artifact@v4
         with:
           name: kiosk-android
           path: |
             app-release-signed.apk
             android.keystore
+            assetlinks.json
           if-no-files-found: warn
