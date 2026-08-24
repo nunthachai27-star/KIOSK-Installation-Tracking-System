@@ -1,12 +1,20 @@
 name: Build Android APK (KIOSK)
 
-# Run manually from the Actions tab → "Build Android APK (KIOSK)" → Run workflow.
+# Runs automatically when this workflow or the TWA config changes, and can also
+# be run manually from the Actions tab. Publishes the signed .apk as a GitHub
+# Release so it has a public download link.
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-apk.yml'
+      - 'twa-manifest.json'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +73,7 @@ jobs:
           EOF
           cat assetlinks.json
 
-      - name: Upload APK + keystore + assetlinks
+      - name: Upload APK + keystore + assetlinks (Actions artifact)
         uses: actions/upload-artifact@v4
         with:
           name: kiosk-android
@@ -74,3 +82,13 @@ jobs:
             android.keystore
             assetlinks.json
           if-no-files-found: warn
+
+      - name: Publish APK to a public GitHub Release (easy download link)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-build-${{ github.run_number }}
+          name: KIOSK APK — build ${{ github.run_number }}
+          body: |
+            แอป KIOSK (Android) — ไฟล์ `app-release-signed.apk` ด้านล่าง
+            ดาวน์โหลด → เปิดบนมือถือ Android → อนุญาตติดตั้งจากแหล่งนอก Store → ติดตั้ง
+          files: app-release-signed.apk
