@@ -29,8 +29,12 @@ jobs:
 
       - name: Point Bubblewrap at the runner's JDK + Android SDK
         run: |
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "SDK=$SDK"; ls "$SDK" | head
+          yes | "$SDK"/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
           mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
+          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$SDK\"}" > ~/.bubblewrap/config.json
           cat ~/.bubblewrap/config.json
 
       - name: Create a signing key
@@ -51,8 +55,6 @@ jobs:
           bubblewrap --version 2>&1 | tee -a build.log
           echo "=== which bubblewrap ===" | tee -a build.log
           which bubblewrap 2>&1 | tee -a build.log
-          echo "=== update project from twa-manifest ===" | tee -a build.log
-          printf '%s\n%s\n' "$KS_PASS" "$KS_PASS" | bubblewrap update 2>&1 | tee -a build.log
           echo "=== build ===" | tee -a build.log
           printf '%s\n%s\n' "$KS_PASS" "$KS_PASS" | bubblewrap build --skipPwaValidation 2>&1 | tee -a build.log
           echo "=== exit of build: ${PIPESTATUS[0]} ===" | tee -a build.log
