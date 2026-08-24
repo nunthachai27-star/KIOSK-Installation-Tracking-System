@@ -55,6 +55,14 @@ jobs:
           bubblewrap --version 2>&1 | tee -a build.log
           echo "=== which bubblewrap ===" | tee -a build.log
           which bubblewrap 2>&1 | tee -a build.log
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "=== SDK diag ===" | tee -a build.log
+          echo "ANDROID_HOME=$ANDROID_HOME ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT SDK=$SDK" | tee -a build.log
+          echo "-- config.json --" | tee -a build.log; cat ~/.bubblewrap/config.json | tee -a build.log; echo | tee -a build.log
+          echo "-- ls SDK --" | tee -a build.log; ls -la "$SDK" 2>&1 | tee -a build.log
+          echo "-- ls cmdline-tools --" | tee -a build.log; ls -la "$SDK/cmdline-tools" 2>&1 | tee -a build.log
+          echo "-- ls build-tools --" | tee -a build.log; ls "$SDK/build-tools" 2>&1 | tee -a build.log
+          echo "-- ls platform-tools --" | tee -a build.log; ls "$SDK/platform-tools" 2>&1 | head -3 | tee -a build.log
           echo "=== build ===" | tee -a build.log
           printf '%s\n%s\n' "$KS_PASS" "$KS_PASS" | bubblewrap build --skipPwaValidation 2>&1 | tee -a build.log
           echo "=== exit of build: ${PIPESTATUS[0]} ===" | tee -a build.log
