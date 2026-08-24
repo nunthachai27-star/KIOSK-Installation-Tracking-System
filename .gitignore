@@ -16,3 +16,8 @@ tsconfig.tsbuildinfo
 
 # Uploaded team files (stored on a docker volume in prod)
 /uploads
+
+# PWA app icons — keep despite the *.png rule above
+!public/icons/*.png
+!public/apple-touch-icon.png
+!public/favicon.png
