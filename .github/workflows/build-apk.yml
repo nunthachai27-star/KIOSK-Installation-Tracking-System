@@ -1,8 +1,5 @@
 name: Build Android APK (KIOSK)
 
-# Runs automatically when this workflow or the TWA config changes, and can also
-# be run manually from the Actions tab. Publishes the signed .apk as a GitHub
-# Release so it has a public download link.
 on:
   workflow_dispatch:
   push:
@@ -45,16 +42,26 @@ jobs:
             -storepass "$KS_PASS" -keypass "$KS_PASS" \
             -dname "CN=KIOSK, O=BMS, L=Bangkok, C=TH"
 
-      - name: Build the APK
+      - name: Build the APK (capture log, never fail the job)
         env:
           KS_PASS: kioskbms2569
         run: |
-          bubblewrap build --skipPwaValidation <<EOF
-          $KS_PASS
-          $KS_PASS
-          EOF
+          set +e
+          echo "=== bubblewrap version ===" | tee build.log
+          bubblewrap --version 2>&1 | tee -a build.log
+          echo "=== which bubblewrap ===" | tee -a build.log
+          which bubblewrap 2>&1 | tee -a build.log
+          echo "=== update project from twa-manifest ===" | tee -a build.log
+          printf '%s\n%s\n' "$KS_PASS" "$KS_PASS" | bubblewrap update 2>&1 | tee -a build.log
+          echo "=== build ===" | tee -a build.log
+          printf '%s\n%s\n' "$KS_PASS" "$KS_PASS" | bubblewrap build --skipPwaValidation 2>&1 | tee -a build.log
+          echo "=== exit of build: ${PIPESTATUS[0]} ===" | tee -a build.log
+          echo "=== files ===" | tee -a build.log
+          ls -la 2>&1 | tee -a build.log
+          true
 
-      - name: Generate assetlinks.json (for full-screen, no URL bar)
+      - name: Generate assetlinks.json
+        if: always()
         env:
           KS_PASS: kioskbms2569
         run: |
@@ -64,31 +71,20 @@ jobs:
           cat > assetlinks.json <<EOF
           [{
             "relation": ["delegate_permission/common.handle_all_urls"],
-            "target": {
-              "namespace": "android_app",
-              "package_name": "th.in.bmscloud.kiosktrack",
-              "sha256_cert_fingerprints": ["$FP"]
-            }
+            "target": { "namespace": "android_app", "package_name": "th.in.bmscloud.kiosktrack", "sha256_cert_fingerprints": ["$FP"] }
           }]
           EOF
           cat assetlinks.json
 
-      - name: Upload APK + keystore + assetlinks (Actions artifact)
-        uses: actions/upload-artifact@v4
-        with:
-          name: kiosk-android
-          path: |
-            app-release-signed.apk
-            android.keystore
-            assetlinks.json
-          if-no-files-found: warn
-
-      - name: Publish APK to a public GitHub Release (easy download link)
+      - name: Publish results to a public Release (apk if built, + build.log always)
+        if: always()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-build-${{ github.run_number }}
           name: KIOSK APK — build ${{ github.run_number }}
-          body: |
-            แอป KIOSK (Android) — ไฟล์ `app-release-signed.apk` ด้านล่าง
-            ดาวน์โหลด → เปิดบนมือถือ Android → อนุญาตติดตั้งจากแหล่งนอก Store → ติดตั้ง
-          files: app-release-signed.apk
+          body: "ไฟล์ app-release-signed.apk (ถ้ามี) + build.log สำหรับตรวจสอบ"
+          files: |
+            app-release-signed.apk
+            build.log
+            assetlinks.json
+          fail_on_unmatched_files: false
