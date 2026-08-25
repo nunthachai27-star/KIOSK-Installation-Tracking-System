@@ -66,7 +66,7 @@ jobs:
           echo "-- ls build-tools --" | tee -a build.log; ls "$SDK/build-tools" 2>&1 | tee -a build.log
           echo "-- ls platform-tools --" | tee -a build.log; ls "$SDK/platform-tools" 2>&1 | head -3 | tee -a build.log
           echo "=== update (generate Android project + checksum; finite newlines accept defaults) ===" | tee -a build.log
-          printf '\n\n\n\n' | bubblewrap update 2>&1 | tee -a build.log
+          printf '1.0.0\n' | bubblewrap update 2>&1 | tee -a build.log
           echo "=== update exit: ${PIPESTATUS[1]} ===" | tee -a build.log
           echo "-- ls after update (expect app/, gradlew) --" | tee -a build.log
           ls -la 2>&1 | tee -a build.log
