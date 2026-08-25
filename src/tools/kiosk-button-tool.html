@@ -1979,9 +1979,26 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     catch(e){ IS_ADMIN=false; LOGGED_IN=false; }
   }
 
+  // จัดการรูปแบบไฟล์: เอา WebP ออกทั้งหมด, และล็อก "PNG คุณภาพเต็ม" ให้เฉพาะผู้ที่เข้าสู่ระบบ
+  function setupFmt(){
+    const sel=document.getElementById("fmt"); if(!sel) return;
+    const w=sel.querySelector('option[value="webp"]'); if(w) w.remove();     // เอา WebP ออก (ทุกคน)
+    if(sel.value==="webp"){ sel.value="png"; try{FMT="png";}catch(e){} if(typeof showSize==="function") showSize(); }
+    if(!LOGGED_IN){                                                          // คนนอก: ล็อก PNG คุณภาพเต็ม
+      const opt=sel.querySelector('option[value="png"]');
+      if(opt){ opt.disabled=true; opt.textContent="PNG คุณภาพเต็ม 🔒 (ต้องเข้าสู่ระบบ)"; }
+      const toP256=(notify)=>{ sel.value="p256"; try{FMT="p256";}catch(e){}
+        if(typeof showSize==="function") showSize();
+        if(notify) toast("PNG คุณภาพเต็มใช้ได้เฉพาะผู้เข้าสู่ระบบ — สลับเป็น PNG ประหยัดให้แล้ว"); };
+      if(sel.value==="png") toP256(false);
+      sel.addEventListener("change",()=>{ if(sel.value==="png") toP256(true); });
+    }
+  }
+
   async function init(){
     buildPanel();
     await checkMe();
+    setupFmt();
     try{ const s=sessionStorage.getItem("kbHosp"); if(s) HOSPITAL=s; }catch(e){}
     // คนล็อกอินเข้าหน้าออกแบบได้เลย ไม่ต้องกรอกชื่อ — คนนอกต้องกรอกก่อน
     if(!LOGGED_IN && !HOSPITAL) showGate();
