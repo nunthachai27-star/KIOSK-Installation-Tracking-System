@@ -16,7 +16,7 @@
   "startUrl": "/",
   "iconUrl": "https://raw.githubusercontent.com/nunthachai27-star/KIOSK-Installation-Tracking-System/main/public/icons/icon-512.png",
   "maskableIconUrl": "https://raw.githubusercontent.com/nunthachai27-star/KIOSK-Installation-Tracking-System/main/public/icons/icon-512-maskable.png",
-  "webManifestUrl": "https://kiosk-track.bmscloud.in.th/manifest.webmanifest",
+  "webManifestUrl": "https://raw.githubusercontent.com/nunthachai27-star/KIOSK-Installation-Tracking-System/main/public/manifest.webmanifest",
   "fallbackType": "customtabs",
   "appVersion": "1.0.0",
   "appVersionCode": 1,
