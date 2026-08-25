@@ -1886,7 +1886,10 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     if(canSkip) $("#kbSkip").onclick=()=>g.remove();
     setTimeout(()=>inp.focus(),50);
   }
-  function updateHosBar(){ const b=$("#kbHosName"); if(b) b.textContent=HOSPITAL || (LOGGED_IN?"— (จะถามตอนส่งเข้าแกลเลอรี)":"—"); }
+  function updateHosBar(){
+    const b=$("#kbHosName"); if(b) b.textContent=HOSPITAL || (LOGGED_IN?"ยังไม่ได้ตั้งชื่อ":"—");
+    const c=$("#kbChg"); if(c) c.textContent=HOSPITAL?"เปลี่ยน":"📝 ตั้งชื่อ/ลงทะเบียน";
+  }
 
   // ---- การ์ดแกลเลอรี (เต็มความกว้าง ต่อท้ายเครื่องมือ) ----
   function buildPanel(){
@@ -1910,6 +1913,7 @@ document.fonts.ready.then(()=>{paint();thumbs();});
 
   async function submitDesign(){
     if(!HOSPITAL){ showGate(submitDesign); return; } // ยังไม่มีชื่อ → ถามก่อน แล้วส่งต่อ
+    registerHospital(HOSPITAL); // บันทึกทะเบียนด้วยเสมอ (เผื่อคนล็อกอินที่ไม่ผ่านประตู)
     const btn=$("#kbSubmit"); btn.disabled=true; const old=btn.textContent; btn.textContent="กำลังส่ง…";
     try{
       const list=(typeof items==="function")?items():[];
