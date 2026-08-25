@@ -771,6 +771,23 @@ model Note {
   @@index([pinned])
 }
 
+// เครื่องมือออกแบบปุ่ม Kiosk (สาธารณะ): โรงพยาบาลกรอกชื่อแล้วส่งดีไซน์เข้าแกลเลอรี
+// เพื่อให้ที่อื่นดูเป็นแรงบันดาลใจ/เลียนแบบเทมเพลตได้ + เก็บสถิติว่าที่ไหนใช้บ้าง.
+// เก็บ "เฉพาะสไตล์เทมเพลต" (styleJson ที่ผ่าน whitelist ฝั่งเซิร์ฟเวอร์) + ข้อความตัวอย่าง —
+// ไม่เก็บรูปที่อัปโหลด. ไม่ผูก FK กับตารางใด ๆ เพื่อไม่ให้กระทบส่วนอื่นของระบบเลย.
+model KioskButtonDesign {
+  id         String   @id @default(cuid())
+  hospital   String   // ชื่อโรงพยาบาล (ผู้ใช้กรอกก่อนเริ่มใช้)
+  styleJson  String   // JSON สไตล์ปุ่มที่ผ่านการตรวจ/whitelist แล้ว
+  sampleText String   // ข้อความตัวอย่างบนปุ่ม
+  ip         String?  // IP ผู้ส่ง (audit + rate limit) — ไม่แสดงสาธารณะ
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([hospital])
+  @@index([ip, createdAt])
+}
+
 // รายการ "วิธีการแก้ไข" แบบไทม์ไลน์ — แต่ละครั้งมีวันที่ + ข้อความ (ติดตามได้หลายวัน).
 model IssueSolution {
   id         String   @id @default(cuid())

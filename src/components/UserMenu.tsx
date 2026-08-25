@@ -15,6 +15,7 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
   const [pwOpen, setPwOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -59,6 +60,19 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
           <button onClick={() => { setOpen(false); setThemeOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🎨 ธีมสีเว็บ
+          </button>
+          <a href="/kiosk-buttons" target="_blank" rel="noopener" onClick={() => setOpen(false)}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            🎛️ ออกแบบปุ่ม Kiosk
+          </a>
+          <button onClick={() => {
+              try {
+                navigator.clipboard.writeText(`${location.origin}/kiosk-buttons`)
+                setCopied(true); setTimeout(() => setCopied(false), 2000)
+              } catch { /* clipboard may be blocked — ignore */ }
+            }}
+            className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
+            {copied ? '✓ คัดลอกลิงก์สาธารณะแล้ว' : '🔗 คัดลอกลิงก์สาธารณะ (ส่งให้ รพ. อื่น)'}
           </button>
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">

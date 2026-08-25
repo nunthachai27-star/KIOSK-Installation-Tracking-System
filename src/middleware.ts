@@ -17,7 +17,10 @@ export default auth((req) => {
   // Public: executive dashboard + hospital satisfaction rating (no login).
   // Bounded matching (exact path or under it) so e.g. "/exec-secret" is NOT public.
   const PUBLIC = ['/api/auth', '/login', '/exec', '/rate', '/api/rate', '/borrow', '/api/borrow-request',
-    '/manifest.webmanifest', '/icons', '/apple-touch-icon.png', '/favicon.png', '/.well-known']
+    '/manifest.webmanifest', '/icons', '/apple-touch-icon.png', '/favicon.png', '/.well-known',
+    // เครื่องมือออกแบบปุ่ม Kiosk — เปิดสาธารณะเฉพาะหน้านี้ + API ของมันเท่านั้น
+    // (DELETE/สถิติ ตรวจสิทธิ์ในตัวจัดการเอง) ที่เหลือของเว็บยังต้อง login เหมือนเดิม
+    '/kiosk-buttons', '/api/kiosk-buttons']
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 
