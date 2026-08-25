@@ -17,7 +17,7 @@ export default auth((req) => {
   // Public: executive dashboard + hospital satisfaction rating (no login).
   // Bounded matching (exact path or under it) so e.g. "/exec-secret" is NOT public.
   const PUBLIC = ['/api/auth', '/login', '/exec', '/rate', '/api/rate', '/borrow', '/api/borrow-request',
-    '/manifest.webmanifest', '/icons', '/apple-touch-icon.png', '/favicon.png']
+    '/manifest.webmanifest', '/icons', '/apple-touch-icon.png', '/favicon.png', '/.well-known']
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 
