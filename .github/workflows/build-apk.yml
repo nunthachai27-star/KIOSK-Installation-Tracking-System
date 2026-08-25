@@ -65,16 +65,37 @@ jobs:
           echo "-- ls cmdline-tools --" | tee -a build.log; ls -la "$SDK/cmdline-tools" 2>&1 | tee -a build.log
           echo "-- ls build-tools --" | tee -a build.log; ls "$SDK/build-tools" 2>&1 | tee -a build.log
           echo "-- ls platform-tools --" | tee -a build.log; ls "$SDK/platform-tools" 2>&1 | head -3 | tee -a build.log
-          echo "=== update (generate Android project + checksum; finite newlines accept defaults) ===" | tee -a build.log
+          echo "=== update (generate Android project; feed required versionName) ===" | tee -a build.log
           printf '1.0.0\n' | bubblewrap update 2>&1 | tee -a build.log
           echo "=== update exit: ${PIPESTATUS[1]} ===" | tee -a build.log
-          echo "-- ls after update (expect app/, gradlew) --" | tee -a build.log
-          ls -la 2>&1 | tee -a build.log
-          echo "=== build (2 keystore passwords) ===" | tee -a build.log
-          printf '%s\n%s\n' "$KS_PASS" "$KS_PASS" | bubblewrap build --skipPwaValidation 2>&1 | tee -a build.log
-          echo "=== exit of build: ${PIPESTATUS[0]} ===" | tee -a build.log
-          echo "=== files ===" | tee -a build.log
-          ls -la 2>&1 | tee -a build.log
+          # Bubblewrap's interactive `build` reads the keystore passwords over a
+          # broken stdin pipe in CI, so compile with Gradle directly and sign with
+          # apksigner using our own keystore (stable fingerprint for assetlinks).
+          chmod +x ./gradlew
+          echo "=== gradle assembleRelease ===" | tee -a build.log
+          ./gradlew --no-daemon assembleRelease 2>&1 | tail -60 | tee -a build.log
+          REL=$(find app/build/outputs/apk/release -name '*.apk' 2>/dev/null | head -1)
+          if [ -z "$REL" ]; then
+            echo "=== release produced no apk, fallback assembleDebug ===" | tee -a build.log
+            ./gradlew --no-daemon assembleDebug 2>&1 | tail -60 | tee -a build.log
+            REL=$(find app/build/outputs/apk/debug -name '*.apk' 2>/dev/null | head -1)
+          fi
+          echo "=== picked apk: $REL ===" | tee -a build.log
+          BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)
+          echo "build-tools: $BT" | tee -a build.log
+          if [ -n "$REL" ]; then
+            case "$REL" in
+              *unsigned*)
+                "$BT"/zipalign -f -p 4 "$REL" aligned.apk 2>&1 | tee -a build.log
+                "$BT"/apksigner sign --ks android.keystore --ks-pass pass:"$KS_PASS" \
+                  --key-pass pass:"$KS_PASS" --out app-release-signed.apk aligned.apk 2>&1 | tee -a build.log ;;
+              *)
+                cp "$REL" app-release-signed.apk ;;
+            esac
+            "$BT"/apksigner verify --print-certs app-release-signed.apk 2>&1 | tee -a build.log
+          fi
+          echo "=== final apks ===" | tee -a build.log
+          ls -la *.apk 2>&1 | tee -a build.log
           true
 
       - name: Generate assetlinks.json
