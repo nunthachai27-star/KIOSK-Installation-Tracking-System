@@ -2027,6 +2027,8 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     // เปิดจากหน้า log ด้วย ?hospital=ชื่อ → กรองแกลเลอรีให้ดูดีไซน์ของ รพ. นั้น
     try{ const p=new URLSearchParams(location.search).get("hospital"); if(p) VIEWHOSP=p.slice(0,120); }catch(e){}
     try{ const s=sessionStorage.getItem("kbHosp"); if(s) HOSPITAL=s; }catch(e){}
+    // ถ้ารู้ชื่อ รพ. อยู่แล้ว (จำจาก session) → ลงทะเบียนทันทีตอนโหลด ไม่ต้องรอกดส่งดีไซน์
+    if(HOSPITAL) registerHospital(HOSPITAL);
     // คนล็อกอินเข้าหน้าออกแบบได้เลย ไม่ต้องกรอกชื่อ — คนนอกต้องกรอกก่อน
     if(!LOGGED_IN && !HOSPITAL) showGate();
     updateHosBar();
