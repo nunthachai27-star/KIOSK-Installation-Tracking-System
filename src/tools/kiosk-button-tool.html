@@ -1816,7 +1816,14 @@ document.fonts.ready.then(()=>{paint();thumbs();});
   "use strict";
   const API="/api/kiosk-buttons";
   const $=s=>document.querySelector(s);
-  let HOSPITAL="", IS_ADMIN=false, LOGGED_IN=false, DESIGNS=[];
+  let HOSPITAL="", IS_ADMIN=false, LOGGED_IN=false, DESIGNS=[], VIEWHOSP="";
+
+  // บันทึกทะเบียนโรงพยาบาลทันทีที่กรอกชื่อ (ขึ้น log ตั้งแต่ลงทะเบียน แม้ยังไม่ส่งดีไซน์)
+  function registerHospital(name){
+    if(!name) return;
+    fetch(API+"/register",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({hospital:name,website:""})}).catch(()=>{});
+  }
 
   const toast=(msg)=>{ let t=$(".kb-toast"); if(!t){t=document.createElement("div");t.className="kb-toast";document.body.appendChild(t);}
     t.textContent=msg; requestAnimationFrame(()=>t.classList.add("on"));
@@ -1872,6 +1879,7 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     const done=()=>{ const v=inp.value.replace(/\s+/g," ").trim();
       if(v.length<2){ $("#kbHosErr").textContent="กรุณากรอกชื่อโรงพยาบาล"; inp.focus(); return; }
       HOSPITAL=v.slice(0,120); try{sessionStorage.setItem("kbHosp",HOSPITAL);}catch(e){}
+      registerHospital(HOSPITAL);
       g.remove(); updateHosBar(); if(typeof after==="function") after(); };
     $("#kbHosGo").onclick=done;
     inp.addEventListener("keydown",e=>{if(e.key==="Enter")done();});
@@ -1892,6 +1900,7 @@ document.fonts.ready.then(()=>{paint();thumbs();});
         '<button class="btn" id="kbSubmit">⬆️ ส่งดีไซน์นี้เข้าแกลเลอรี</button></div>'+
       '<div class="hint" style="margin:0 0 12px">กด <b>ใช้เทมเพลตนี้</b> เพื่อดึงสไตล์ของโรงพยาบาลอื่นมาปรับต่อได้ · '+
         'แกลเลอรีแสดงเฉพาะ "สไตล์ปุ่ม" (สี/เลย์เอาต์/ฟอนต์) ไม่แสดงรูปที่อัปโหลด</div>'+
+      '<div id="kbFilter" style="margin:0 0 10px;font-size:13px;color:#0B1E3D"></div>'+
       '<div class="kb-gallery" id="kbGrid"><div class="kb-empty">กำลังโหลด…</div></div>';
     wrap.appendChild(card);
     $("#kbChg").onclick=e=>{e.preventDefault(); try{sessionStorage.removeItem("kbHosp");}catch(_){} HOSPITAL=""; updateHosBar(); showGate();};
@@ -1962,13 +1971,25 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     }catch(e){ toast("เชื่อมต่อไม่ได้"); }
   }
 
+  function updateFilterNote(){
+    const el=$("#kbFilter"); if(!el) return;
+    el.innerHTML="";
+    if(!VIEWHOSP){ return; }
+    const b=document.createElement("b"); b.textContent="กำลังดูดีไซน์ของ: "+VIEWHOSP;
+    const a=document.createElement("a"); a.href="#"; a.textContent="ดูทั้งหมด";
+    a.style.cssText="margin-left:10px;color:#00897B;font-weight:400";
+    a.onclick=(e)=>{ e.preventDefault(); VIEWHOSP=""; loadGallery(); };
+    el.appendChild(b); el.appendChild(a);
+  }
   async function loadGallery(){
     try{
-      const res=await fetch(API+"/designs",{cache:"no-store"});
+      const url = VIEWHOSP ? (API+"/designs?hospital="+encodeURIComponent(VIEWHOSP)) : (API+"/designs");
+      const res=await fetch(url,{cache:"no-store"});
       const d=await res.json();
       DESIGNS=Array.isArray(d.designs)?d.designs:[];
       const st=$("#kbStats");
       if(st&&d.stats) st.textContent=(d.stats.hospitals||0)+" โรงพยาบาล · "+(d.stats.total||0)+" ดีไซน์";
+      updateFilterNote();
       renderGrid();
     }catch(e){ const g=$("#kbGrid"); if(g) g.innerHTML='<div class="kb-empty">โหลดแกลเลอรีไม่ได้</div>'; }
   }
@@ -1999,6 +2020,8 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     buildPanel();
     await checkMe();
     setupFmt();
+    // เปิดจากหน้า log ด้วย ?hospital=ชื่อ → กรองแกลเลอรีให้ดูดีไซน์ของ รพ. นั้น
+    try{ const p=new URLSearchParams(location.search).get("hospital"); if(p) VIEWHOSP=p.slice(0,120); }catch(e){}
     try{ const s=sessionStorage.getItem("kbHosp"); if(s) HOSPITAL=s; }catch(e){}
     // คนล็อกอินเข้าหน้าออกแบบได้เลย ไม่ต้องกรอกชื่อ — คนนอกต้องกรอกก่อน
     if(!LOGGED_IN && !HOSPITAL) showGate();

@@ -788,6 +788,19 @@ model KioskButtonDesign {
   @@index([ip, createdAt])
 }
 
+// ทะเบียนโรงพยาบาลที่ "ลงทะเบียน" ใช้เครื่องมือออกแบบปุ่ม (กรอกชื่อผ่านประตู) —
+// ขึ้น log ตั้งแต่ลงทะเบียน แม้ยังไม่ส่งดีไซน์. ชื่อไม่ซ้ำ (ชื่อเดิมรวมเป็นรายการเดียว).
+// ไม่ผูก FK กับตารางใด ๆ — แยกอิสระ ไม่กระทบส่วนอื่น.
+model KioskHospital {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  ip         String?  // IP ผู้ลงทะเบียน (audit + rate limit)
+  createdAt  DateTime @default(now()) // ลงทะเบียนครั้งแรก
+  lastSeenAt DateTime @default(now()) // เข้าใช้ล่าสุด
+
+  @@index([lastSeenAt])
+}
+
 // รายการ "วิธีการแก้ไข" แบบไทม์ไลน์ — แต่ละครั้งมีวันที่ + ข้อความ (ติดตามได้หลายวัน).
 model IssueSolution {
   id         String   @id @default(cuid())

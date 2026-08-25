@@ -111,7 +111,7 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
 
 // บันทึกการใช้งานเครื่องมือออกแบบปุ่ม Kiosk — รายชื่อโรงพยาบาลที่ลงทะเบียนใช้งาน
 // (เฉพาะเจ้าหน้าที่ที่ล็อกอิน — API /log บังคับ session อยู่แล้ว).
-type LogRow = { hospital: string; count: number; lastAt: string; firstAt: string }
+type LogRow = { hospital: string; count: number; registeredAt: string; lastAt: string }
 function KioskLogModal({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<LogRow[] | null>(null)
   const [sum, setSum] = useState({ hospitals: 0, total: 0 })
@@ -136,12 +136,13 @@ function KioskLogModal({ onClose }: { onClose: () => void }) {
           <div className="text-[16px] font-bold text-[#1C1917]">📊 บันทึก รพ. ที่ใช้ออกแบบปุ่ม Kiosk</div>
           <button type="button" onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
         </div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <div className="text-[12.5px] text-[#8492A6]">
             รวม <b className="text-[#1C1917]">{sum.hospitals}</b> โรงพยาบาล · <b className="text-[#1C1917]">{sum.total}</b> ดีไซน์
           </div>
           <button onClick={load} className="text-[12.5px] font-semibold text-[var(--brand)] hover:underline">รีเฟรช</button>
         </div>
+        <div className="text-[11.5px] text-[#9AAABF] mb-3">คลิกชื่อโรงพยาบาลที่มีดีไซน์ เพื่อเปิดดูผลงานของที่นั่น</div>
 
         {err && <div className="text-sm text-[#C13540] mb-2">{err}</div>}
         <div className="overflow-auto border border-[#ECEFF3] rounded-xl">
@@ -151,8 +152,8 @@ function KioskLogModal({ onClose }: { onClose: () => void }) {
                 <th className="px-3 py-2 font-bold">#</th>
                 <th className="px-3 py-2 font-bold">โรงพยาบาล</th>
                 <th className="px-3 py-2 font-bold whitespace-nowrap">ดีไซน์</th>
+                <th className="px-3 py-2 font-bold whitespace-nowrap">ลงทะเบียนเมื่อ</th>
                 <th className="px-3 py-2 font-bold whitespace-nowrap">ใช้ล่าสุด</th>
-                <th className="px-3 py-2 font-bold whitespace-nowrap">เริ่มใช้</th>
               </tr>
             </thead>
             <tbody>
@@ -163,10 +164,18 @@ function KioskLogModal({ onClose }: { onClose: () => void }) {
               ) : rows.map((r, i) => (
                 <tr key={i} className="border-t border-[#F1F3F6] hover:bg-[#F7FAFD]">
                   <td className="px-3 py-2 text-[#8492A6]">{i + 1}</td>
-                  <td className="px-3 py-2 font-semibold text-[#1C1917]">{r.hospital}</td>
+                  <td className="px-3 py-2 font-semibold text-[#1C1917]">
+                    {r.count > 0 ? (
+                      <a href={`/kiosk-buttons?hospital=${encodeURIComponent(r.hospital)}`} target="_blank" rel="noopener"
+                        title="เปิดดูดีไซน์ของโรงพยาบาลนี้"
+                        className="text-[var(--brand)] hover:underline">{r.hospital} <span className="text-[10px]">↗</span></a>
+                    ) : (
+                      <span>{r.hospital} <span className="text-[10.5px] font-normal text-[#B6C0CE]">(ยังไม่มีดีไซน์)</span></span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">{r.count}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.registeredAt)}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.lastAt)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.firstAt)}</td>
                 </tr>
               ))}
             </tbody>
