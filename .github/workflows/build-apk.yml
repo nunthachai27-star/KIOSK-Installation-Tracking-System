@@ -32,6 +32,8 @@ jobs:
           SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
           echo "JAVA_HOME=$JAVA_HOME"
           echo "SDK=$SDK"; ls "$SDK" | head
+          # Bubblewrap 1.22 validates the legacy "tools/" dir which modern runners lack.
+          [ -d "$SDK/tools" ] || ln -s "$SDK/cmdline-tools/latest" "$SDK/tools"
           yes | "$SDK"/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
           mkdir -p ~/.bubblewrap
           echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$SDK\"}" > ~/.bubblewrap/config.json
