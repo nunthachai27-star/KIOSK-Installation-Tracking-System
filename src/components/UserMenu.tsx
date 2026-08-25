@@ -17,6 +17,7 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
   const [themeOpen, setThemeOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
+  const [kioskSub, setKioskSub] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -62,23 +63,32 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🎨 ธีมสีเว็บ
           </button>
-          <a href="/kiosk-buttons" target="_blank" rel="noopener" onClick={() => setOpen(false)}
+          <button onClick={() => setKioskSub((v) => !v)}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🎛️ ออกแบบปุ่ม Kiosk
-          </a>
-          <button onClick={() => {
-              try {
-                navigator.clipboard.writeText(`${location.origin}/kiosk-buttons`)
-                setCopied(true); setTimeout(() => setCopied(false), 2000)
-              } catch { /* clipboard may be blocked — ignore */ }
-            }}
-            className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
-            {copied ? '✓ คัดลอกลิงก์สาธารณะแล้ว' : '🔗 คัดลอกลิงก์สาธารณะ (ส่งให้ รพ. อื่น)'}
+            <span className={`ml-auto text-[#A8A29E] text-[10px] transition-transform ${kioskSub ? 'rotate-180' : ''}`}>▾</span>
           </button>
-          <button onClick={() => { setOpen(false); setLogOpen(true) }}
-            className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
-            📊 บันทึก รพ. ที่ใช้ออกแบบปุ่ม
-          </button>
+          {kioskSub && (
+            <div className="ml-4 pl-1 border-l border-[#ECEFF3]">
+              <a href="/kiosk-buttons" target="_blank" rel="noopener" onClick={() => setOpen(false)}
+                className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+                🎨 เปิดหน้าออกแบบ
+              </a>
+              <button onClick={() => {
+                  try {
+                    navigator.clipboard.writeText(`${location.origin}/kiosk-buttons`)
+                    setCopied(true); setTimeout(() => setCopied(false), 2000)
+                  } catch { /* clipboard may be blocked — ignore */ }
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
+                {copied ? '✓ คัดลอกลิงก์แล้ว' : '🔗 คัดลอกลิงก์สาธารณะ'}
+              </button>
+              <button onClick={() => { setOpen(false); setLogOpen(true) }}
+                className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
+                📊 บันทึก รพ. ที่ใช้ออกแบบ
+              </button>
+            </div>
+          )}
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🔑 เปลี่ยนรหัสผ่าน
