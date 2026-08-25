@@ -1786,10 +1786,12 @@ document.fonts.ready.then(()=>{paint();thumbs();});
   border-radius:11px;font-size:15px;font-family:inherit;outline:none}
 #kbGate input:focus{border-color:#00897B;box-shadow:0 0 0 3px rgba(0,137,123,.15)}
 #kbGate .err{color:#C62828;font-size:12px;margin-top:6px;min-height:15px}
-#kbGate button{margin-top:14px;width:100%;border:0;border-radius:11px;padding:12px;cursor:pointer;
+#kbGate .btns{display:flex;gap:8px;margin-top:14px}
+#kbGate button{flex:1;border:0;border-radius:11px;padding:12px;cursor:pointer;
   font:inherit;font-size:15px;font-weight:800;background:#00897B;color:#fff;
   box-shadow:0 4px 12px rgba(0,137,123,.35)}
 #kbGate button:hover{filter:brightness(1.07)}
+#kbGate button.sec{flex:0 0 auto;background:#EDF1F6;color:#5A6B82;box-shadow:none;font-weight:700}
 #kbGate .foot{margin-top:12px;font-size:11.5px;color:#9AAABF;text-align:center;line-height:1.5}
 .kb-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:10000;
   background:#0B1E3D;color:#fff;padding:11px 20px;border-radius:12px;font-size:14px;font-weight:700;
@@ -1814,7 +1816,7 @@ document.fonts.ready.then(()=>{paint();thumbs();});
   "use strict";
   const API="/api/kiosk-buttons";
   const $=s=>document.querySelector(s);
-  let HOSPITAL="", IS_ADMIN=false, DESIGNS=[];
+  let HOSPITAL="", IS_ADMIN=false, LOGGED_IN=false, DESIGNS=[];
 
   const toast=(msg)=>{ let t=$(".kb-toast"); if(!t){t=document.createElement("div");t.className="kb-toast";document.body.appendChild(t);}
     t.textContent=msg; requestAnimationFrame(()=>t.classList.add("on"));
@@ -1848,33 +1850,35 @@ document.fonts.ready.then(()=>{paint();thumbs();});
   function toCfg(s){s=clean(s);return Object.assign({},BASE,s,{preset:null,custom:null,
     autofill:!!s.autofill,accent:s.accent,font:s.font});}
 
-  // ---- ประตู: ต้องกรอกชื่อ รพ. ก่อนเริ่มใช้ ----
-  function showGate(){
+  // ---- ประตูกรอกชื่อ รพ. ----
+  // คนนอก (ไม่ล็อกอิน): เด้งตอนเข้าหน้า. คนล็อกอิน: ข้ามได้ จะเด้งเฉพาะตอนกดส่งเข้าแกลเลอรี.
+  function showGate(after){
     if($("#kbGate")) return;
     const g=document.createElement("div"); g.id="kbGate";
+    const canSkip = LOGGED_IN && typeof after!=="function"; // ล็อกอินและไม่ใช่ตอนส่ง → ให้ข้ามได้
     g.innerHTML='<div class="box"><h3>🎨 ออกแบบปุ่มบริการ Kiosk</h3>'+
-      '<p>เครื่องมือออกแบบปุ่มหน้าจอ Kiosk สำหรับโรงพยาบาล — กรอกชื่อโรงพยาบาลของท่านก่อนเริ่มใช้งาน '+
-      '(ใช้เก็บสถิติ และแสดงผลงานในแกลเลอรีให้ที่อื่นดูเป็นแนวทางได้)</p>'+
+      '<p>กรอกชื่อโรงพยาบาลของท่าน — ใช้แสดงในแกลเลอรีและเก็บสถิติว่าที่ไหนใช้บ้าง '+
+      '(ที่อื่นจะได้ดูเป็นแนวทางและเลียนแบบเทมเพลตได้)</p>'+
       '<label>ชื่อโรงพยาบาล</label>'+
       '<input id="kbHosIn" maxlength="120" placeholder="เช่น โรงพยาบาลบ้านนา" autocomplete="off">'+
       '<div class="err" id="kbHosErr"></div>'+
-      '<button id="kbHosGo">เริ่มออกแบบ</button>'+
+      '<div class="btns">'+
+        (canSkip?'<button class="sec" id="kbSkip">ข้ามไปก่อน</button>':'')+
+        '<button id="kbHosGo">'+(typeof after==="function"?"ยืนยันและส่ง":"เริ่มออกแบบ")+'</button>'+
+      '</div>'+
       '<div class="foot">ข้อมูลที่เก็บ: เฉพาะชื่อโรงพยาบาล + สไตล์ปุ่ม (ไม่เก็บรูปที่อัปโหลด)</div></div>';
     document.body.appendChild(g);
-    const inp=$("#kbHosIn");
-    const submit=()=>{ const v=inp.value.replace(/\s+/g," ").trim();
+    const inp=$("#kbHosIn"); if(HOSPITAL) inp.value=HOSPITAL;
+    const done=()=>{ const v=inp.value.replace(/\s+/g," ").trim();
       if(v.length<2){ $("#kbHosErr").textContent="กรุณากรอกชื่อโรงพยาบาล"; inp.focus(); return; }
       HOSPITAL=v.slice(0,120); try{sessionStorage.setItem("kbHosp",HOSPITAL);}catch(e){}
-      g.remove(); updateHosBar(); };
-    $("#kbHosGo").onclick=submit;
-    inp.addEventListener("keydown",e=>{if(e.key==="Enter")submit();});
+      g.remove(); updateHosBar(); if(typeof after==="function") after(); };
+    $("#kbHosGo").onclick=done;
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter")done();});
+    if(canSkip) $("#kbSkip").onclick=()=>g.remove();
     setTimeout(()=>inp.focus(),50);
   }
-  function ensureHospital(){
-    try{ const s=sessionStorage.getItem("kbHosp"); if(s){HOSPITAL=s; return true;} }catch(e){}
-    showGate(); return false;
-  }
-  function updateHosBar(){ const b=$("#kbHosName"); if(b) b.textContent=HOSPITAL||"—"; }
+  function updateHosBar(){ const b=$("#kbHosName"); if(b) b.textContent=HOSPITAL || (LOGGED_IN?"— (จะถามตอนส่งเข้าแกลเลอรี)":"—"); }
 
   // ---- การ์ดแกลเลอรี (เต็มความกว้าง ต่อท้ายเครื่องมือ) ----
   function buildPanel(){
@@ -1890,13 +1894,13 @@ document.fonts.ready.then(()=>{paint();thumbs();});
         'แกลเลอรีแสดงเฉพาะ "สไตล์ปุ่ม" (สี/เลย์เอาต์/ฟอนต์) ไม่แสดงรูปที่อัปโหลด</div>'+
       '<div class="kb-gallery" id="kbGrid"><div class="kb-empty">กำลังโหลด…</div></div>';
     wrap.appendChild(card);
-    $("#kbChg").onclick=e=>{e.preventDefault(); try{sessionStorage.removeItem("kbHosp");}catch(_){} HOSPITAL=""; showGate();};
+    $("#kbChg").onclick=e=>{e.preventDefault(); try{sessionStorage.removeItem("kbHosp");}catch(_){} HOSPITAL=""; updateHosBar(); showGate();};
     $("#kbSubmit").onclick=submitDesign;
     updateHosBar();
   }
 
   async function submitDesign(){
-    if(!HOSPITAL){ showGate(); return; }
+    if(!HOSPITAL){ showGate(submitDesign); return; } // ยังไม่มีชื่อ → ถามก่อน แล้วส่งต่อ
     const btn=$("#kbSubmit"); btn.disabled=true; const old=btn.textContent; btn.textContent="กำลังส่ง…";
     try{
       const list=(typeof items==="function")?items():[];
@@ -1969,12 +1973,21 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     }catch(e){ const g=$("#kbGrid"); if(g) g.innerHTML='<div class="kb-empty">โหลดแกลเลอรีไม่ได้</div>'; }
   }
 
-  async function checkAdmin(){
-    try{ const r=await fetch(API+"/me",{cache:"no-store"}); const d=await r.json(); IS_ADMIN=!!d.admin; }
-    catch(e){ IS_ADMIN=false; }
+  async function checkMe(){
+    try{ const r=await fetch(API+"/me",{cache:"no-store"}); const d=await r.json();
+      IS_ADMIN=!!d.admin; LOGGED_IN=!!d.loggedIn; }
+    catch(e){ IS_ADMIN=false; LOGGED_IN=false; }
   }
 
-  function init(){ ensureHospital(); buildPanel(); checkAdmin().then(loadGallery); }
+  async function init(){
+    buildPanel();
+    await checkMe();
+    try{ const s=sessionStorage.getItem("kbHosp"); if(s) HOSPITAL=s; }catch(e){}
+    // คนล็อกอินเข้าหน้าออกแบบได้เลย ไม่ต้องกรอกชื่อ — คนนอกต้องกรอกก่อน
+    if(!LOGGED_IN && !HOSPITAL) showGate();
+    updateHosBar();
+    loadGallery();
+  }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
 })();
 </script>
