@@ -1810,12 +1810,6 @@ document.fonts.ready.then(()=>{paint();thumbs();});
 .kb-item .row{display:flex;gap:6px}
 .kb-item .row button{flex:1}
 .kb-empty{grid-column:1/-1;text-align:center;color:#9AAABF;font-size:13.5px;padding:24px}
-.kb-logtbl{width:100%;border-collapse:collapse;font-size:13px}
-.kb-logtbl th{text-align:left;font-size:11.5px;color:#5E7290;padding:0 10px 7px;font-weight:800;white-space:nowrap}
-.kb-logtbl td{padding:7px 10px;border-top:1px solid #EDF1F6;white-space:nowrap;color:#3C4A5E}
-.kb-logtbl td.h{white-space:normal;font-weight:800;color:#0B1E3D}
-.kb-logtbl tr:hover td{background:#F7FAFD}
-#kbLog h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 </style>
 <script>
 (function(){
@@ -1985,51 +1979,9 @@ document.fonts.ready.then(()=>{paint();thumbs();});
     catch(e){ IS_ADMIN=false; LOGGED_IN=false; }
   }
 
-  // ---- แผงบันทึกการใช้งาน (เฉพาะเจ้าหน้าที่ล็อกอิน) ----
-  function buildLogPanel(){
-    const wrap=document.querySelector(".wrap"); if(!wrap||$("#kbLog")) return;
-    const card=document.createElement("div"); card.className="card"; card.id="kbLog"; card.style.marginTop="13px";
-    card.innerHTML=
-      '<h2>📊 บันทึกการใช้งาน — โรงพยาบาลที่ลงทะเบียน '+
-        '<span style="font-weight:400;color:#9AAABF;font-size:12px">(เฉพาะเจ้าหน้าที่)</span>'+
-        '<button class="mini" id="kbLogReload" style="margin-left:auto">รีเฟรช</button></h2>'+
-      '<div id="kbLogSum" class="hint" style="margin:0 0 10px"></div>'+
-      '<div style="overflow-x:auto"><table class="kb-logtbl"><thead><tr>'+
-        '<th>#</th><th>โรงพยาบาล</th><th>จำนวนดีไซน์</th><th>ใช้ล่าสุด</th><th>เริ่มใช้</th></tr></thead>'+
-      '<tbody id="kbLogBody"><tr><td colspan="5" style="color:#9AAABF;padding:14px">กำลังโหลด…</td></tr></tbody></table></div>';
-    const panel=$("#kbPanel");
-    if(panel) wrap.insertBefore(card,panel); else wrap.appendChild(card);
-    $("#kbLogReload").onclick=loadLog;
-    loadLog();
-  }
-  async function loadLog(){
-    const card=$("#kbLog"); if(!card) return;
-    try{
-      const r=await fetch(API+"/log",{cache:"no-store"});
-      if(!r.ok){ card.style.display="none"; return; }
-      const d=await r.json();
-      $("#kbLogSum").textContent="รวม "+(d.hospitals||0)+" โรงพยาบาล · "+(d.total||0)+" ดีไซน์";
-      const body=$("#kbLogBody"); body.innerHTML="";
-      if(!d.rows||!d.rows.length){
-        body.innerHTML='<tr><td colspan="5" style="color:#9AAABF;padding:14px">ยังไม่มีโรงพยาบาลลงทะเบียน</td></tr>'; return; }
-      const fmt=s=>{ try{return new Date(s).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"});}catch(e){return "";} };
-      d.rows.forEach((row,i)=>{
-        const tr=document.createElement("tr");
-        const td=(t,cls)=>{const el=document.createElement("td");el.textContent=t;if(cls)el.className=cls;return el;};
-        tr.appendChild(td(String(i+1)));
-        tr.appendChild(td(row.hospital||"—","h"));
-        tr.appendChild(td(String(row.count)));
-        tr.appendChild(td(fmt(row.lastAt)));
-        tr.appendChild(td(fmt(row.firstAt)));
-        body.appendChild(tr);
-      });
-    }catch(e){ /* เงียบ */ }
-  }
-
   async function init(){
     buildPanel();
     await checkMe();
-    if(LOGGED_IN) buildLogPanel();
     try{ const s=sessionStorage.getItem("kbHosp"); if(s) HOSPITAL=s; }catch(e){}
     // คนล็อกอินเข้าหน้าออกแบบได้เลย ไม่ต้องกรอกชื่อ — คนนอกต้องกรอกก่อน
     if(!LOGGED_IN && !HOSPITAL) showGate();

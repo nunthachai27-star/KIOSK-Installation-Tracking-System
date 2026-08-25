@@ -16,6 +16,7 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [logOpen, setLogOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -74,6 +75,10 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
             className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
             {copied ? '✓ คัดลอกลิงก์สาธารณะแล้ว' : '🔗 คัดลอกลิงก์สาธารณะ (ส่งให้ รพ. อื่น)'}
           </button>
+          <button onClick={() => { setOpen(false); setLogOpen(true) }}
+            className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
+            📊 บันทึก รพ. ที่ใช้ออกแบบปุ่ม
+          </button>
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🔑 เปลี่ยนรหัสผ่าน
@@ -89,8 +94,78 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
       {avatarOpen && <AvatarEditor userId={userId} name={name} current={avatar}
         onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
       {themeOpen && <ThemePicker userId={userId} current={theme} currentBg={bg} onClose={() => setThemeOpen(false)} />}
+      {logOpen && <KioskLogModal onClose={() => setLogOpen(false)} />}
     </div>
   )
+}
+
+// บันทึกการใช้งานเครื่องมือออกแบบปุ่ม Kiosk — รายชื่อโรงพยาบาลที่ลงทะเบียนใช้งาน
+// (เฉพาะเจ้าหน้าที่ที่ล็อกอิน — API /log บังคับ session อยู่แล้ว).
+type LogRow = { hospital: string; count: number; lastAt: string; firstAt: string }
+function KioskLogModal({ onClose }: { onClose: () => void }) {
+  const [rows, setRows] = useState<LogRow[] | null>(null)
+  const [sum, setSum] = useState({ hospitals: 0, total: 0 })
+  const [err, setErr] = useState('')
+
+  async function load() {
+    setErr(''); setRows(null)
+    try {
+      const res = await fetch('/api/kiosk-buttons/log', { cache: 'no-store' })
+      if (!res.ok) { setErr('โหลดข้อมูลไม่สำเร็จ'); setRows([]); return }
+      const d = await res.json()
+      setRows(d.rows || []); setSum({ hospitals: d.hospitals || 0, total: d.total || 0 })
+    } catch { setErr('เชื่อมต่อไม่ได้'); setRows([]) }
+  }
+  useEffect(() => { load() }, [])
+  const fmt = (s: string) => { try { return new Date(s).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) } catch { return '' } }
+
+  const modal = (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-[16px] font-bold text-[#1C1917]">📊 บันทึก รพ. ที่ใช้ออกแบบปุ่ม Kiosk</div>
+          <button type="button" onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
+        </div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[12.5px] text-[#8492A6]">
+            รวม <b className="text-[#1C1917]">{sum.hospitals}</b> โรงพยาบาล · <b className="text-[#1C1917]">{sum.total}</b> ดีไซน์
+          </div>
+          <button onClick={load} className="text-[12.5px] font-semibold text-[var(--brand)] hover:underline">รีเฟรช</button>
+        </div>
+
+        {err && <div className="text-sm text-[#C13540] mb-2">{err}</div>}
+        <div className="overflow-auto border border-[#ECEFF3] rounded-xl">
+          <table className="w-full text-[13px] border-collapse">
+            <thead className="sticky top-0 bg-[#F7FAFD]">
+              <tr className="text-left text-[11.5px] text-[#5A6B82]">
+                <th className="px-3 py-2 font-bold">#</th>
+                <th className="px-3 py-2 font-bold">โรงพยาบาล</th>
+                <th className="px-3 py-2 font-bold whitespace-nowrap">ดีไซน์</th>
+                <th className="px-3 py-2 font-bold whitespace-nowrap">ใช้ล่าสุด</th>
+                <th className="px-3 py-2 font-bold whitespace-nowrap">เริ่มใช้</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows === null ? (
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-[#9AAABF]">กำลังโหลด…</td></tr>
+              ) : rows.length === 0 ? (
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-[#9AAABF]">ยังไม่มีโรงพยาบาลลงทะเบียนใช้งาน</td></tr>
+              ) : rows.map((r, i) => (
+                <tr key={i} className="border-t border-[#F1F3F6] hover:bg-[#F7FAFD]">
+                  <td className="px-3 py-2 text-[#8492A6]">{i + 1}</td>
+                  <td className="px-3 py-2 font-semibold text-[#1C1917]">{r.hospital}</td>
+                  <td className="px-3 py-2">{r.count}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.lastAt)}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.firstAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
