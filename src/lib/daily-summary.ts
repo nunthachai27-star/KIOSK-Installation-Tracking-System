@@ -23,9 +23,16 @@ export type DevDetail = {
   code: number; title: string; type: string; priority: string; status: string
   product: string; detail: string; steps: DevStep[]
 }
+// งานสรุปที่ผู้ใช้พิมพ์เอง (แก้/ลบได้เฉพาะเจ้าของ)
+export type ManualEntry = { id: string; heading: string; detail: string }
 export type StaffSummary = {
   staffId: string; name: string; nickname: string | null; role: Role
-  total: number; issueDetails: IssueDetail[]; devDetails: DevDetail[]; lines: SummaryLine[]; rating: number; ratingCount: number
+  total: number; issueDetails: IssueDetail[]; devDetails: DevDetail[]; manualEntries: ManualEntry[]; lines: SummaryLine[]; rating: number; ratingCount: number
+}
+
+// วันของสรุป (YYYY-MM-DD ตามเวลาท้องถิ่น) — ใช้จับคู่กับงานพิมพ์เอง
+export function dateKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 // จัด QC เป็นกลุ่ม: โรงพยาบาล → เลข S/N → รายการ checklist (เรียงชื่อ รพ. แล้วเลข S/N)
@@ -76,6 +83,12 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     }),
     prisma.user.findMany({ select: { id: true, name: true, nickname: true, role: true } }),
   ])
+  // งานสรุปที่พิมพ์เองของวันนี้
+  const manualRows = await prisma.reportEntry.findMany({
+    where: { dateKey: dateKeyOf(from) },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, userId: true, heading: true, detail: true },
+  })
   // Cumulative satisfaction per resolver (all-time) — badge alongside the daily report.
   const ratingByStaff = await prisma.issue.groupBy({ by: ['assignedToId'], where: { rating: { not: null }, assignedToId: { not: null } }, _avg: { rating: true }, _count: { rating: true } })
   const ratingOf = new Map(ratingByStaff.map((g) => [g.assignedToId as string, { avg: g._avg.rating ?? 0, count: g._count.rating }]))
@@ -89,12 +102,13 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   type Acc = {
     jobs: string[]; serials: string[]; qcRaw: QcRaw[]; issueDetails: IssueDetail[]
     delivery: string[]; install: string[]; handover: string[]; invoice: string[]; dev: Map<number, DevDetail>
+    manual: ManualEntry[]
     act: Partial<Record<ActivityType, string[]>>
   }
   const map = new Map<string, Acc>()
   const acc = (id: string): Acc => {
     let a = map.get(id)
-    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], dev: new Map(), act: {} }; map.set(id, a) }
+    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], dev: new Map(), manual: [], act: {} }; map.set(id, a) }
     return a
   }
 
@@ -163,6 +177,8 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
       : e.toStatus && !e.fromStatus ? 'เปิดคำขอ' : 'คอมเมนต์/อัปเดต'
     d.steps.push({ time: e.createdAt.toISOString(), text: e.note ? `${action}: ${e.note}` : action })
   }
+  // งานสรุปที่พิมพ์เอง — ผูกกับเจ้าของ (ผู้ใช้ที่มีแต่งานพิมพ์เองก็จะขึ้นในสรุป)
+  for (const m of manualRows) acc(m.userId).manual.push({ id: m.id, heading: m.heading, detail: m.detail })
 
   const result: StaffSummary[] = []
   for (const [id, a] of map) {
@@ -180,10 +196,10 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
       lines.push({ heading: `งาน${label} (ตามแผนคิว)`, text: `ดำเนินการ${label}ตามแผนงานที่ได้รับมอบหมาย จำนวน ${list.length} รายการ เรียบร้อยแล้ว`, items: list })
     }
     const devDetails = [...a.dev.values()]
-    const total = a.issueDetails.length + devDetails.length + lines.reduce((s, l) => s + l.items.length, 0)
+    const total = a.issueDetails.length + devDetails.length + a.manual.length + lines.reduce((s, l) => s + l.items.length, 0)
     const u = userOf.get(id)
     const r = ratingOf.get(id)
-    result.push({ staffId: id, name: u?.name ?? '—', nickname: u?.nickname ?? null, role: u?.role ?? 'OFFICE', total, issueDetails: a.issueDetails, devDetails, lines, rating: r?.avg ?? 0, ratingCount: r?.count ?? 0 })
+    result.push({ staffId: id, name: u?.name ?? '—', nickname: u?.nickname ?? null, role: u?.role ?? 'OFFICE', total, issueDetails: a.issueDetails, devDetails, manualEntries: a.manual, lines, rating: r?.avg ?? 0, ratingCount: r?.count ?? 0 })
   }
   result.sort((x, y) => y.total - x.total)
   return result

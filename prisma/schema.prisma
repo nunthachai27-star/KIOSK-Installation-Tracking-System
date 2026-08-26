@@ -814,6 +814,22 @@ model IssueSolution {
   @@index([issueId])
 }
 
+// งานสรุปที่ "พิมพ์เอง" เพิ่มในหน้าสรุปงานรายวัน — ต่อผู้ใช้ + ต่อวัน.
+// เสริมจากงานที่ระบบดึงอัตโนมัติ (ไม่แตะข้อมูลจริง). เจ้าของแก้/ลบได้เฉพาะของตัวเอง.
+model ReportEntry {
+  id        String   @id @default(cuid())
+  userId    String   // เจ้าของ (แก้/ลบได้เฉพาะของตัวเอง)
+  userName  String?  // denormalized — คงไว้แม้ผู้ใช้ถูกลบ
+  dateKey   String   // วันของสรุป (YYYY-MM-DD ตามเวลาท้องถิ่น)
+  heading   String   // หัวข้องาน
+  detail    String   // รายละเอียด (หลายบรรทัด = หลายรายการ)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dateKey])
+  @@index([userId, dateKey])
+}
+
 // ── แถบ "พัฒนา" (Dev Requests) ───────────────────────────────────────────────
 // คำขอแก้ไข/เพิ่มฟังก์ชันจากทีมเทคนิค → ทีมพัฒนา พร้อมไทม์ไลน์ติดตามสถานะร่วมกัน.
 // ไม่ผูก FK กับตารางเดิม — แยกอิสระ ไม่กระทบส่วนอื่น. ทีมพัฒนาเข้าผ่านลิงก์ token สาธารณะ

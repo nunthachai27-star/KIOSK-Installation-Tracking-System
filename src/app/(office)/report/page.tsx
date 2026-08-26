@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import type { Role } from '@prisma/client'
+import { auth } from '@/lib/auth'
 import { getDailySummary, type StaffSummary, type IssueDetail, type DevDetail } from '@/lib/daily-summary'
 import { dayRangeLocal } from '@/lib/activity'
 import { CopyReportButton } from '@/components/CopyReportButton'
+import { ReportManualSection } from '@/components/ReportManualSection'
 import { devCode, TYPE_META, PRIORITY_META, STATUS_META, type DevType, type DevPriority, type DevStatus } from '@/lib/devRequest'
 
 const dateTitle = new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -48,6 +50,13 @@ function reportText(s: StaffSummary, day: Date): string {
   const claims = s.issueDetails.filter((x) => x.issueType === 'CLAIM')
   if (general.length) { L.push(''); L.push('งานแก้ไขปัญหา smart innovation'); general.forEach(block) }
   if (claims.length) { L.push(''); L.push('งานเคลมอุปกรณ์'); claims.forEach(block) }
+  if (s.manualEntries.length) {
+    L.push(''); L.push('งานสรุปเพิ่มเติม')
+    for (const m of s.manualEntries) {
+      L.push(m.heading)
+      for (const ln of m.detail.split('\n').filter(Boolean)) L.push(`- ${ln}`)
+    }
+  }
   if (s.devDetails.length) {
     L.push(''); L.push('งานประสานงานทีมพัฒนา (คำขอพัฒนา)')
     for (const d of s.devDetails) {
@@ -167,7 +176,10 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
   const { d } = await searchParams
   const day = parseDateParam(d)
   const { from, to } = dayRangeLocal(day)
-  const summary = await getDailySummary(from, to)
+  const [summary, session] = await Promise.all([getDailySummary(from, to), auth()])
+  const meId = session?.user?.id ?? ''
+  const dateKey = ymd(day)
+  const hasOwnCard = summary.some((s) => s.staffId === meId)
 
   const prev = new Date(day); prev.setDate(day.getDate() - 1)
   const next = new Date(day); next.setDate(day.getDate() + 1)
@@ -295,9 +307,21 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
               </ol>
               </>
             )}
+
+            {/* งานสรุปเพิ่มเติม (พิมพ์เอง) — แก้ได้เฉพาะเจ้าของ */}
+            <ReportManualSection entries={staff.manualEntries} dateKey={dateKey} canEdit={staff.staffId === meId} />
           </div>
           )
         })
+      )}
+
+      {/* ยังไม่มีการ์ดของฉันในวันนี้ → ให้เพิ่มงานสรุปพิมพ์เองได้ */}
+      {meId && !hasOwnCard && (
+        <div className="ds-card p-5">
+          <div className="text-[13.5px] font-bold text-[#1C1917] mb-1">{staffName({ name: session?.user?.name ?? 'ฉัน', nickname: null } as StaffSummary)}</div>
+          <p className="text-[12.5px] text-[#8492A6] mb-3">ยังไม่มีงานที่ระบบบันทึกให้ในวันนี้ — เพิ่มงานสรุปที่ทำเองได้ที่นี่</p>
+          <ReportManualSection entries={[]} dateKey={dateKey} canEdit />
+        </div>
       )}
     </div>
   )
