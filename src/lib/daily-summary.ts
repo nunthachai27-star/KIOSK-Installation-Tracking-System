@@ -2,7 +2,7 @@ import type { ActivityType, Role } from '@prisma/client'
 import { prisma } from './prisma'
 import { ACTIVITY_LABEL } from './activity'
 import { ISSUE_STATUS, ISSUE_METHOD, ISSUE_WARRANTY } from './issue'
-import { devCode, STATUS_META, type DevStatus } from './devRequest'
+import { STATUS_META, type DevStatus } from './devRequest'
 
 // กลุ่ม QC: แยกตามโรงพยาบาล → เลข S/N (แต่ละเครื่อง) → รายการ checklist ที่ตรวจ
 export type QcGroup = { hospital: string; units: { serial: string; items: string[] }[] }
@@ -17,9 +17,15 @@ export type IssueDetail = {
   solution: string        // legacy single field (fallback)
   steps: IssueStep[]      // timeline entries recorded today
 }
+// รายละเอียดคำขอพัฒนา (คล้าย IssueDetail) — พร้อมกิจกรรมที่เจ้าหน้าที่ทำในวันนั้น
+export type DevStep = { time: string; text: string }
+export type DevDetail = {
+  code: number; title: string; type: string; priority: string; status: string
+  product: string; detail: string; steps: DevStep[]
+}
 export type StaffSummary = {
   staffId: string; name: string; nickname: string | null; role: Role
-  total: number; issueDetails: IssueDetail[]; lines: SummaryLine[]; rating: number; ratingCount: number
+  total: number; issueDetails: IssueDetail[]; devDetails: DevDetail[]; lines: SummaryLine[]; rating: number; ratingCount: number
 }
 
 // จัด QC เป็นกลุ่ม: โรงพยาบาล → เลข S/N → รายการ checklist (เรียงชื่อ รพ. แล้วเลข S/N)
@@ -62,7 +68,12 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     prisma.handoverRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     prisma.invoiceRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     // กิจกรรมแถบพัฒนาที่ "เจ้าหน้าที่" ทำในวันนั้น (เปิดคำขอ/เปลี่ยนสถานะ/คอมเมนต์) — ฝั่งทีมพัฒนา (DEV) ไม่นับ
-    prisma.devRequestEvent.findMany({ where: { actor: 'STAFF', createdAt: inDay }, select: { actorName: true, fromStatus: true, toStatus: true, request: { select: { code: true, title: true } } } }),
+    prisma.devRequestEvent.findMany({
+      where: { actor: 'STAFF', createdAt: inDay },
+      orderBy: { createdAt: 'asc' },
+      select: { actorName: true, fromStatus: true, toStatus: true, note: true, createdAt: true,
+        request: { select: { code: true, title: true, type: true, priority: true, status: true, product: true, detail: true } } },
+    }),
     prisma.user.findMany({ select: { id: true, name: true, nickname: true, role: true } }),
   ])
   // Cumulative satisfaction per resolver (all-time) — badge alongside the daily report.
@@ -77,13 +88,13 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   type QcRaw = { serial: string; item: string; hospital: string }
   type Acc = {
     jobs: string[]; serials: string[]; qcRaw: QcRaw[]; issueDetails: IssueDetail[]
-    delivery: string[]; install: string[]; handover: string[]; invoice: string[]; dev: string[]
+    delivery: string[]; install: string[]; handover: string[]; invoice: string[]; dev: Map<number, DevDetail>
     act: Partial<Record<ActivityType, string[]>>
   }
   const map = new Map<string, Acc>()
   const acc = (id: string): Acc => {
     let a = map.get(id)
-    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], dev: [], act: {} }; map.set(id, a) }
+    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], dev: new Map(), act: {} }; map.set(id, a) }
     return a
   }
 
@@ -136,14 +147,21 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     const x = acc(a.responsibleUserId).act
     ;(x[a.activityType] ??= []).push(`${a.job.hospital.name} · ${a.job.productType}`)
   }
-  // แถบพัฒนา: ผูกกิจกรรมกับเจ้าหน้าที่ตามชื่อผู้ทำ (actorName → id)
+  // แถบพัฒนา: ผูกกิจกรรมกับเจ้าหน้าที่ตามชื่อผู้ทำ (actorName → id) — รวมหลายเหตุการณ์ต่อคำขอเป็นการ์ดเดียว
   for (const e of devEvents) {
     const actor = e.actorName ? nameToId.get(e.actorName.trim()) : null
     if (!actor) continue
+    const req = e.request
+    const a = acc(actor)
+    let d = a.dev.get(req.code)
+    if (!d) {
+      d = { code: req.code, title: req.title, type: req.type, priority: req.priority, status: req.status, product: req.product, detail: req.detail, steps: [] }
+      a.dev.set(req.code, d)
+    }
     const action = e.fromStatus && e.toStatus
       ? `เปลี่ยนสถานะเป็น ${STATUS_META[e.toStatus as DevStatus]?.label ?? e.toStatus}`
       : e.toStatus && !e.fromStatus ? 'เปิดคำขอ' : 'คอมเมนต์/อัปเดต'
-    acc(actor).dev.push(`${devCode(e.request.code)} · ${e.request.title} — ${action}`)
+    d.steps.push({ time: e.createdAt.toISOString(), text: e.note ? `${action}: ${e.note}` : action })
   }
 
   const result: StaffSummary[] = []
@@ -161,11 +179,11 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
       const label = ACTIVITY_LABEL[type as ActivityType] ?? 'งานอื่นๆ'
       lines.push({ heading: `งาน${label} (ตามแผนคิว)`, text: `ดำเนินการ${label}ตามแผนงานที่ได้รับมอบหมาย จำนวน ${list.length} รายการ เรียบร้อยแล้ว`, items: list })
     }
-    if (a.dev.length) lines.push({ heading: 'งานประสานงานทีมพัฒนา (คำขอพัฒนา)', text: `ดำเนินการแจ้ง/ติดตามคำขอพัฒนาระบบร่วมกับทีมพัฒนา จำนวน ${a.dev.length} รายการ เรียบร้อยแล้ว`, items: a.dev })
-    const total = a.issueDetails.length + lines.reduce((s, l) => s + l.items.length, 0)
+    const devDetails = [...a.dev.values()]
+    const total = a.issueDetails.length + devDetails.length + lines.reduce((s, l) => s + l.items.length, 0)
     const u = userOf.get(id)
     const r = ratingOf.get(id)
-    result.push({ staffId: id, name: u?.name ?? '—', nickname: u?.nickname ?? null, role: u?.role ?? 'OFFICE', total, issueDetails: a.issueDetails, lines, rating: r?.avg ?? 0, ratingCount: r?.count ?? 0 })
+    result.push({ staffId: id, name: u?.name ?? '—', nickname: u?.nickname ?? null, role: u?.role ?? 'OFFICE', total, issueDetails: a.issueDetails, devDetails, lines, rating: r?.avg ?? 0, ratingCount: r?.count ?? 0 })
   }
   result.sort((x, y) => y.total - x.total)
   return result

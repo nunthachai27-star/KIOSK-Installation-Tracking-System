@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import type { Role } from '@prisma/client'
-import { getDailySummary, type StaffSummary, type IssueDetail } from '@/lib/daily-summary'
+import { getDailySummary, type StaffSummary, type IssueDetail, type DevDetail } from '@/lib/daily-summary'
 import { dayRangeLocal } from '@/lib/activity'
 import { CopyReportButton } from '@/components/CopyReportButton'
+import { devCode, TYPE_META, PRIORITY_META, STATUS_META, type DevType, type DevPriority, type DevStatus } from '@/lib/devRequest'
 
 const dateTitle = new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -47,6 +48,20 @@ function reportText(s: StaffSummary, day: Date): string {
   const claims = s.issueDetails.filter((x) => x.issueType === 'CLAIM')
   if (general.length) { L.push(''); L.push('งานแก้ไขปัญหา smart innovation'); general.forEach(block) }
   if (claims.length) { L.push(''); L.push('งานเคลมอุปกรณ์'); claims.forEach(block) }
+  if (s.devDetails.length) {
+    L.push(''); L.push('งานประสานงานทีมพัฒนา (คำขอพัฒนา)')
+    for (const d of s.devDetails) {
+      const ty = TYPE_META[d.type as DevType]?.label ?? d.type
+      const st = STATUS_META[d.status as DevStatus]?.label ?? d.status
+      L.push(`${devCode(d.code)} · ${d.title}`)
+      L.push(`${ty} · ${PRIORITY_META[d.priority as DevPriority]?.label ?? d.priority} · โปรดัก: ${d.product} · สถานะ: ${st}`)
+      L.push('รายละเอียด')
+      L.push(d.detail)
+      L.push('การดำเนินการวันนี้')
+      for (const stp of d.steps) L.push(`- ${new Date(stp.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} : ${stp.text}`)
+      L.push('')
+    }
+  }
   for (const l of s.lines) {
     L.push('')
     L.push(l.heading)
@@ -110,6 +125,40 @@ function IssueCard({ it }: { it: IssueDetail }) {
           <div className="text-[13px] text-[#3C4A5E] mt-0.5 whitespace-pre-wrap">{it.solution || '—'}</div>
         )}
       </div>
+    </div>
+  )
+}
+
+// รายละเอียดคำขอพัฒนา 1 ใบ + กิจกรรมที่ทำวันนี้ (ประเภท/ความสำคัญ/สถานะ/รายละเอียด/การดำเนินการ)
+function DevCard({ d }: { d: DevDetail }) {
+  const ty = TYPE_META[d.type as DevType]
+  const pr = PRIORITY_META[d.priority as DevPriority]
+  const st = STATUS_META[d.status as DevStatus]
+  return (
+    <div className="rounded-xl border border-[#EEEAE6] bg-[#FBFAF8] p-3.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-[13.5px] font-bold text-[#1C1917]"><span className="tnum text-[#8492A6] mr-1">{devCode(d.code)}</span>{d.title}</div>
+        {st && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#F0E8FB] text-[#7A44C6] whitespace-nowrap">{st.emoji} {st.label}</span>}
+      </div>
+      <div className="text-[11.5px] text-[#8492A6] mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+        {ty && <span>{ty.emoji} {ty.label}</span>}
+        {pr && <span>ความสำคัญ: {pr.label}</span>}
+        {d.product && <span>🖥 {d.product}</span>}
+      </div>
+      <div className="mt-1.5"><span className="text-[12.5px] font-semibold text-[#B45309]">รายละเอียด</span><div className="text-[13px] text-[#3C4A5E] mt-0.5 whitespace-pre-wrap">{d.detail}</div></div>
+      {d.steps.length > 0 && (
+        <div className="mt-1.5">
+          <span className="text-[12.5px] font-semibold text-[#157F4C]">การดำเนินการวันนี้</span>
+          <ul className="mt-1 flex flex-col gap-1">
+            {d.steps.map((s, k) => (
+              <li key={k} className="text-[13px] text-[#3C4A5E] flex gap-2">
+                <span className="text-[11px] font-bold text-[var(--brand)] tnum shrink-0 mt-[3px] whitespace-nowrap">{new Date(s.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="whitespace-pre-wrap">{s.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
@@ -182,6 +231,16 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
                 <SectionTitle icon="🧰" text="งานเคลมอุปกรณ์" n={claims.length} />
                 <div className="flex flex-col gap-3">
                   {claims.map((it, i) => <IssueCard key={i} it={it} />)}
+                </div>
+              </div>
+            )}
+
+            {/* กลุ่ม: งานประสานงานทีมพัฒนา (คำขอพัฒนา) */}
+            {staff.devDetails.length > 0 && (
+              <div className="mb-4">
+                <SectionTitle icon="🧑‍💻" text="งานประสานงานทีมพัฒนา (คำขอพัฒนา)" n={staff.devDetails.length} />
+                <div className="flex flex-col gap-3">
+                  {staff.devDetails.map((d, i) => <DevCard key={i} d={d} />)}
                 </div>
               </div>
             )}
