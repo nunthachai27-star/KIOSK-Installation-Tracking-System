@@ -20,7 +20,10 @@ export default auth((req) => {
     '/manifest.webmanifest', '/icons', '/apple-touch-icon.png', '/favicon.png', '/.well-known',
     // เครื่องมือออกแบบปุ่ม Kiosk — เปิดสาธารณะเฉพาะหน้านี้ + API ของมันเท่านั้น
     // (DELETE/สถิติ ตรวจสิทธิ์ในตัวจัดการเอง) ที่เหลือของเว็บยังต้อง login เหมือนเดิม
-    '/kiosk-buttons', '/api/kiosk-buttons']
+    '/kiosk-buttons', '/api/kiosk-buttons',
+    // ลิงก์ทีมพัฒนา (แถบพัฒนา) — เปิดเฉพาะ /dev/team/<token> + API ของมัน (ตรวจ token เอง).
+    // หน้า /dev (เจ้าหน้าที่) และ /api/dev-requests ยังต้อง login OFFICE เหมือนเดิม.
+    '/dev/team', '/api/dev/team']
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 

@@ -813,3 +813,78 @@ model IssueSolution {
 
   @@index([issueId])
 }
+
+// ── แถบ "พัฒนา" (Dev Requests) ───────────────────────────────────────────────
+// คำขอแก้ไข/เพิ่มฟังก์ชันจากทีมเทคนิค → ทีมพัฒนา พร้อมไทม์ไลน์ติดตามสถานะร่วมกัน.
+// ไม่ผูก FK กับตารางเดิม — แยกอิสระ ไม่กระทบส่วนอื่น. ทีมพัฒนาเข้าผ่านลิงก์ token สาธารณะ
+// (แก้ได้แค่สถานะ+คอมเมนต์). เจ้าหน้าที่ที่ล็อกอินจัดการได้เต็มที่.
+enum DevReqType {
+  BUG         // บั๊ก/ข้อผิดพลาด
+  FEATURE     // ฟังก์ชันใหม่
+  UI          // ปรับ UI/UX
+  IMPROVEMENT // ปรับปรุงประสิทธิภาพ
+}
+
+enum DevReqPriority {
+  HIGH   // ด่วนมาก
+  MEDIUM // ปกติ
+  LOW    // ไว้ทำทีหลัง
+}
+
+enum DevReqStatus {
+  NEW         // รอทีมพัฒนา
+  REVIEWING   // ทีมพัฒนากำลังดู
+  IN_PROGRESS // กำลังทำ
+  TESTING     // รอทดสอบ
+  DONE        // เสร็จ
+}
+
+enum DevReqActor {
+  STAFF // เจ้าหน้าที่ (ล็อกอิน)
+  DEV   // ทีมพัฒนา (ผ่านลิงก์สาธารณะ)
+}
+
+model DevRequest {
+  id           String            @id @default(cuid())
+  code         Int               @unique @default(autoincrement()) // เลขคำขอสั้น (DEV-xxx)
+  type         DevReqType        @default(BUG)
+  priority     DevReqPriority    @default(MEDIUM)
+  status       DevReqStatus      @default(NEW)
+  product      String            // โปรดัก/หน้าจอที่ติดปัญหา
+  title        String            // หัวข้อสั้น
+  detail       String            // อาการ/สิ่งที่ขอแก้
+  steps        String?           // ขั้นตอนทำซ้ำ (ทีละบรรทัด)
+  expected     String?           // ผลลัพธ์ที่คาดหวัง
+  links        String?           // ลิงก์รูป/วิดีโอ (ทีละบรรทัด)
+  reporterName String?           // ผู้แจ้ง (denormalized — คงไว้แม้ผู้ใช้ถูกลบ)
+  reporterId   String?
+  ip           String?           // IP ผู้สร้าง (audit + rate limit)
+  events       DevRequestEvent[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DevRequestEvent {
+  id         String        @id @default(cuid())
+  request    DevRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId  String
+  actor      DevReqActor   @default(STAFF) // ใครเป็นคนทำ
+  actorName  String?       // ชื่อผู้ทำ (denormalized)
+  fromStatus DevReqStatus?
+  toStatus   DevReqStatus?
+  note       String?       // คอมเมนต์/บันทึก
+  createdAt  DateTime      @default(now())
+
+  @@index([requestId])
+}
+
+// token ลับใบเดียวสำหรับลิงก์ให้ทีมพัฒนาเข้าดู/อัปเดตบอร์ด (สร้างใหม่ได้ = revoke ของเดิม).
+model DevBoardToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+  createdBy String?
+}
