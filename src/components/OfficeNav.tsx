@@ -22,7 +22,7 @@ export const NAV_ITEMS = [
 
 // Clean monochrome line icons (recolor via currentColor).
 function NavIcon({ name }: { name: string }) {
-  const common = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  const common = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, className: `ni ni-${name}` }
   switch (name) {
     case 'dashboard': return <svg {...common}><rect x="3.5" y="3.5" width="5.5" height="5.5" rx="1" /><rect x="11" y="3.5" width="5.5" height="5.5" rx="1" /><rect x="3.5" y="11" width="5.5" height="5.5" rx="1" /><rect x="11" y="11" width="5.5" height="5.5" rx="1" /></svg>
     case 'jobs': return <svg {...common}><rect x="4" y="3" width="12" height="14" rx="2" /><path d="M7 7h6M7 10h6M7 13h4" /></svg>
@@ -49,6 +49,7 @@ export function OfficeNav() {
   const path = usePathname()
   return (
     <nav className="flex items-stretch gap-0.5">
+      <style>{NAV_ANIM}</style>
       {NAV_ITEMS.map((it) => {
         const active = it.href === '/' ? path === '/' : path.startsWith(it.href)
         return (
@@ -56,7 +57,7 @@ export function OfficeNav() {
             key={it.href}
             href={it.href}
             aria-current={active ? 'page' : undefined}
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-xl min-w-[52px] transition-colors ${
+            className={`nav-link flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-xl min-w-[52px] transition-colors ${
               active ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'text-[#6B7686] hover:bg-[#F4F7FB] hover:text-[#3C4A5E]'
             }`}
           >
@@ -68,3 +69,52 @@ export function OfficeNav() {
     </nav>
   )
 }
+
+// ลูกเล่นไอคอนตอน hover — แต่ละแถบมีเอกลักษณ์คนละแบบ (เคารพ prefers-reduced-motion)
+const NAV_ANIM = `
+.ni{ transform-box:fill-box; transform-origin:center; }
+.nav-link{ overflow:visible; }
+@media(prefers-reduced-motion:no-preference){
+  /* แดชบอร์ด — ป็อปสเกล */
+  .nav-link:hover .ni-dashboard{ animation:na-pop .5s ease; }
+  @keyframes na-pop{ 0%{transform:scale(1)} 45%{transform:scale(1.22)} 100%{transform:scale(1)} }
+  /* งานทั้งหมด — สะบัดเอียง */
+  .nav-link:hover .ni-jobs{ animation:na-wiggle .55s ease; }
+  @keyframes na-wiggle{ 0%,100%{transform:rotate(0)} 25%{transform:rotate(-9deg)} 55%{transform:rotate(7deg)} 80%{transform:rotate(-3deg)} }
+  /* งานตามแผน — เด้งขึ้น */
+  .nav-link:hover .ni-planned{ animation:na-bounce .55s cubic-bezier(.28,.84,.42,1); }
+  @keyframes na-bounce{ 0%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} 70%{transform:translateY(-1px)} }
+  /* โรงพยาบาล — ลอยขึ้นลง */
+  .nav-link:hover .ni-hospital{ animation:na-bob .8s ease-in-out; }
+  @keyframes na-bob{ 0%,100%{transform:translateY(0)} 25%{transform:translateY(-2.5px)} 50%{transform:translateY(0)} 75%{transform:translateY(-1.5px)} }
+  /* ทะเบียนสินค้า — พลิกแนวนอน */
+  .nav-link:hover .ni-registry{ animation:na-flipx .6s ease; }
+  @keyframes na-flipx{ 0%{transform:scaleX(1)} 50%{transform:scaleX(-1)} 100%{transform:scaleX(1)} }
+  /* ปฏิทิน — แกว่งจากบน */
+  .nav-link:hover .ni-calendar{ transform-origin:top center; animation:na-swing .6s ease; }
+  @keyframes na-swing{ 0%,100%{transform:rotate(0)} 30%{transform:rotate(11deg)} 65%{transform:rotate(-8deg)} }
+  /* จัดคิว — ไล่ทีละบรรทัด */
+  .nav-link:hover .ni-queue{ animation:na-nudge .5s ease; }
+  @keyframes na-nudge{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(3px)} }
+  /* Monitor — กะพริบ */
+  .nav-link:hover .ni-monitor{ animation:na-blink .7s ease; }
+  @keyframes na-blink{ 0%,100%{opacity:1;transform:scale(1)} 40%{opacity:.35;transform:scale(1.08)} 70%{opacity:1} }
+  /* แจ้งปัญหา — สั่น */
+  .nav-link:hover .ni-issue{ animation:na-shake .5s ease; }
+  @keyframes na-shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 60%{transform:translateX(-1.5px)} 80%{transform:translateX(1.5px)} }
+  /* งานจัดซื้อ — รถเข็นวิ่ง */
+  .nav-link:hover .ni-purchase{ animation:na-roll .6s ease; }
+  @keyframes na-roll{ 0%{transform:translateX(-3px)} 60%{transform:translateX(3px)} 100%{transform:translateX(0)} }
+  /* คลังสินค้า — หมุนกล่อง */
+  .nav-link:hover .ni-stock{ animation:na-spin .7s ease; }
+  @keyframes na-spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  /* ยืม-คืน — สลับไปมา */
+  .nav-link:hover .ni-loan{ animation:na-swap .6s ease; }
+  @keyframes na-swap{ 0%,100%{transform:translateX(0)} 30%{transform:translateX(-2.5px)} 65%{transform:translateX(2.5px)} }
+  /* โน้ต — เอียงแบบเขียน */
+  .nav-link:hover .ni-note{ transform-origin:bottom left; animation:na-tilt .55s ease; }
+  @keyframes na-tilt{ 0%,100%{transform:rotate(0)} 40%{transform:rotate(-12deg)} 70%{transform:rotate(4deg)} }
+  /* พัฒนา — วงเล็บถ่าง */
+  .nav-link:hover .ni-dev{ animation:na-spread .55s ease; }
+  @keyframes na-spread{ 0%{transform:scaleX(1)} 45%{transform:scaleX(1.28)} 100%{transform:scaleX(1)} }
+}`
