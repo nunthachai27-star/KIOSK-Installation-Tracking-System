@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getStockSummary } from '@/lib/stock'
 import { StockDashboard } from '@/components/StockDashboard'
+import { StockAnomalyButton } from '@/components/StockAnomalyButton'
 
 export default async function StockPage() {
   const { kpi, groups } = await getStockSummary()
@@ -14,9 +15,12 @@ export default async function StockPage() {
             <p className="text-[13px] text-[#8492A6] mt-0.5">สต็อกอุปกรณ์ของฝ่าย · รับเข้า / จ่ายออก / คงเหลือ แยกตามรุ่นและ Lot · แจ้งเตือนสินค้าใกล้หมด</p>
           </div>
         </div>
-        <Link href="/stock/new" className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
-          ＋ เพิ่มสินค้า / รับเข้า
-        </Link>
+        <div className="flex items-center gap-2">
+          <StockAnomalyButton />
+          <Link href="/stock/new" className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
+            ＋ เพิ่มสินค้า / รับเข้า
+          </Link>
+        </div>
       </div>
       <StockDashboard kpi={kpi} groups={groups} />
     </div>
