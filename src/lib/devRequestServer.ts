@@ -2,7 +2,67 @@ import { randomBytes } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
+import type { DevReqStatus, DevReqActor } from '@prisma/client'
 import { prisma } from './prisma'
+
+// รวบการเปลี่ยนสถานะแบบ "ไม่มีคอมเมนต์" ของคนเดิมที่ทำติดกันภายในช่วงนี้ให้เป็นรายการเดียว
+// (กันไทม์ไลน์รกเวลากดสถานะไปมา). ถ้ามีคอมเมนต์ = เก็บครบทุกครั้ง.
+const SQUASH_WINDOW_MS = 10 * 60_000
+
+// บันทึกการเปลี่ยนสถานะ/คอมเมนต์ลงไทม์ไลน์อย่างชาญฉลาด (ใช้ร่วมทั้งฝั่งเจ้าหน้าที่และทีมพัฒนา).
+export async function recordDevChange(opts: {
+  requestId: string; fromStatus: string; newStatus: string | null
+  note: string | null; actor: 'STAFF' | 'DEV'; actorName: string | null
+}): Promise<void> {
+  const { requestId, fromStatus, newStatus, note, actorName } = opts
+  const actor = opts.actor as DevReqActor
+
+  // คอมเมนต์อย่างเดียว
+  if (!newStatus) {
+    await prisma.devRequestEvent.create({ data: { requestId, actor, actorName, note } })
+    return
+  }
+  const toStatus = newStatus as DevReqStatus
+  const from = fromStatus as DevReqStatus
+
+  // เปลี่ยนสถานะ + มีคอมเมนต์ → เก็บเป็นเหตุการณ์ใหม่เสมอ (มีเนื้อหา ไม่ใช่ noise)
+  if (note) {
+    await prisma.$transaction([
+      prisma.devRequest.update({ where: { id: requestId }, data: { status: toStatus } }),
+      prisma.devRequestEvent.create({ data: { requestId, actor, actorName, fromStatus: from, toStatus, note } }),
+    ])
+    return
+  }
+
+  // เปลี่ยนสถานะแบบไม่มีคอมเมนต์ → พยายามรวบกับเหตุการณ์เปลี่ยนสถานะล่าสุดของคนเดิม
+  const last = await prisma.devRequestEvent.findFirst({ where: { requestId }, orderBy: { createdAt: 'desc' } })
+  const now = new Date()
+  const squashable = !!last && last.actor === actor && last.toStatus != null && !last.note
+    && (now.getTime() - last.createdAt.getTime()) <= SQUASH_WINDOW_MS
+
+  if (squashable && last) {
+    if (last.fromStatus === toStatus) {
+      // วนกลับมาสถานะต้นทางเดิม → ลบเหตุการณ์นั้นทิ้ง (ไม่เหลือร่องรอย noise)
+      await prisma.$transaction([
+        prisma.devRequestEvent.delete({ where: { id: last.id } }),
+        prisma.devRequest.update({ where: { id: requestId }, data: { status: toStatus } }),
+      ])
+    } else {
+      // อัปเดตปลายทางของเหตุการณ์เดิม + เลื่อนเวลาเป็นล่าสุด (คงต้นทางเดิมไว้)
+      await prisma.$transaction([
+        prisma.devRequestEvent.update({ where: { id: last.id }, data: { toStatus, actorName, createdAt: now } }),
+        prisma.devRequest.update({ where: { id: requestId }, data: { status: toStatus } }),
+      ])
+    }
+    return
+  }
+
+  // ปกติ: เพิ่มเหตุการณ์ใหม่
+  await prisma.$transaction([
+    prisma.devRequest.update({ where: { id: requestId }, data: { status: toStatus } }),
+    prisma.devRequestEvent.create({ data: { requestId, actor, actorName, fromStatus: from, toStatus } }),
+  ])
+}
 
 // ── รูปแนบ (ใช้ตาราง Attachment เดิม, refTable = 'DevRequest') ────────────────
 export const DEV_IMG_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])

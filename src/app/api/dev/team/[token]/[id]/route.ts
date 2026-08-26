@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isDevStatus } from '@/lib/devRequest'
-import { str, reqIp, isValidDevToken, serializeOneWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { str, reqIp, isValidDevToken, recordDevChange, serializeOneWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,14 +42,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     }
   }
 
-  const data: Record<string, unknown> = {}
-  if (newStatus) data.status = newStatus
-  data.events = {
-    create: newStatus
-      ? { actor: 'DEV', actorName: devName, fromStatus: cur.status, toStatus: newStatus, note }
-      : { actor: 'DEV', actorName: devName, note },
-  }
+  await recordDevChange({ requestId: id, fromStatus: cur.status, newStatus, note, actor: 'DEV', actorName: devName })
 
-  const updated = await prisma.devRequest.update({ where: { id }, data, include: REQUEST_INCLUDE })
-  return NextResponse.json({ ok: true, request: await serializeOneWithImages(updated) })
+  const updated = await prisma.devRequest.findUnique({ where: { id }, include: REQUEST_INCLUDE })
+  return NextResponse.json({ ok: true, request: updated ? await serializeOneWithImages(updated) : null })
 }
