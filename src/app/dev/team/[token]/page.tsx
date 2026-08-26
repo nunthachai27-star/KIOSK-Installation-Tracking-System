@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { isValidDevToken, serializeRequest, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { isValidDevToken, teamNoteFor, serializeWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 import { DevBoard } from '@/components/DevBoard'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +11,11 @@ export default async function DevTeamPage({ params }: { params: Promise<{ token:
   const { token } = await params
   if (!(await isValidDevToken(token))) notFound()
 
-  const rows = await prisma.devRequest.findMany({ orderBy: { createdAt: 'desc' }, include: REQUEST_INCLUDE })
-  const initial = rows.map(serializeRequest)
+  const [rows, teamNote] = await Promise.all([
+    prisma.devRequest.findMany({ orderBy: { createdAt: 'desc' }, include: REQUEST_INCLUDE }),
+    teamNoteFor(token),
+  ])
+  const initial = await serializeWithImages(rows)
 
   return (
     <div style={{ minHeight: '100vh', background: '#F1F4F8' }}>
@@ -34,7 +37,7 @@ export default async function DevTeamPage({ params }: { params: Promise<{ token:
           </div>
         </div>
         <div style={{ marginTop: 14 }}>
-          <DevBoard initial={initial} mode="dev" token={token} />
+          <DevBoard initial={initial} mode="dev" token={token} teamNote={teamNote} />
         </div>
       </div>
     </div>

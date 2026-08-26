@@ -885,6 +885,7 @@ model DevRequestEvent {
 model DevBoardToken {
   id        String   @id @default(cuid())
   token     String   @unique
+  teamNote  String?  // โน้ตหัวบอร์ด: ทีมพัฒนาคือใคร/ติดต่อยังไง (แสดงให้ทั้งเจ้าหน้าที่และทีมพัฒนา)
   createdAt DateTime @default(now())
   createdBy String?
 }

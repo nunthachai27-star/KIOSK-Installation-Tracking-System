@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isDevStatus } from '@/lib/devRequest'
-import { str, reqIp, isValidDevToken, serializeRequest, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { str, reqIp, isValidDevToken, serializeOneWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,5 +51,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   }
 
   const updated = await prisma.devRequest.update({ where: { id }, data, include: REQUEST_INCLUDE })
-  return NextResponse.json({ ok: true, request: serializeRequest(updated) })
+  return NextResponse.json({ ok: true, request: await serializeOneWithImages(updated) })
 }

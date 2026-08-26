@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logAction } from '@/lib/audit'
 import { isDevType, isDevPriority } from '@/lib/devRequest'
-import { str, reqIp, getOrCreateDevToken, serializeRequest, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { str, reqIp, getDevSettings, serializeWithImages, serializeOneWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,12 +15,12 @@ export async function GET() {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
-  const [rows, token] = await Promise.all([
+  const [rows, settings] = await Promise.all([
     prisma.devRequest.findMany({ orderBy: { createdAt: 'desc' }, include: REQUEST_INCLUDE }),
-    getOrCreateDevToken(session.user.name),
+    getDevSettings(session.user.name),
   ])
   return NextResponse.json(
-    { requests: rows.map(serializeRequest), token },
+    { requests: await serializeWithImages(rows), token: settings.token, teamNote: settings.teamNote },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }
@@ -68,5 +68,5 @@ export async function POST(req: Request) {
     include: REQUEST_INCLUDE,
   })
   await logAction(session.user, 'CREATE', 'คำขอพัฒนา', `เปิดคำขอ "${title}"`)
-  return NextResponse.json({ ok: true, request: serializeRequest(created) }, { status: 201 })
+  return NextResponse.json({ ok: true, request: await serializeOneWithImages(created) }, { status: 201 })
 }

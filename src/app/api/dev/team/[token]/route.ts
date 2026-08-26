@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { isValidDevToken, serializeRequest, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { isValidDevToken, teamNoteFor, serializeWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,9 +11,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
   if (!(await isValidDevToken(token))) {
     return NextResponse.json({ error: 'not found' }, { status: 404 })
   }
-  const rows = await prisma.devRequest.findMany({ orderBy: { createdAt: 'desc' }, include: REQUEST_INCLUDE })
+  const [rows, teamNote] = await Promise.all([
+    prisma.devRequest.findMany({ orderBy: { createdAt: 'desc' }, include: REQUEST_INCLUDE }),
+    teamNoteFor(token),
+  ])
   return NextResponse.json(
-    { requests: rows.map(serializeRequest) },
+    { requests: await serializeWithImages(rows), teamNote },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }

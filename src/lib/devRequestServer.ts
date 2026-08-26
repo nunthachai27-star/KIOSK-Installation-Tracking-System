@@ -1,5 +1,52 @@
 import { randomBytes } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { NextResponse } from 'next/server'
 import { prisma } from './prisma'
+
+// ── รูปแนบ (ใช้ตาราง Attachment เดิม, refTable = 'DevRequest') ────────────────
+export const DEV_IMG_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
+export const DEV_IMG_MAX = 8 * 1024 * 1024 // 8MB ต่อรูป
+
+export function isDevImage(type: string, size: number): boolean {
+  return DEV_IMG_TYPES.has(type) && size > 0 && size <= DEV_IMG_MAX
+}
+
+// โหลดรูปของคำขอหลายรายการทีเดียว (id + ชนิด — หน้าเว็บสร้าง URL เอง)
+export async function loadImages(requestIds: string[]): Promise<Map<string, { id: string; type: string }[]>> {
+  const m = new Map<string, { id: string; type: string }[]>()
+  if (!requestIds.length) return m
+  const atts = await prisma.attachment.findMany({
+    where: { refTable: 'DevRequest', refId: { in: requestIds } },
+    orderBy: { uploadedAt: 'asc' },
+    select: { id: true, refId: true, fileType: true },
+  })
+  for (const a of atts) {
+    const arr = m.get(a.refId) ?? []
+    arr.push({ id: a.id, type: a.fileType })
+    m.set(a.refId, arr)
+  }
+  return m
+}
+
+// เสิร์ฟรูปของแถบพัฒนา — เฉพาะไฟล์รูปที่อยู่ใต้ /uploads และผูกกับ DevRequest เท่านั้น
+// (ใช้ได้ทั้งฝั่งเจ้าหน้าที่และลิงก์ทีมพัฒนา — กันเปิดไฟล์อื่นในระบบ).
+export async function serveDevImage(attId: string): Promise<Response> {
+  const att = await prisma.attachment.findUnique({ where: { id: attId } })
+  if (!att || att.refTable !== 'DevRequest' || !DEV_IMG_TYPES.has(att.fileType) || !att.filePath.startsWith('/uploads/')) {
+    return NextResponse.json({ error: 'not found' }, { status: 404 })
+  }
+  const buf = await readFile(path.join(process.cwd(), att.filePath.replace(/^\//, '')))
+  return new NextResponse(new Uint8Array(buf), {
+    headers: {
+      'Content-Type': att.fileType,
+      'Content-Disposition': `inline; filename="${encodeURIComponent(att.fileName)}"`,
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+      'Cache-Control': 'private, max-age=86400',
+    },
+  })
+}
 
 // ── ตัวช่วยฝั่งเซิร์ฟเวอร์ของแถบ "พัฒนา" ────────────────────────────────────
 
@@ -36,12 +83,35 @@ export async function getOrCreateDevToken(createdBy?: string | null): Promise<st
   return token
 }
 
-// สร้าง token ใหม่ (revoke ของเดิมทั้งหมด) — ใช้ตอนลิงก์รั่ว.
+// ตั้งค่าบอร์ด (token + โน้ตทีมพัฒนา) — สร้าง token ถ้ายังไม่มี.
+export async function getDevSettings(createdBy?: string | null): Promise<{ token: string; teamNote: string | null }> {
+  const existing = await prisma.devBoardToken.findFirst({ orderBy: { createdAt: 'desc' } })
+  if (existing) return { token: existing.token, teamNote: existing.teamNote }
+  const token = randomBytes(24).toString('hex')
+  const row = await prisma.devBoardToken.create({ data: { token, createdBy: createdBy ?? null } })
+  return { token: row.token, teamNote: row.teamNote }
+}
+
+// อ่านโน้ตทีมพัฒนาจาก token (ฝั่งสาธารณะ).
+export async function teamNoteFor(token: string): Promise<string | null> {
+  const row = await prisma.devBoardToken.findUnique({ where: { token }, select: { teamNote: true } })
+  return row?.teamNote ?? null
+}
+
+// ตั้งโน้ตทีมพัฒนา (เจ้าหน้าที่).
+export async function setTeamNote(note: string | null, createdBy?: string | null): Promise<void> {
+  const existing = await prisma.devBoardToken.findFirst({ orderBy: { createdAt: 'desc' } })
+  if (existing) await prisma.devBoardToken.update({ where: { id: existing.id }, data: { teamNote: note } })
+  else await prisma.devBoardToken.create({ data: { token: randomBytes(24).toString('hex'), teamNote: note, createdBy: createdBy ?? null } })
+}
+
+// สร้าง token ใหม่ (revoke ของเดิมทั้งหมด) — ใช้ตอนลิงก์รั่ว. คงโน้ตเดิมไว้.
 export async function rotateDevToken(createdBy?: string | null): Promise<string> {
+  const prev = await prisma.devBoardToken.findFirst({ orderBy: { createdAt: 'desc' }, select: { teamNote: true } })
   const token = randomBytes(24).toString('hex')
   await prisma.$transaction([
     prisma.devBoardToken.deleteMany({}),
-    prisma.devBoardToken.create({ data: { token, createdBy: createdBy ?? null } }),
+    prisma.devBoardToken.create({ data: { token, teamNote: prev?.teamNote ?? null, createdBy: createdBy ?? null } }),
   ])
   return token
 }
@@ -111,4 +181,16 @@ export function serializeRequest(r: RequestRow) {
 
 export const REQUEST_INCLUDE = {
   events: { orderBy: { createdAt: 'asc' as const } },
+}
+
+// serialize + แนบรูป (batch) — สำหรับรายการหลายคำขอ
+export async function serializeWithImages(rows: RequestRow[]) {
+  const imgs = await loadImages(rows.map((r) => r.id))
+  return rows.map((r) => ({ ...serializeRequest(r), images: imgs.get(r.id) ?? [] }))
+}
+
+// serialize + แนบรูป — สำหรับคำขอเดียว (ตอบหลัง create/update)
+export async function serializeOneWithImages(row: RequestRow) {
+  const imgs = await loadImages([row.id])
+  return { ...serializeRequest(row), images: imgs.get(row.id) ?? [] }
 }

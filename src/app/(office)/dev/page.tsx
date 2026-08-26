@@ -1,17 +1,17 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { getOrCreateDevToken, serializeRequest, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { getDevSettings, serializeWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 import { DevBoard } from '@/components/DevBoard'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DevPage() {
   const session = await auth()
-  const [rows, token] = await Promise.all([
+  const [rows, settings] = await Promise.all([
     prisma.devRequest.findMany({ orderBy: { createdAt: 'desc' }, include: REQUEST_INCLUDE }),
-    getOrCreateDevToken(session?.user?.name),
+    getDevSettings(session?.user?.name),
   ])
-  const initial = rows.map(serializeRequest)
+  const initial = await serializeWithImages(rows)
   const publicBase = process.env.AUTH_URL || ''
 
   return (
@@ -25,7 +25,7 @@ export default async function DevPage() {
           <p className="text-[13px] text-[#8492A6] mt-0.5">แจ้งบั๊ก / ขอฟีเจอร์ใหม่ให้ทีมพัฒนา แล้วติดตามสถานะการดำเนินงานร่วมกันได้ในที่เดียว · ส่งลิงก์ให้ทีมพัฒนาอัปเดตงานได้</p>
         </div>
       </div>
-      <DevBoard initial={initial} mode="staff" token={token} publicBase={publicBase} />
+      <DevBoard initial={initial} mode="staff" token={settings.token} teamNote={settings.teamNote} publicBase={publicBase} />
     </div>
   )
 }

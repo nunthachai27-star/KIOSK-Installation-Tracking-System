@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logAction } from '@/lib/audit'
 import { isDevType, isDevPriority, isDevStatus, STATUS_META, type DevStatus } from '@/lib/devRequest'
-import { str, serializeRequest, REQUEST_INCLUDE } from '@/lib/devRequestServer'
+import { str, serializeOneWithImages, REQUEST_INCLUDE } from '@/lib/devRequestServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const updated = await prisma.devRequest.update({ where: { id }, data, include: REQUEST_INCLUDE })
   await logAction(session.user, 'UPDATE', 'คำขอพัฒนา',
     newStatus ? `"${cur.title}" → ${STATUS_META[newStatus].label}` : `แก้ไข "${cur.title}"`)
-  return NextResponse.json({ ok: true, request: serializeRequest(updated) })
+  return NextResponse.json({ ok: true, request: await serializeOneWithImages(updated) })
 }
 
 // ── DELETE: ลบคำขอ (เจ้าหน้าที่เท่านั้น — ยืนยันฝั่งหน้าเว็บก่อน) ─────────────────
