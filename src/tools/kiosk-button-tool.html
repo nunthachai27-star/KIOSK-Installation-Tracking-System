@@ -2038,5 +2038,163 @@ document.fonts.ready.then(()=>{paint();thumbs();});
 })();
 </script>
 
+<!-- ===== KIOSK pro tools (BMS) ===== -->
+<style id="kb-pro-css">
+.kb-protool{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 auto 14px;max-width:1440px;
+  padding:9px 14px;background:#fff;border:1px solid #D7E0EC;border-radius:12px;
+  font-family:"F-sarabun",Tahoma,sans-serif;box-shadow:0 1px 2px rgba(11,30,61,.05)}
+.kb-protool button,.kb-protool select{border:1.5px solid #D7E0EC;background:#F8FAFD;border-radius:9px;
+  padding:7px 11px;font:inherit;font-size:13px;font-weight:700;color:#0B1E3D;cursor:pointer}
+.kb-protool button:hover:not(:disabled),.kb-protool select:hover{border-color:#00897B}
+.kb-protool button:disabled{opacity:.38;cursor:default}
+.kb-protool .sep{width:1px;height:22px;background:#E1E8F0;margin:0 2px}
+.kb-protool label.ck{display:flex;align-items:center;gap:6px;font-size:13px;color:#243b5a;cursor:pointer;font-weight:700}
+.kb-protool label.ck input{accent-color:#00897B;width:16px;height:16px}
+#kbIconCard .kb-icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px}
+#kbIconCard .kb-icons button{border:1.5px solid #D7E0EC;background:#fff;border-radius:11px;padding:8px 4px 5px;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0B1E3D}
+#kbIconCard .kb-icons button:hover{border-color:#00897B;background:#F1FAF8}
+#kbIconCard .kb-icons svg{width:26px;height:26px;display:block}
+#kbIconCard .kb-icons .nm{font-size:10.5px;color:#5E7290;line-height:1.1;text-align:center}
+</style>
+<script>
+(function(){
+  "use strict";
+  var $=function(s){return document.querySelector(s);};
+  function toast(m){ try{ var t=document.querySelector(".kb-toast"); if(!t){t=document.createElement("div");t.className="kb-toast";document.body.appendChild(t);} t.textContent=m; requestAnimationFrame(function(){t.classList.add("on");}); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("on");},2000);}catch(e){} }
+
+  // ===== Undo/Redo + บันทึกงานอัตโนมัติ =====
+  var HIST=[],HP=-1,lastS="",APPLYING=false;
+  function snap(){ try{ var ta=$("#names"); return JSON.stringify({cfg:cfg,names:ta?ta.value:""}); }catch(e){ return ""; } }
+  function applyState(st){ APPLYING=true; try{
+      if(st&&st.cfg){ cfg=Object.assign({},BASE,st.cfg); }
+      var ta=$("#names"); if(ta&&st&&typeof st.names==="string") ta.value=st.names;
+      syncControls(); paint(); thumbs();
+      try{ document.documentElement.style.setProperty("--accent",cfg.accent); }catch(e){}
+    }catch(e){} setTimeout(function(){APPLYING=false;},60); }
+  function updUR(){ var u=$("#kbUndo"),r=$("#kbRedo"); if(u)u.disabled=HP<=0; if(r)r.disabled=HP>=HIST.length-1; }
+  function record(){ if(APPLYING) return; var s=snap(); if(!s||s===lastS) return; lastS=s;
+    HIST=HIST.slice(0,HP+1); HIST.push(s); if(HIST.length>60) HIST.shift(); HP=HIST.length-1; updUR();
+    try{ localStorage.setItem("kbWork",s); }catch(e){} }
+  function undo(){ if(HP<=0) return; HP--; applyState(JSON.parse(HIST[HP])); lastS=HIST[HP]; updUR(); }
+  function redo(){ if(HP>=HIST.length-1) return; HP++; applyState(JSON.parse(HIST[HP])); lastS=HIST[HP]; updUR(); }
+
+  // ===== ขนาดตัวอักษรเท่ากันทั้งชุด =====
+  var UNIFORM_ON=false,UNIFORM_SIZE=0,_render=null,_paint=null,_measure=null;
+  function computeUniform(){ try{ var list=items(),m=Infinity,i,L; for(i=0;i<list.length;i++){ L=_measure(list[i],cfg); if(L&&L.size<m)m=L.size; } UNIFORM_SIZE=isFinite(m)?Math.floor(m):0; }catch(e){ UNIFORM_SIZE=0; } }
+  function installUniform(){ if(typeof render!=="function"||typeof paint!=="function"||typeof measure!=="function") return;
+    _render=render; _paint=paint; _measure=measure;
+    render=function(text,c,w,h,canvas){ try{ if(UNIFORM_ON&&UNIFORM_SIZE>0&&c===cfg&&UNIFORM_SIZE<(c.maxPt||999)){ return _render(text,Object.assign({},c,{maxPt:UNIFORM_SIZE}),w,h,canvas);} }catch(e){} return _render(text,c,w,h,canvas); };
+    paint=function(){ try{ if(UNIFORM_ON) computeUniform(); }catch(e){} return _paint(); };
+  }
+
+  // ===== คัดลอกรูปไปคลิปบอร์ด =====
+  function copyImg(){ (async function(){ try{
+      var list=items(); if(!list.length){ toast("ยังไม่มีปุ่ม"); return; }
+      var w=+($("#ow").value)||850,h=+($("#oh").value)||283;
+      var cv=render(list[idx],cfg,w,h);
+      if(!navigator.clipboard||!window.ClipboardItem){ toast("เบราว์เซอร์นี้คัดลอกรูปไม่ได้ ใช้ปุ่มโหลดแทน"); return; }
+      var blob=await new Promise(function(res){cv.toBlob(res,"image/png");});
+      await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+      toast("คัดลอกรูปปุ่มแล้ว — วางได้เลย (Ctrl+V)");
+    }catch(e){ toast("คัดลอกไม่สำเร็จ ใช้ปุ่มโหลดแทน"); } })(); }
+
+  // ===== ขนาดสำเร็จรูป =====
+  var SIZES=[["850 × 283 (ปัจจุบัน)",850,283],["1024 × 341",1024,341],["1200 × 400",1200,400],["600 × 200",600,200],["400 × 400 จัตุรัส",400,400],["512 × 512 จัตุรัส",512,512],["300 × 420 แนวตั้ง",300,420]];
+  function setSize(w,h){ var ow=$("#ow"),oh=$("#oh"); if(!ow||!oh)return; ow.value=w; oh.value=h;
+    ow.dispatchEvent(new Event("input",{bubbles:true})); oh.dispatchEvent(new Event("input",{bubbles:true})); }
+
+  // ===== ไอคอนบริการ (ใส่เป็นรูปหน้าปุ่ม) =====
+  var ICONS=[
+    ["ทั่วไป/กากบาท",'<path fill="@C" d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/>'],
+    ["หัวใจ",'<path fill="@C" d="M12 21S3 14.6 3 8.8A4.8 4.8 0 0112 6a4.8 4.8 0 019 2.8C21 14.6 12 21 12 21z"/>'],
+    ["เภสัชกรรม",'<rect fill="@C" x="2.5" y="9" width="19" height="6" rx="3"/><rect fill="#fff" x="11" y="9" width="2" height="6"/>'],
+    ["จักษุ/ตา",'<path fill="@C" d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7zm0 11a4 4 0 110-8 4 4 0 010 8z"/>'],
+    ["ทันตกรรม/ฟัน",'<path fill="@C" d="M12 3c-3 0-6 1-6 4 0 2 .4 4 1 7.5.4 2.4.8 4.5 1.6 4.5.9 0 1-2 1.4-3.6.2-.9.5-1.2 1-1.2s.8.3 1 1.2c.4 1.6.5 3.6 1.4 3.6.8 0 1.2-2.1 1.6-4.5.6-3.5 1-5.5 1-7.5 0-3-3-4-6-4z"/>'],
+    ["ห้องแล็บ",'<path fill="@C" d="M9 2h6v2h-1v4.6l5 8.4A2 2 0 0117.3 20H6.7A2 2 0 015 17l5-8.4V4H9z"/>'],
+    ["เจาะเลือด",'<path fill="@C" d="M12 3s6.5 7.3 6.5 11.3A6.5 6.5 0 015.5 14.3C5.5 10.3 12 3 12 3z"/>'],
+    ["ผู้ป่วย/คน",'<circle fill="@C" cx="12" cy="7" r="4"/><path fill="@C" d="M4 21a8 8 0 0116 0z"/>'],
+    ["ห้องบัตร/เอกสาร",'<path fill="@C" d="M6 2h8l5 5v15H6z"/><path fill="#fff" d="M13.5 3v5H18"/>'],
+    ["คิว/เวลา",'<path fill="@C" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5h-2v6l5 3 1-1.7-4-2.3z"/>'],
+    ["ฉุกเฉิน",'<path fill="@C" d="M12 2l8 3v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5z"/><path fill="#fff" d="M11 7h2v3h3v2h-3v3h-2v-3H8v-2h3z"/>'],
+    ["กระดูก/กายภาพ",'<path fill="@C" d="M7 17a2.2 2.2 0 11-2.2-2.2L14.8 4.8A2.2 2.2 0 1117 7L7 17z"/>'],
+    ["เด็ก/กุมาร",'<circle fill="@C" cx="12" cy="6" r="3"/><path fill="@C" d="M7 21c0-4 2-8 5-8s5 4 5 8z"/>'],
+    ["หู คอ จมูก",'<path fill="@C" d="M12 3a6 6 0 00-6 6c0 3 2 4 2 7a3 3 0 006 0c0-1 .6-1 1.4-1A2.6 2.6 0 0018 9a6 6 0 00-6-6zm-2 6a2 2 0 114 0 2 2 0 01-4 0z"/>'],
+    ["ยาน้ำ/ขวด",'<path fill="@C" d="M9 2h6v3l1 2v13H8V7l1-2z"/><rect fill="#fff" x="9.5" y="11" width="5" height="4"/>'],
+    ["โทร/นัดหมาย",'<path fill="@C" d="M6.6 3H10l1.6 4-2 1.4a11 11 0 005 5l1.4-2 4 1.6V21A18 18 0 013 6.6z"/>']
+  ];
+  function pickIcon(inner){ try{
+      var col=cfg.accent||"#00897B";
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'+inner.replace(/@C/g,col)+'</svg>';
+      var img=new Image();
+      img.onload=function(){ try{ FGS.shared=img; if(!cfg.fgSize||cfg.fgSize<30) cfg.fgSize=44; syncControls(); paint(); thumbs(); toast("ใส่ไอคอนแล้ว — ปรับขนาด/ตำแหน่งได้ในการ์ด 'รูปหน้าปุ่ม & ตำแหน่ง'"); }catch(e){} };
+      img.onerror=function(){ toast("ใส่ไอคอนไม่สำเร็จ"); };
+      img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+    }catch(e){} }
+  function buildIconCard(){ try{
+      var left=document.querySelector(".grid > div"); if(!left||$("#kbIconCard")) return;
+      var card=document.createElement("div"); card.className="card"; card.id="kbIconCard"; card.style.display="none";
+      card.innerHTML='<h2>ไอคอนบริการ — คลิกใส่บนปุ่ม <button class="mini" id="kbIconClear" style="float:right">ลบไอคอน</button></h2>'+
+        '<div class="hint" style="margin:0 0 10px">ไอคอนใช้สีเดียวกับสีหลัก · ปรับขนาด/ตำแหน่งได้ในการ์ด "รูปหน้าปุ่ม & ตำแหน่ง"</div><div class="kb-icons"></div>';
+      left.appendChild(card);
+      var wrap=card.querySelector(".kb-icons");
+      ICONS.forEach(function(ic){ var b=document.createElement("button");
+        b.innerHTML='<svg viewBox="0 0 24 24">'+ic[1].replace(/@C/g,"#0B7F73")+'</svg><span class="nm">'+ic[0]+'</span>';
+        b.onclick=function(){ pickIcon(ic[1]); }; wrap.appendChild(b); });
+      var clr=$("#kbIconClear"); if(clr) clr.onclick=function(){ try{ FGS.shared=null; if(FGS.byName&&FGS.byName.clear) FGS.byName.clear(); paint(); thumbs(); toast("ลบไอคอนแล้ว"); }catch(e){} };
+    }catch(e){} }
+
+  // ===== สีเพิ่มเติม =====
+  function moreSwatches(){ try{
+      var sw=$("#sw"); if(!sw||sw._more) return; sw._more=1;
+      var more=["#0EA5A0","#0F766E","#2563EB","#1D4ED8","#4F46E5","#7C3AED","#9333EA","#DB2777","#E11D48","#DC2626","#EA580C","#D97706","#CA8A04","#16A34A","#047857","#475569","#0F172A"];
+      var cinput=sw.querySelector('input[type="color"]');
+      more.forEach(function(c){ var b=document.createElement("button");
+        b.style.background=c; b.title=c; b.setAttribute("data-c",c);
+        b.onclick=function(){ try{ cfg.accent=c; syncControls(); paint(); thumbs(); }catch(e){} };
+        if(cinput) sw.insertBefore(b,cinput); else sw.appendChild(b); });
+    }catch(e){} }
+
+  // ===== แถบเครื่องมือ =====
+  function buildToolbar(){ try{
+      var grid=document.querySelector(".grid"),wrap=document.querySelector(".wrap");
+      if(!grid||!wrap||$("#kbProBar")) return;
+      var bar=document.createElement("div"); bar.className="kb-protool"; bar.id="kbProBar";
+      var sizeOpts=SIZES.map(function(s,i){return '<option value="'+i+'">'+s[0]+'</option>';}).join("");
+      bar.innerHTML='<button id="kbUndo" title="ย้อน (Ctrl+Z)">↶ ย้อน</button>'+
+        '<button id="kbRedo" title="ทำซ้ำ (Ctrl+Y)">↷ ทำซ้ำ</button><span class="sep"></span>'+
+        '<button id="kbCopy" title="คัดลอกรูปปุ่มไปคลิปบอร์ด">📋 คัดลอกรูป</button><span class="sep"></span>'+
+        '<span style="font-size:13px;color:#5E7290;font-weight:700">ขนาด</span><select id="kbSize">'+sizeOpts+'</select>'+
+        '<span class="sep"></span><label class="ck"><input type="checkbox" id="kbUniform"> ตัวอักษรเท่ากันทั้งชุด</label>'+
+        '<span class="sep"></span><button id="kbIconBtn" title="คลังไอคอนบริการ">🧩 ไอคอนบริการ</button>'+
+        '<span style="flex:1;min-width:8px"></span><span style="font-size:11.5px;color:#9AAABF">💾 บันทึกงานอัตโนมัติ</span>';
+      wrap.insertBefore(bar,grid);
+      $("#kbUndo").onclick=undo; $("#kbRedo").onclick=redo; $("#kbCopy").onclick=copyImg;
+      $("#kbSize").onchange=function(e){ var s=SIZES[+e.target.value]; if(s) setSize(s[1],s[2]); };
+      $("#kbUniform").onchange=function(e){ UNIFORM_ON=e.target.checked; if(UNIFORM_ON) computeUniform(); paint(); toast(UNIFORM_ON?"ตัวอักษรทุกปุ่มจะเท่ากันทั้งชุด":"กลับไปปรับขนาดอัตโนมัติต่อปุ่ม"); };
+      $("#kbIconBtn").onclick=function(){ var c=$("#kbIconCard"); if(c){ c.style.display=c.style.display==="none"?"":"none"; if(c.style.display!=="none") c.scrollIntoView({behavior:"smooth",block:"center"}); } };
+      updUR();
+    }catch(e){} }
+
+  function keys(){ document.addEventListener("keydown",function(e){
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||"")) return;
+    var k=(e.key||"").toLowerCase();
+    if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&k==="z"){ e.preventDefault(); undo(); }
+    else if((e.ctrlKey||e.metaKey)&&(k==="y"||(e.shiftKey&&k==="z"))){ e.preventDefault(); redo(); }
+  }); }
+
+  function start(){
+    try{ installUniform(); }catch(e){}
+    try{ buildToolbar(); }catch(e){}
+    try{ buildIconCard(); }catch(e){}
+    try{ moreSwatches(); }catch(e){}
+    try{ keys(); }catch(e){}
+    try{ var w=localStorage.getItem("kbWork"); if(w){ applyState(JSON.parse(w)); toast("กู้คืนงานล่าสุดแล้ว"); } }catch(e){}
+    setTimeout(function(){ lastS=snap(); HIST=[lastS]; HP=0; updUR(); setInterval(record,900); },500);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start); else start();
+})();
+</script>
+
 </body>
 </html>
