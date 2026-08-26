@@ -54,7 +54,10 @@ function reportText(s: StaffSummary, day: Date): string {
     if (l.groups) {
       for (const g of l.groups) {
         L.push(`  ${g.hospital}`)
-        for (const u of g.units) L.push(`   • ${u.serial}: ${u.items.join(', ')}`)
+        for (const u of g.units) {
+          L.push(`   ${u.serial}`)
+          for (const it of u.items) L.push(`   - ${it}`)
+        }
       }
     } else {
       for (const it of l.items) L.push(`- ${it}`)
@@ -201,12 +204,17 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
                               <div className="text-[12.5px] font-bold text-[#243b5a] flex items-center gap-1.5">
                                 <span>🏥</span><span>{g.hospital}</span>
                               </div>
-                              <ul className="mt-1 flex flex-col gap-1 pl-3 ml-1 border-l-2 border-[#E8EDF3]">
+                              <ul className="mt-1 flex flex-col gap-1.5 pl-3 ml-1 border-l-2 border-[#E8EDF3]">
                                 {g.units.map((u, ui) => (
-                                  <li key={ui} className="text-[12.5px] text-[#5A6B82] leading-relaxed">
-                                    <span className="font-bold text-[#3C4A5E] tnum">{u.serial}</span>
-                                    <span className="text-[#B6C0CE]"> — </span>
-                                    <span>{u.items.join(', ')}</span>
+                                  <li key={ui} className="text-[12.5px]">
+                                    <div className="font-bold text-[#3C4A5E] tnum">{u.serial}</div>
+                                    <ul className="mt-0.5 flex flex-col gap-0.5">
+                                      {u.items.map((it, k) => (
+                                        <li key={k} className="flex items-start gap-1.5 text-[#5A6B82]">
+                                          <span className="text-[#C4BFB9] mt-0.5">•</span><span>{it}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
                                   </li>
                                 ))}
                               </ul>
