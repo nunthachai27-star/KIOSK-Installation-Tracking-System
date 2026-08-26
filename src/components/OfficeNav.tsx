@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export const NAV_ITEMS = [
+  { href: '/dashboard', label: 'แดชบอร์ด', icon: 'dashboard' },
   { href: '/', label: 'งานทั้งหมด', icon: 'jobs' },
   { href: '/planned', label: 'งานตามแผน', icon: 'planned' },
   { href: '/hospitals', label: 'โรงพยาบาล', icon: 'hospital' },
@@ -23,6 +24,7 @@ export const NAV_ITEMS = [
 function NavIcon({ name }: { name: string }) {
   const common = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
   switch (name) {
+    case 'dashboard': return <svg {...common}><rect x="3.5" y="3.5" width="5.5" height="5.5" rx="1" /><rect x="11" y="3.5" width="5.5" height="5.5" rx="1" /><rect x="3.5" y="11" width="5.5" height="5.5" rx="1" /><rect x="11" y="11" width="5.5" height="5.5" rx="1" /></svg>
     case 'jobs': return <svg {...common}><rect x="4" y="3" width="12" height="14" rx="2" /><path d="M7 7h6M7 10h6M7 13h4" /></svg>
     case 'planned': return <svg {...common}><rect x="3" y="4.5" width="14" height="12.5" rx="2" /><path d="M3 8.5h14M7 2.5v3M13 2.5v3M8 12.5l1.8 1.8L13 11" /></svg>
     case 'hospital': return <svg {...common}><path d="M4 17V5.5l6-2.5 6 2.5V17" /><path d="M4 17h12" /><path d="M10 7v4M8 9h4" /></svg>
