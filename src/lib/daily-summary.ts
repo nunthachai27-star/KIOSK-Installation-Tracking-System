@@ -3,7 +3,9 @@ import { prisma } from './prisma'
 import { ACTIVITY_LABEL } from './activity'
 import { ISSUE_STATUS, ISSUE_METHOD, ISSUE_WARRANTY } from './issue'
 
-export type SummaryLine = { heading: string; text: string; items: string[] }
+// กลุ่ม QC: แยกตามโรงพยาบาล → เลข S/N (แต่ละเครื่อง) → รายการ checklist ที่ตรวจ
+export type QcGroup = { hospital: string; units: { serial: string; items: string[] }[] }
+export type SummaryLine = { heading: string; text: string; items: string[]; groups?: QcGroup[] }
 export type IssueStep = { date: string; text: string }
 export type IssueDetail = {
   issueType: 'GENERAL' | 'CLAIM'
@@ -17,6 +19,22 @@ export type IssueDetail = {
 export type StaffSummary = {
   staffId: string; name: string; nickname: string | null; role: Role
   total: number; issueDetails: IssueDetail[]; lines: SummaryLine[]; rating: number; ratingCount: number
+}
+
+// จัด QC เป็นกลุ่ม: โรงพยาบาล → เลข S/N → รายการ checklist (เรียงชื่อ รพ. แล้วเลข S/N)
+function qcGroupsFrom(raw: { serial: string; item: string; hospital: string }[]): QcGroup[] {
+  const byH = new Map<string, Map<string, string[]>>()
+  for (const r of raw) {
+    let u = byH.get(r.hospital); if (!u) { u = new Map(); byH.set(r.hospital, u) }
+    let arr = u.get(r.serial); if (!arr) { arr = []; u.set(r.serial, arr) }
+    arr.push(r.item)
+  }
+  return [...byH.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0], 'th'))
+    .map(([hospital, units]) => ({
+      hospital,
+      units: [...units.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([serial, items]) => ({ serial, items })),
+    }))
 }
 
 // Per-staff work summary for a day — each category lists the actual items worked on,
@@ -53,15 +71,16 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   const jobDesc = (j: { hospital: { name: string }; productType: string; jobCode: string }) => `${j.hospital.name} · ${j.productType} (${j.jobCode})`
   const fromMs = from.getTime(), toMs = to.getTime()
 
+  type QcRaw = { serial: string; item: string; hospital: string }
   type Acc = {
-    jobs: string[]; serials: string[]; qc: string[]; issueDetails: IssueDetail[]
+    jobs: string[]; serials: string[]; qcRaw: QcRaw[]; issueDetails: IssueDetail[]
     delivery: string[]; install: string[]; handover: string[]; invoice: string[]
     act: Partial<Record<ActivityType, string[]>>
   }
   const map = new Map<string, Acc>()
   const acc = (id: string): Acc => {
     let a = map.get(id)
-    if (!a) { a = { jobs: [], serials: [], qc: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], act: {} }; map.set(id, a) }
+    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], act: {} }; map.set(id, a) }
     return a
   }
 
@@ -81,7 +100,7 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
       if (isNaN(atMs) || atMs < fromMs || atMs > toMs) continue
       const actor = (typeof e.by === 'string' && nameToId.get(e.by.trim())) || q.staffId
       if (!actor) continue
-      acc(actor).qc.push(`${q.serial.serialNo} · ${typeof e.item === 'string' ? e.item : '—'} · ${q.serial.job.hospital.name}`)
+      acc(actor).qcRaw.push({ serial: q.serial.serialNo, item: typeof e.item === 'string' ? e.item : '—', hospital: q.serial.job.hospital.name })
     }
   }
   for (const i of issues) {
@@ -120,7 +139,7 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     const lines: SummaryLine[] = []
     if (a.jobs.length) lines.push({ heading: 'งานบันทึกข้อมูลงานใหม่เข้าสู่ระบบ', text: `ดำเนินการบันทึกข้อมูลงานใหม่เข้าสู่ระบบ จำนวน ${a.jobs.length} รายการ พร้อมรายละเอียดที่เกี่ยวข้องเรียบร้อยแล้ว`, items: a.jobs })
     if (a.serials.length) lines.push({ heading: 'งานลงทะเบียนหมายเลขเครื่อง (Serial Number)', text: `ดำเนินการลงทะเบียนและออกหมายเลขเครื่อง (Serial Number) ของอุปกรณ์ จำนวน ${a.serials.length} งาน พร้อมบันทึกข้อมูลเรียบร้อยแล้ว`, items: a.serials })
-    if (a.qc.length) lines.push({ heading: 'งานตรวจสอบคุณภาพอุปกรณ์ (QC Checklist)', text: `ดำเนินการตรวจสอบคุณภาพและความพร้อมของอุปกรณ์ตามรายการตรวจสอบ (Checklist) จำนวน ${a.qc.length} รายการ พร้อมบันทึกผลการตรวจสอบเรียบร้อยแล้ว`, items: a.qc })
+    if (a.qcRaw.length) lines.push({ heading: 'งานตรวจสอบคุณภาพอุปกรณ์ (QC Checklist)', text: `ดำเนินการตรวจสอบคุณภาพและความพร้อมของอุปกรณ์ตามรายการตรวจสอบ (Checklist) จำนวน ${a.qcRaw.length} รายการ พร้อมบันทึกผลการตรวจสอบเรียบร้อยแล้ว`, items: a.qcRaw.map((r) => `${r.serial} · ${r.item} · ${r.hospital}`), groups: qcGroupsFrom(a.qcRaw) })
     if (a.delivery.length) lines.push({ heading: 'งานจัดส่งสินค้าและอุปกรณ์', text: `ดำเนินการจัดส่งสินค้าและอุปกรณ์ตามแผนงาน จำนวน ${a.delivery.length} งาน พร้อมบันทึกรายละเอียดการจัดส่งและหลักฐานประกอบเรียบร้อยแล้ว`, items: a.delivery })
     if (a.install.length) lines.push({ heading: 'งานติดตั้งระบบและอุปกรณ์', text: `ดำเนินการติดตั้งระบบและอุปกรณ์ให้แก่หน่วยงานหรือสถานที่ที่ได้รับมอบหมาย จำนวน ${a.install.length} งาน พร้อมบันทึกรายละเอียดการติดตั้งและผลการดำเนินงานเรียบร้อยแล้ว`, items: a.install })
     if (a.handover.length) lines.push({ heading: 'งานส่งมอบงานและอบรมการใช้งาน', text: `ดำเนินการส่งมอบงานและอบรมการใช้งานให้แก่หน่วยงานที่เกี่ยวข้อง จำนวน ${a.handover.length} งาน พร้อมบันทึกรายละเอียดการส่งมอบเรียบร้อยแล้ว`, items: a.handover })

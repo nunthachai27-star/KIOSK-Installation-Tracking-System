@@ -51,7 +51,14 @@ function reportText(s: StaffSummary, day: Date): string {
     L.push('')
     L.push(l.heading)
     L.push(l.text)
-    for (const it of l.items) L.push(`- ${it}`)
+    if (l.groups) {
+      for (const g of l.groups) {
+        L.push(`  ${g.hospital}`)
+        for (const u of g.units) L.push(`   • ${u.serial}: ${u.items.join(', ')}`)
+      }
+    } else {
+      for (const it of l.items) L.push(`- ${it}`)
+    }
   }
   return L.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
@@ -187,7 +194,26 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
                     <div className="min-w-0">
                       <div className="text-[14px] font-bold text-[#1C1917]">{l.heading}</div>
                       <div className="text-[13.5px] text-[#3C4A5E] mt-0.5 leading-relaxed">{l.text}</div>
-                      {l.items.length > 0 && (
+                      {l.groups ? (
+                        <div className="mt-2 flex flex-col gap-2.5">
+                          {l.groups.map((g, gi) => (
+                            <div key={gi}>
+                              <div className="text-[12.5px] font-bold text-[#243b5a] flex items-center gap-1.5">
+                                <span>🏥</span><span>{g.hospital}</span>
+                              </div>
+                              <ul className="mt-1 flex flex-col gap-1 pl-3 ml-1 border-l-2 border-[#E8EDF3]">
+                                {g.units.map((u, ui) => (
+                                  <li key={ui} className="text-[12.5px] text-[#5A6B82] leading-relaxed">
+                                    <span className="font-bold text-[#3C4A5E] tnum">{u.serial}</span>
+                                    <span className="text-[#B6C0CE]"> — </span>
+                                    <span>{u.items.join(', ')}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      ) : l.items.length > 0 && (
                         <ul className="mt-1.5 flex flex-col gap-1">
                           {l.items.map((it, k) => (
                             <li key={k} className="flex items-start gap-1.5 text-[12.5px] text-[#5A6B82]">
