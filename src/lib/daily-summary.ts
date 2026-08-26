@@ -2,6 +2,7 @@ import type { ActivityType, Role } from '@prisma/client'
 import { prisma } from './prisma'
 import { ACTIVITY_LABEL } from './activity'
 import { ISSUE_STATUS, ISSUE_METHOD, ISSUE_WARRANTY } from './issue'
+import { devCode, STATUS_META, type DevStatus } from './devRequest'
 
 // กลุ่ม QC: แยกตามโรงพยาบาล → เลข S/N (แต่ละเครื่อง) → รายการ checklist ที่ตรวจ
 export type QcGroup = { hospital: string; units: { serial: string; items: string[] }[] }
@@ -42,7 +43,7 @@ function qcGroupsFrom(raw: { serial: string; item: string; hospital: string }[])
 export async function getDailySummary(from: Date, to: Date): Promise<StaffSummary[]> {
   const inDay = { gte: from, lte: to }
   const jobSel = { hospital: { select: { name: true } }, productType: true, jobCode: true } as const
-  const [jobsCreated, serialRecs, unitQcs, activities, issues, deliveries, installs, handovers, invoices, users] = await Promise.all([
+  const [jobsCreated, serialRecs, unitQcs, activities, issues, deliveries, installs, handovers, invoices, devEvents, users] = await Promise.all([
     prisma.job.findMany({ where: { createdById: { not: null }, createdAt: inDay }, select: { createdById: true, hospital: { select: { name: true } }, productType: true, jobCode: true } }),
     prisma.serialRecord.findMany({ where: { staffId: { not: null }, updatedAt: inDay }, select: { staffId: true, job: { select: jobSel } } }),
     prisma.unitQc.findMany({ where: { updatedAt: inDay }, select: { staffId: true, checklist: true, serial: { select: { serialNo: true, job: { select: { hospital: { select: { name: true } }, productType: true } } } } } }),
@@ -60,6 +61,8 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     prisma.installationRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     prisma.handoverRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     prisma.invoiceRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
+    // กิจกรรมแถบพัฒนาที่ "เจ้าหน้าที่" ทำในวันนั้น (เปิดคำขอ/เปลี่ยนสถานะ/คอมเมนต์) — ฝั่งทีมพัฒนา (DEV) ไม่นับ
+    prisma.devRequestEvent.findMany({ where: { actor: 'STAFF', createdAt: inDay }, select: { actorName: true, fromStatus: true, toStatus: true, request: { select: { code: true, title: true } } } }),
     prisma.user.findMany({ select: { id: true, name: true, nickname: true, role: true } }),
   ])
   // Cumulative satisfaction per resolver (all-time) — badge alongside the daily report.
@@ -74,13 +77,13 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   type QcRaw = { serial: string; item: string; hospital: string }
   type Acc = {
     jobs: string[]; serials: string[]; qcRaw: QcRaw[]; issueDetails: IssueDetail[]
-    delivery: string[]; install: string[]; handover: string[]; invoice: string[]
+    delivery: string[]; install: string[]; handover: string[]; invoice: string[]; dev: string[]
     act: Partial<Record<ActivityType, string[]>>
   }
   const map = new Map<string, Acc>()
   const acc = (id: string): Acc => {
     let a = map.get(id)
-    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], act: {} }; map.set(id, a) }
+    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], dev: [], act: {} }; map.set(id, a) }
     return a
   }
 
@@ -133,6 +136,15 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     const x = acc(a.responsibleUserId).act
     ;(x[a.activityType] ??= []).push(`${a.job.hospital.name} · ${a.job.productType}`)
   }
+  // แถบพัฒนา: ผูกกิจกรรมกับเจ้าหน้าที่ตามชื่อผู้ทำ (actorName → id)
+  for (const e of devEvents) {
+    const actor = e.actorName ? nameToId.get(e.actorName.trim()) : null
+    if (!actor) continue
+    const action = e.fromStatus && e.toStatus
+      ? `เปลี่ยนสถานะเป็น ${STATUS_META[e.toStatus as DevStatus]?.label ?? e.toStatus}`
+      : e.toStatus && !e.fromStatus ? 'เปิดคำขอ' : 'คอมเมนต์/อัปเดต'
+    acc(actor).dev.push(`${devCode(e.request.code)} · ${e.request.title} — ${action}`)
+  }
 
   const result: StaffSummary[] = []
   for (const [id, a] of map) {
@@ -149,6 +161,7 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
       const label = ACTIVITY_LABEL[type as ActivityType] ?? 'งานอื่นๆ'
       lines.push({ heading: `งาน${label} (ตามแผนคิว)`, text: `ดำเนินการ${label}ตามแผนงานที่ได้รับมอบหมาย จำนวน ${list.length} รายการ เรียบร้อยแล้ว`, items: list })
     }
+    if (a.dev.length) lines.push({ heading: 'งานประสานงานทีมพัฒนา (คำขอพัฒนา)', text: `ดำเนินการแจ้ง/ติดตามคำขอพัฒนาระบบร่วมกับทีมพัฒนา จำนวน ${a.dev.length} รายการ เรียบร้อยแล้ว`, items: a.dev })
     const total = a.issueDetails.length + lines.reduce((s, l) => s + l.items.length, 0)
     const u = userOf.get(id)
     const r = ratingOf.get(id)
