@@ -1,11 +1,16 @@
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { SignOutButton } from '@/components/SignOutButton'
+import { MobileAccountMenu } from '@/components/MobileAccountMenu'
+
+const ROLE_LABEL: Record<string, string> = {
+  OFFICE: 'เจ้าหน้าที่สำนักงาน', FIELD: 'เจ้าหน้าที่ภาคสนาม', TECHNICIAN: 'ช่างเทคนิค',
+  ADMIN: 'ผู้ดูแลระบบ', EXECUTIVE: 'ผู้บริหาร', SYSTEM_ADMIN: 'ผู้ดูแลระบบสูงสุด',
+}
 
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   const name = session?.user?.name ?? ''
-  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  const role = ROLE_LABEL[session?.user?.role ?? ''] ?? 'ผู้ใช้งาน'
 
   return (
     <div className="min-h-screen bg-[#F6F8FB] flex justify-center">
@@ -29,13 +34,7 @@ export default async function MobileLayout({ children }: { children: React.React
             ＋
           </Link>
 
-          <div className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-[#8492A6]">
-            <span className="w-6 h-6 rounded-full bg-[var(--brand)] text-white grid place-items-center text-[11px] font-bold">
-              {initial}
-            </span>
-            <span className="text-[11px] font-semibold">ฉัน</span>
-            <SignOutButton />
-          </div>
+          <MobileAccountMenu name={name} role={role} />
         </nav>
       </div>
     </div>
