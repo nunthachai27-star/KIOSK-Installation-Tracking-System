@@ -543,6 +543,7 @@ model Attachment {
   fileType     String
   filePath     String
   fileSize     Int
+  category     String?  // ชนิดเอกสาร (เช่น เอกสารงาน: สัญญา/PO, ใบเสนอราคา) — nullable, ของเดิมเป็น null
   uploadedById String?
   uploadedAt   DateTime @default(now())
 

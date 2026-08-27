@@ -7,6 +7,7 @@ import type { Hospital, User } from '@prisma/client'
 import type { SerializedJob } from '@/lib/serialize'
 import { withCurrent } from '@/lib/options'
 import { Combobox } from '@/components/Combobox'
+import { JobDocuments } from '@/components/JobDocuments'
 
 type HospitalOption = Pick<Hospital, 'id' | 'name' | 'province' | 'code'>
 type UserOption = Pick<User, 'id' | 'name' | 'role'>
@@ -450,6 +451,12 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
           {saved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
         </div>
       </form>
+
+      {isEdit && job && (
+        <div className="mt-6">
+          <JobDocuments jobId={job.id} />
+        </div>
+      )}
 
       {isEdit && (
         <div className="mt-6 border-t border-[#F1F5F9] pt-5">

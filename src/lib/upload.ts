@@ -11,12 +11,12 @@ export function safeFileName(original: string): string {
   return `${base}-${stamp}.${ext}`
 }
 
-export async function saveUpload(file: File, refTable: string, refId: string, userId?: string) {
+export async function saveUpload(file: File, refTable: string, refId: string, userId?: string, category?: string) {
   await mkdir(UPLOAD_DIR, { recursive: true })
   const name = safeFileName(file.name)
   const buf = Buffer.from(await file.arrayBuffer())
   await writeFile(path.join(UPLOAD_DIR, name), buf)
   return prisma.attachment.create({
-    data: { refTable, refId, fileName: file.name, fileType: file.type || 'application/octet-stream', filePath: `/uploads/${name}`, fileSize: buf.length, uploadedById: userId },
+    data: { refTable, refId, fileName: file.name, fileType: file.type || 'application/octet-stream', filePath: `/uploads/${name}`, fileSize: buf.length, uploadedById: userId, category: category ?? null },
   })
 }
