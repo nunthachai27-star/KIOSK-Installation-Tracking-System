@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { enhanceImage } from '@/lib/enhanceImage'
 
 type Doc = { id: string; fileName: string; fileType: string; category: string | null; fileSize: number; uploadedAt: string }
 
@@ -18,6 +19,8 @@ export function JobDocuments({ jobId }: { jobId: string }) {
   const [docs, setDocs] = useState<Doc[]>([])
   const [cat, setCat] = useState('contract')
   const [busy, setBusy] = useState(false)
+  const [phase, setPhase] = useState('')
+  const [enhance, setEnhance] = useState(true)
   const [err, setErr] = useState('')
   const camRef = useRef<HTMLInputElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -35,7 +38,13 @@ export function JobDocuments({ jobId }: { jobId: string }) {
     if (!files?.length) return
     setBusy(true); setErr('')
     try {
-      for (const f of Array.from(files)) {
+      for (const raw of Array.from(files)) {
+        let f = raw
+        if (enhance && raw.type.startsWith('image/')) {
+          setPhase('กำลังสแกน/ปรับความชัด…')
+          f = await enhanceImage(raw)
+        }
+        setPhase('กำลังอัปโหลด…')
         const fd = new FormData()
         fd.append('file', f)
         fd.append('category', cat)
@@ -44,7 +53,7 @@ export function JobDocuments({ jobId }: { jobId: string }) {
         if (r.ok) setDocs((p) => [j.document, ...p])
         else setErr(j.message || 'อัปโหลดไม่สำเร็จ')
       }
-    } finally { setBusy(false) }
+    } finally { setBusy(false); setPhase('') }
   }
   async function del(id: string) {
     if (!confirm('ลบเอกสารนี้?')) return
@@ -76,7 +85,11 @@ export function JobDocuments({ jobId }: { jobId: string }) {
           className="inline-flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:opacity-60">
           📎 เลือกไฟล์ (รูป / PDF)
         </button>
-        {busy && <span className="text-[12.5px] text-[#8492A6]">กำลังอัปโหลด…</span>}
+        <label className="inline-flex items-center gap-1.5 text-[12.5px] text-[#5A6B82] cursor-pointer select-none">
+          <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} className="accent-[var(--brand)]" />
+          ✨ สแกน/ปรับความชัดอัตโนมัติ
+        </label>
+        {busy && <span className="text-[12.5px] text-[var(--brand)] font-semibold">{phase || 'กำลังทำงาน…'}</span>}
         <input ref={camRef} type="file" accept="image/*" capture="environment" hidden
           onChange={(e) => { upload(e.target.files); e.target.value = '' }} />
         <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple hidden

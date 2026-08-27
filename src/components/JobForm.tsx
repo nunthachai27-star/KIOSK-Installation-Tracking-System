@@ -436,6 +436,8 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
           </div>
         </div>
 
+        {isEdit && job && <JobDocuments jobId={job.id} />}
+
         {formError && <div className="text-sm text-[#C13540] font-medium">{formError}</div>}
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -451,12 +453,6 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
           {saved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
         </div>
       </form>
-
-      {isEdit && job && (
-        <div className="mt-6">
-          <JobDocuments jobId={job.id} />
-        </div>
-      )}
 
       {isEdit && (
         <div className="mt-6 border-t border-[#F1F5F9] pt-5">
