@@ -49,7 +49,7 @@ export function MobileMenu({ userId, name, avatar, theme, bg }: { userId: string
       {open && (
         <>
           <div className="fixed inset-0 top-16 bg-black/20 z-30" onClick={close} />
-          <div className="absolute right-0 top-full mt-3 z-40 w-56 bg-white rounded-2xl border border-[#E7EDF4] shadow-[0_16px_40px_-12px_rgba(18,45,90,0.35)] p-2 flex flex-col">
+          <div className="absolute right-0 top-full mt-3 z-40 w-56 max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-white rounded-2xl border border-[#E7EDF4] shadow-[0_16px_40px_-12px_rgba(18,45,90,0.35)] p-2 flex flex-col">
             {NAV_ITEMS.map((it) => {
               const active = it.href === '/' ? path === '/' : path.startsWith(it.href)
               return (
