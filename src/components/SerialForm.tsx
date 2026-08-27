@@ -6,6 +6,7 @@ import type { SerialNumber, SerialType, SerialStatus } from '@prisma/client'
 import { SERIAL_TYPE_LABELS } from '@/lib/serial-types'
 import { addBusinessDays } from '@/lib/workdays'
 import { Combobox } from './Combobox'
+import { ScanButton } from './ScanButton'
 
 const planFmt = new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -153,6 +154,18 @@ export function SerialForm({
   async function removeSerial(id: string) {
     const res = await fetch(`/api/jobs/${jobId}/serials/${id}`, { method: 'DELETE' })
     if (res.ok) { setRows(r => r.filter(x => x.id !== id && x.parentId !== id)); router.refresh() }
+  }
+
+  // สแกนบาร์โค้ด/QR → หา Serial ในคลังที่ตรง (ตัดช่องว่าง/ขีดออกก่อนเทียบ) แล้วจ่ายออกให้อัตโนมัติ.
+  // เหมือนการเลือกจาก Combobox ทุกอย่าง — แค่ได้ค่าจากกล้องแทนการพิมพ์.
+  function handleScan(unitId: string, compName: string, code: string) {
+    const key = `u:${unitId}:${compName}`
+    const norm = (s: string) => s.replace(/[^a-z0-9]/gi, '').toLowerCase()
+    const nq = norm(code)
+    if (!nq) return
+    const match = stock.find(o => norm(o.serialNo || '') === nq)
+    if (match) { setErrors(e => ({ ...e, [key]: '' })); issueComponent(unitId, compName, match.id) }
+    else setErrors(e => ({ ...e, [key]: `ไม่พบ Serial "${code.trim()}" ในคลัง (อาจถูกตัดไปแล้ว หรือคนละรุ่น)` }))
   }
 
   async function fillUnits() {
@@ -319,13 +332,20 @@ export function SerialForm({
                         })}
                       </div>
                     )}
-                    <Combobox
-                      key={`${key}-${list.length}`}
-                      value=""
-                      options={stockCombo}
-                      onChange={(sid) => { if (sid) issueComponent(unit.id, c.name, sid) }}
-                      placeholder={stockCombo.length ? 'เลือกจากคลัง (ค้นหา Serial / รุ่น)…' : 'ไม่มีของในคลัง'}
-                    />
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <Combobox
+                          key={`${key}-${list.length}`}
+                          value=""
+                          options={stockCombo}
+                          onChange={(sid) => { if (sid) issueComponent(unit.id, c.name, sid) }}
+                          placeholder={stockCombo.length ? 'เลือกจากคลัง (ค้นหา Serial / รุ่น)…' : 'ไม่มีของในคลัง'}
+                        />
+                      </div>
+                      <ScanButton
+                        className="shrink-0 w-11 h-[42px] grid place-items-center rounded-lg border border-[#D6DFEA] text-[#5A6B82] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                        onScan={(code) => handleScan(unit.id, c.name, code)} />
+                    </div>
                     {saving[key] && <p className="text-xs text-[#8492A6] mt-1">กำลังจ่ายออกจากคลัง…</p>}
                     {errors[key] && <p className="text-xs text-[#C13540] mt-1">{errors[key]}</p>}
                   </div>
