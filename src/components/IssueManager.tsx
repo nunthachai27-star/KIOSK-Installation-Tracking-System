@@ -435,7 +435,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
       {showFilters && (
         <div className="flex items-stretch gap-2 flex-wrap">
           <StatusCard active={filter === 'ALL'} label="ทั้งหมด" n={byProduct.length} color="var(--brand)" onClick={() => setFilter('ALL')} />
-          <StatusCard active={filter === 'OPEN'} label="กำลังดำเนินการ" n={openCount} color="#1B5FD9" onClick={() => setFilter('OPEN')} />
+          <StatusCard active={filter === 'OPEN'} label="ที่ยังไม่ปิด" n={openCount} color="#1B5FD9" onClick={() => setFilter('OPEN')} />
           {statusChips.map(({ st, n }) => (
             <StatusCard key={st} active={filter === st} label={ISSUE_STATUS[st].label} n={n} color={ISSUE_STATUS[st].color} onClick={() => setFilter(st)} />
           ))}
