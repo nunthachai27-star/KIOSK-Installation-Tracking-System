@@ -227,8 +227,8 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
 
   // Build a print-ready Word (.doc) delivery-note report from the saved job data.
   // Read-only — it never writes to the job; it only reads the stored record.
-  function downloadReport() {
-    if (!job || !report) return
+  function buildReportHtml(): { html: string; safe: string } | null {
+    if (!job || !report) return null
     const esc = (v: string | null | undefined) =>
       (v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     // Prefix a label only when the value doesn't already start with it
@@ -283,15 +283,30 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
 <body>${blocks}</body></html>`
 
     const safe = (report.hospitalName || job.jobCode || 'job').replace(/[\\/:*?"<>|]+/g, '_').trim()
-    const blob = new Blob(['﻿', html], { type: 'application/msword' })
+    return { html, safe }
+  }
+
+  // ดาวน์โหลดเป็นไฟล์ .doc (ของเดิม)
+  function downloadReport() {
+    const r = buildReportHtml(); if (!r) return
+    const blob = new Blob(['﻿', r.html], { type: 'application/msword' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ใบส่งของ-${safe}.doc`
+    a.download = `ใบส่งของ-${r.safe}.doc`
     document.body.appendChild(a)
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
+  }
+
+  // เปิดหน้าต่างพิมพ์ → เลือกปริ้นเตอร์ที่ต่อกับเครื่องได้เลย (ไม่ต้องโหลดไฟล์ก่อน)
+  function printReport() {
+    const r = buildReportHtml(); if (!r) return
+    const w = window.open('', '_blank', 'width=900,height=1000')
+    if (!w) { alert('เปิดหน้าต่างพิมพ์ไม่ได้ — โปรดอนุญาต pop-up ของเว็บนี้'); return }
+    w.document.open(); w.document.write(r.html); w.document.close()
+    setTimeout(() => { try { w.focus(); w.print() } catch { /* ผู้ใช้ปิดหน้าต่างไปก่อน */ } }, 400)
   }
 
   const err = (field: string) => fieldErrors[field]?.[0]
@@ -445,9 +460,15 @@ export function JobForm({ job, hospitals, users, productTypes, provinces, report
             {saving ? 'กำลังบันทึก…' : 'บันทึกข้อมูลงาน'}
           </button>
           {isEdit && report && (
+            <button type="button" onClick={printReport}
+              className="flex items-center gap-1.5 bg-[#157F4C] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#0F6B3E]">
+              🖨️ พิมพ์ใบส่งของ
+            </button>
+          )}
+          {isEdit && report && (
             <button type="button" onClick={downloadReport}
               className="flex items-center gap-1.5 bg-[#1B5FD9] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[#164FB3]">
-              📄 รายงานขอใบส่งของ
+              📄 ดาวน์โหลด (.doc)
             </button>
           )}
           {saved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
