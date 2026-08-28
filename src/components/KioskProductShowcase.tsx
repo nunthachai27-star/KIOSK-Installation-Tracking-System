@@ -20,9 +20,16 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
   const [interestId, setInterestId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const [imgv, setImgv] = useState(0) // bump to refresh images after upload
+  const [editing, setEditing] = useState<Product | 'new' | null>(null)
   const notify = (m: string) => { setToast(m); window.setTimeout(() => setToast(''), 3000) }
   const open = items.find((p) => p.id === openId) || null
   const interest = items.find((p) => p.id === interestId) || null
+
+  async function removeProduct(p: Product) {
+    if (!confirm(`ลบรุ่น "${p.name}"? การลบนี้กู้คืนไม่ได้`)) return
+    const r = await fetch(`/api/kiosk-products/${p.id}`, { method: 'DELETE' })
+    if (r.ok) { setItems((a) => a.filter((x) => x.id !== p.id)); setOpenId(null); notify('ลบรุ่นแล้ว') } else notify('ลบไม่สำเร็จ')
+  }
 
   return (
     <div className="kpx">
@@ -38,6 +45,13 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
           </div>
         </div>
       </header>
+
+      {admin && (
+        <div className="kpx-adminbar">
+          <span className="kpx-admin-note">โหมดเจ้าหน้าที่ · จัดการรุ่นได้</span>
+          <button className="kpx-btn primary" onClick={() => setEditing('new')}>＋ เพิ่มรุ่น</button>
+        </div>
+      )}
 
       <main className="kpx-grid">
         {items.map((p) => {
@@ -77,20 +91,29 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
           onClose={() => setOpenId(null)}
           onInterest={() => { setInterestId(open.id); setOpenId(null) }}
           onUploaded={(imageId) => { setItems((arr) => arr.map((x) => x.id === open.id ? { ...x, imageId } : x)); setImgv((v) => v + 1); notify('เปลี่ยนรูปแล้ว') }}
+          onEdit={() => { setEditing(open); setOpenId(null) }}
+          onDelete={() => removeProduct(open)}
           notify={notify} />
       )}
       {interest && <InterestForm p={interest} onClose={() => setInterestId(null)} onDone={(m) => { setInterestId(null); notify(m) }} />}
+      {editing && (
+        <ProductForm product={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={(prod, isNew) => { setItems((a) => isNew ? [...a, prod] : a.map((x) => x.id === prod.id ? { ...prod, imageId: x.imageId } : x)); setEditing(null); notify(isNew ? 'เพิ่มรุ่นแล้ว' : 'บันทึกการแก้ไขแล้ว') }} />
+      )}
       {toast && createPortal(<div className="kpx-toast">{toast}</div>, document.body)}
     </div>
   )
 }
 
-function Detail({ p, admin, imgv, onClose, onInterest, onUploaded, notify }: {
+function Detail({ p, admin, imgv, onClose, onInterest, onUploaded, onEdit, onDelete, notify }: {
   p: Product; admin: boolean; imgv: number
-  onClose: () => void; onInterest: () => void; onUploaded: (imageId: string) => void; notify: (m: string) => void
+  onClose: () => void; onInterest: () => void; onUploaded: (imageId: string) => void
+  onEdit: () => void; onDelete: () => void; notify: (m: string) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
+  const [zoom, setZoom] = useState(false)
   async function upload(f: File | null) {
     if (!f) return
     setBusy(true)
@@ -107,8 +130,14 @@ function Detail({ p, admin, imgv, onClose, onInterest, onUploaded, notify }: {
         <button className="kpx-close" onClick={onClose} aria-label="ปิด">✕</button>
         <div className="kpx-modal-media">
           {p.imageId
-            ? <img src={`${imgUrl(p.imageId)}?v=${imgv}`} alt={p.name} />
+            ? <img src={`${imgUrl(p.imageId)}?v=${imgv}`} alt={p.name} onClick={() => setZoom(true)} title="คลิกเพื่อดูรูปเต็ม" />
             : <div className="kpx-thumb-ph big"><span>🖥️</span></div>}
+          {p.imageId && <button className="kpx-zoom" onClick={() => setZoom(true)}>🔍 ดูรูปเต็ม</button>}
+          {zoom && p.imageId && createPortal(
+            <div className="kpx-light" onClick={() => setZoom(false)}>
+              <button className="kpx-close light" onClick={() => setZoom(false)} aria-label="ปิด">✕</button>
+              <img src={`${imgUrl(p.imageId)}?v=${imgv}`} alt={p.name} onClick={(e) => e.stopPropagation()} />
+            </div>, document.body)}
           {admin && (
             <>
               <button className="kpx-upload" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? 'กำลังอัปโหลด…' : '📷 เปลี่ยนรูป'}</button>
@@ -135,6 +164,65 @@ function Detail({ p, admin, imgv, onClose, onInterest, onUploaded, notify }: {
           )}
 
           <button className="kpx-btn primary block" onClick={onInterest}>💙 สนใจรุ่นนี้ — ให้ทีมงานติดต่อกลับ</button>
+          {admin && (
+            <div className="kpx-admin-actions">
+              <button className="kpx-btn ghost" onClick={onEdit}>✏️ แก้ไขรุ่น</button>
+              <button className="kpx-btn danger" onClick={onDelete}>🗑 ลบรุ่น</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>, document.body)
+}
+
+// ฟอร์มเพิ่ม/แก้ไขรุ่น (เจ้าหน้าที่)
+function ProductForm({ product, onClose, onSaved }: { product: Product | null; onClose: () => void; onSaved: (p: Product, isNew: boolean) => void }) {
+  const isNew = !product
+  const [name, setName] = useState(product?.name ?? '')
+  const [tagline, setTagline] = useState(product?.tagline ?? '')
+  const [category, setCategory] = useState(product?.category ?? '')
+  const [priceLabel, setPriceLabel] = useState(product?.priceLabel ?? '')
+  const [priceNote, setPriceNote] = useState(product?.priceNote ?? '')
+  const [features, setFeatures] = useState((product?.features ?? []).join('\n'))
+  const [specs, setSpecs] = useState((product?.specs ?? []).join('\n'))
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const CATS = ['Smart Hospital Kiosk', 'Mini Kiosk', 'Payment Kiosk']
+
+  async function submit() {
+    if (name.trim().length < 2) { setErr('กรุณากรอกชื่อรุ่น'); return }
+    setBusy(true); setErr('')
+    try {
+      const url = isNew ? '/api/kiosk-products' : `/api/kiosk-products/${product!.id}`
+      const r = await fetch(url, {
+        method: isNew ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, tagline, category, priceLabel, priceNote, features, specs }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (r.ok && j.product) onSaved(j.product, isNew); else setErr(j.message || 'บันทึกไม่สำเร็จ')
+    } finally { setBusy(false) }
+  }
+
+  return createPortal(
+    <div className="kpx-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="kpx-modal narrow" role="dialog" aria-modal="true">
+        <button className="kpx-close" onClick={onClose} aria-label="ปิด">✕</button>
+        <div className="kpx-modal-body">
+          <h2>{isNew ? 'เพิ่มรุ่นใหม่' : 'แก้ไขรุ่น'}</h2>
+          <div className="kpx-form">
+            <label>ชื่อรุ่น *<input value={name} onChange={(e) => setName(e.target.value)} maxLength={160} /></label>
+            <label>คำโปรย<input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={200} /></label>
+            <label>หมวด<input list="kpx-cats" value={category} onChange={(e) => setCategory(e.target.value)} maxLength={60} /><datalist id="kpx-cats">{CATS.map((c) => <option key={c} value={c} />)}</datalist></label>
+            <label>ราคา (ข้อความ)<input value={priceLabel} onChange={(e) => setPriceLabel(e.target.value)} maxLength={80} placeholder="เช่น 79,000 บาท" /></label>
+            <label>เงื่อนไข/หมายเหตุราคา<input value={priceNote} onChange={(e) => setPriceNote(e.target.value)} maxLength={300} /></label>
+            <label>ความสามารถ (บรรทัดละข้อ)<textarea value={features} onChange={(e) => setFeatures(e.target.value)} rows={5} maxLength={3000} /></label>
+            <label>คุณลักษณะ/อุปกรณ์ (บรรทัดละข้อ)<textarea value={specs} onChange={(e) => setSpecs(e.target.value)} rows={4} maxLength={2000} /></label>
+            {err && <div className="kpx-err">{err}</div>}
+          </div>
+          <div className="kpx-actions">
+            <button className="kpx-btn ghost" onClick={onClose}>ยกเลิก</button>
+            <button className="kpx-btn primary" disabled={busy} onClick={submit}>{busy ? 'กำลังบันทึก…' : isNew ? 'เพิ่มรุ่น' : 'บันทึก'}</button>
+          </div>
         </div>
       </div>
     </div>, document.body)
@@ -201,8 +289,8 @@ const CSS = `
 .kpx-grid{ max-width:1120px; margin:0 auto; padding:26px 20px; display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; }
 .kpx-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; overflow:hidden; cursor:pointer; text-align:left; display:flex; flex-direction:column; box-shadow:0 1px 2px rgba(20,30,45,.04),0 8px 24px -18px rgba(20,30,45,.3); transition:transform .14s,box-shadow .14s,border-color .14s; }
 .kpx-card:hover{ transform:translateY(-4px); box-shadow:0 16px 40px -20px rgba(20,30,45,.45); border-color:#D3DAE4; }
-.kpx-thumb{ position:relative; aspect-ratio:16/10; background:linear-gradient(135deg,#EAF3F4,#DDE8F2); overflow:hidden; }
-.kpx-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.kpx-thumb{ position:relative; aspect-ratio:4/5; background:#EEF2F7; overflow:hidden; display:grid; place-items:center; padding:6px; }
+.kpx-thumb img{ width:100%; height:100%; object-fit:contain; display:block; }
 .kpx-thumb-ph{ width:100%; height:100%; display:grid; place-items:center; }
 .kpx-thumb-ph span{ font-size:52px; opacity:.5; }
 .kpx-thumb-ph.big{ aspect-ratio:16/10; }
@@ -226,6 +314,13 @@ const CSS = `
 .kpx-btn.primary:hover{ filter:brightness(.96); }
 .kpx-btn.primary:disabled{ opacity:.55; cursor:default; }
 .kpx-btn.block{ width:100%; margin-top:14px; padding:12px; font-size:14.5px; }
+.kpx-btn.danger{ border-color:#E7B4B4; color:#C13540; }
+.kpx-btn.danger:hover{ background:#FBE9E9; }
+.kpx-adminbar{ max-width:1120px; margin:0 auto; padding:16px 20px 0; display:flex; align-items:center; gap:12px; }
+.kpx-admin-note{ font-size:12.5px; color:var(--muted); }
+.kpx-adminbar .kpx-btn{ margin-left:auto; }
+.kpx-admin-actions{ display:flex; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+.kpx-admin-actions .kpx-btn{ flex:1; justify-content:center; text-align:center; }
 .kpx-footer{ max-width:1120px; margin:0 auto; padding:26px 20px 48px; color:var(--muted); font-size:12.5px; line-height:1.7; border-top:1px solid var(--line); }
 .kpx-overlay{ position:fixed; inset:0; z-index:80; background:rgba(15,22,33,.55); backdrop-filter:blur(3px); display:flex; align-items:flex-start; justify-content:center; padding:32px 16px; overflow-y:auto; }
 .kpx-modal{ position:relative; background:#fff; border-radius:20px; width:100%; max-width:720px; overflow:hidden; box-shadow:0 24px 60px rgba(18,26,40,.35); animation:kpx-pop .18s ease; }
@@ -233,9 +328,13 @@ const CSS = `
 @keyframes kpx-pop{ from{ transform:translateY(12px) scale(.98); opacity:0; } }
 .kpx-close{ position:absolute; top:12px; right:12px; z-index:2; width:34px; height:34px; border:0; border-radius:10px; background:rgba(255,255,255,.9); color:#3C4A5E; font-size:16px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.15); }
 .kpx-close:hover{ background:#fff; }
-.kpx-modal-media{ position:relative; background:linear-gradient(135deg,#EAF3F4,#DDE8F2); }
-.kpx-modal-media img{ width:100%; max-height:320px; object-fit:contain; display:block; }
+.kpx-modal-media{ position:relative; background:#EEF2F7; text-align:center; padding:10px; }
+.kpx-modal-media img{ max-width:100%; max-height:74vh; object-fit:contain; display:inline-block; cursor:zoom-in; border-radius:6px; }
 .kpx-upload{ position:absolute; bottom:12px; left:12px; border:0; background:rgba(15,22,33,.72); color:#fff; font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:9px; cursor:pointer; }
+.kpx-zoom{ position:absolute; bottom:12px; right:12px; border:0; background:rgba(15,22,33,.72); color:#fff; font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:9px; cursor:pointer; }
+.kpx-light{ position:fixed; inset:0; z-index:95; background:rgba(8,12,18,.92); display:flex; align-items:center; justify-content:center; padding:18px; cursor:zoom-out; }
+.kpx-light img{ max-width:96vw; max-height:96vh; object-fit:contain; cursor:default; border-radius:4px; box-shadow:0 10px 50px rgba(0,0,0,.5); }
+.kpx-close.light{ background:rgba(255,255,255,.15); color:#fff; top:16px; right:16px; }
 .kpx-modal-body{ padding:20px 22px 24px; }
 .kpx-modal-body h2{ font-size:21px; font-weight:700; margin:0 0 4px; letter-spacing:-.01em; }
 .kpx-sec{ margin-top:16px; }
