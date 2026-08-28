@@ -815,6 +815,43 @@ model IssueSolution {
   @@index([issueId])
 }
 
+// ── โชว์เคสโปรดัก Kiosk (พรีวิวโฆษณา + เก็บผู้สนใจ) ───────────────────────────
+// เปิดสาธารณะเฉพาะหน้านี้ + API ของมัน (กันเฮ็กแบบเดียวกับออกแบบปุ่ม Kiosk).
+// ไม่ผูก FK กับตารางเดิม. รูปโปรดักเก็บใน Attachment (refTable='KioskProduct').
+model KioskProduct {
+  id        String   @id            // slug เช่น 'start-smart'
+  name      String
+  tagline   String?
+  category  String?
+  priceLabel String?               // เช่น "79,000 บาท"
+  priceNote  String?               // เงื่อนไข/หมายเหตุราคา
+  features  String?                 // ไฮไลต์ความสามารถ (บรรทัดละข้อ)
+  specs     String?                 // คุณลักษณะ/อุปกรณ์ (บรรทัดละข้อ)
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// ผู้สนใจโปรดัก (leads) — ส่งจากหน้าสาธารณะ.
+model KioskLead {
+  id          String   @id @default(cuid())
+  productId   String?
+  productName String?                // denormalized
+  hospital    String
+  contact     String?
+  phone       String?
+  email       String?
+  note        String?
+  ip          String?                // audit + rate limit
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([ip, createdAt])
+}
+
 // งานสรุปที่ "พิมพ์เอง" เพิ่มในหน้าสรุปงานรายวัน — ต่อผู้ใช้ + ต่อวัน.
 // เสริมจากงานที่ระบบดึงอัตโนมัติ (ไม่แตะข้อมูลจริง). เจ้าของแก้/ลบได้เฉพาะของตัวเอง.
 model ReportEntry {

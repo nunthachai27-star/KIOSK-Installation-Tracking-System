@@ -23,7 +23,9 @@ export default auth((req) => {
     '/kiosk-buttons', '/api/kiosk-buttons',
     // ลิงก์ทีมพัฒนา (แถบพัฒนา) — เปิดเฉพาะ /dev/team/<token> + API ของมัน (ตรวจ token เอง).
     // หน้า /dev (เจ้าหน้าที่) และ /api/dev-requests ยังต้อง login OFFICE เหมือนเดิม.
-    '/dev/team', '/api/dev/team']
+    '/dev/team', '/api/dev/team',
+    // โชว์เคสโปรดัก Kiosk — เปิดหน้าสาธารณะ + API (leads GET ตรวจสิทธิ์ในตัวเอง).
+    '/kiosk-products', '/api/kiosk-products']
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 

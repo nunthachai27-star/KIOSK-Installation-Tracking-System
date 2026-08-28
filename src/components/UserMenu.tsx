@@ -18,6 +18,9 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
   const [copied, setCopied] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
   const [kioskSub, setKioskSub] = useState(false)
+  const [prodSub, setProdSub] = useState(false)
+  const [copiedP, setCopiedP] = useState(false)
+  const [leadsOpen, setLeadsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -89,6 +92,29 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
               </button>
             </div>
           )}
+          <button onClick={() => setProdSub((v) => !v)}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            🖥️ โปรดัก Kiosk
+            <span className={`ml-auto text-[#A8A29E] text-[10px] transition-transform ${prodSub ? 'rotate-180' : ''}`}>▾</span>
+          </button>
+          {prodSub && (
+            <div className="ml-4 pl-1 border-l border-[#ECEFF3]">
+              <a href="/kiosk-products" target="_blank" rel="noopener" onClick={() => setOpen(false)}
+                className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+                🖥️ เปิดหน้าโชว์เคส
+              </a>
+              <button onClick={() => {
+                  try { navigator.clipboard.writeText(`${location.origin}/kiosk-products`); setCopiedP(true); setTimeout(() => setCopiedP(false), 2000) } catch { /* ignore */ }
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
+                {copiedP ? '✓ คัดลอกลิงก์แล้ว' : '🔗 คัดลอกลิงก์โปรดัก'}
+              </button>
+              <button onClick={() => { setOpen(false); setLeadsOpen(true) }}
+                className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
+                📋 รายชื่อผู้สนใจ
+              </button>
+            </div>
+          )}
           <button onClick={() => { setOpen(false); setPwOpen(true) }}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🔑 เปลี่ยนรหัสผ่าน
@@ -105,8 +131,77 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
         onClose={() => setAvatarOpen(false)} onSaved={() => { setAvatarOpen(false); router.refresh() }} />}
       {themeOpen && <ThemePicker userId={userId} current={theme} currentBg={bg} onClose={() => setThemeOpen(false)} />}
       {logOpen && <KioskLogModal onClose={() => setLogOpen(false)} />}
+      {leadsOpen && <KioskLeadsModal onClose={() => setLeadsOpen(false)} />}
     </div>
   )
+}
+
+// รายชื่อผู้สนใจโปรดัก Kiosk (leads) — เฉพาะเจ้าหน้าที่ (API ตรวจสิทธิ์อยู่แล้ว)
+type Lead = { id: string; productName: string | null; hospital: string; contact: string | null; phone: string | null; email: string | null; note: string | null; createdAt: string }
+function KioskLeadsModal({ onClose }: { onClose: () => void }) {
+  const [rows, setRows] = useState<Lead[] | null>(null)
+  const [err, setErr] = useState('')
+  async function load() {
+    setErr(''); setRows(null)
+    try {
+      const res = await fetch('/api/kiosk-products/leads', { cache: 'no-store' })
+      if (!res.ok) { setErr('โหลดข้อมูลไม่สำเร็จ'); setRows([]); return }
+      const d = await res.json(); setRows(d.leads || [])
+    } catch { setErr('เชื่อมต่อไม่ได้'); setRows([]) }
+  }
+  useEffect(() => { load() }, [])
+  const fmt = (s: string) => { try { return new Date(s).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) } catch { return '' } }
+
+  const modal = (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-[16px] font-bold text-[#1C1917]">📋 รายชื่อผู้สนใจโปรดัก Kiosk</div>
+          <button type="button" onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
+        </div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[12.5px] text-[#8492A6]">รวม <b className="text-[#1C1917]">{rows?.length ?? 0}</b> รายการ (ล่าสุด 500)</div>
+          <button onClick={load} className="text-[12.5px] font-semibold text-[var(--brand)] hover:underline">รีเฟรช</button>
+        </div>
+        {err && <div className="text-sm text-[#C13540] mb-2">{err}</div>}
+        <div className="overflow-auto border border-[#ECEFF3] rounded-xl">
+          <table className="w-full text-[13px] border-collapse">
+            <thead className="sticky top-0 bg-[#F7FAFD]">
+              <tr className="text-left text-[11.5px] text-[#5A6B82]">
+                <th className="px-3 py-2 font-bold">วันที่</th>
+                <th className="px-3 py-2 font-bold">โรงพยาบาล/หน่วยงาน</th>
+                <th className="px-3 py-2 font-bold">สนใจรุ่น</th>
+                <th className="px-3 py-2 font-bold">ผู้ติดต่อ</th>
+                <th className="px-3 py-2 font-bold whitespace-nowrap">เบอร์/อีเมล</th>
+                <th className="px-3 py-2 font-bold">หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows === null ? (
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-[#9AAABF]">กำลังโหลด…</td></tr>
+              ) : rows.length === 0 ? (
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-[#9AAABF]">ยังไม่มีผู้สนใจ</td></tr>
+              ) : rows.map((r) => (
+                <tr key={r.id} className="border-t border-[#F1F3F6] hover:bg-[#F7FAFD] align-top">
+                  <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.createdAt)}</td>
+                  <td className="px-3 py-2 font-semibold text-[#1C1917]">{r.hospital}</td>
+                  <td className="px-3 py-2 text-[#3C4A5E]">{r.productName || '—'}</td>
+                  <td className="px-3 py-2 text-[#3C4A5E]">{r.contact || '—'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-[#3C4A5E]">
+                    {r.phone && <div>{r.phone}</div>}
+                    {r.email && <div className="text-[11.5px] text-[#8492A6]">{r.email}</div>}
+                    {!r.phone && !r.email && '—'}
+                  </td>
+                  <td className="px-3 py-2 text-[#5A6B82] max-w-[220px] whitespace-pre-wrap">{r.note || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }
 
 // บันทึกการใช้งานเครื่องมือออกแบบปุ่ม Kiosk — รายชื่อโรงพยาบาลที่ลงทะเบียนใช้งาน
