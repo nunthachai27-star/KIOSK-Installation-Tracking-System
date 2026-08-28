@@ -73,6 +73,11 @@ export function QcForm({
   })
   const [saving, setSaving] = useState<Record<string, boolean>>({})
   const [saved, setSaved] = useState<Record<string, boolean>>({})
+  // ย่อ/ขยายการ์ดรายเครื่อง — ค่าเริ่มต้น: เครื่องที่ตรวจ QC แล้ว (มี qc) ให้ย่อไว้ ลดการเลื่อน
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(units.map(u => [u.id, !!u.qc])))
+  const toggleCollapse = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }))
+  const setAllCollapsed = (v: boolean) => setCollapsed(Object.fromEntries(units.map(u => [u.id, v])))
 
   // Build a plain-text QC report for this job and download it as a .txt file.
   function downloadReport() {
@@ -166,14 +171,42 @@ export function QcForm({
         </button>
       </div>
 
+      {units.length > 1 && (
+        <div className="flex items-center gap-2 -mb-2">
+          <span className="text-[12.5px] text-[#8492A6]">{units.length} เครื่อง</span>
+          <span className="flex-1" />
+          <button type="button" onClick={() => setAllCollapsed(true)}
+            className="text-[12.5px] font-semibold text-[#5A6B82] border border-[#DCE4EE] rounded-lg px-3 py-1.5 hover:border-[var(--brand)] hover:text-[var(--brand)]">▸ ย่อทั้งหมด</button>
+          <button type="button" onClick={() => setAllCollapsed(false)}
+            className="text-[12.5px] font-semibold text-[#5A6B82] border border-[#DCE4EE] rounded-lg px-3 py-1.5 hover:border-[var(--brand)] hover:text-[var(--brand)]">▾ ขยายทั้งหมด</button>
+        </div>
+      )}
+
       {units.map((unit, idx) => {
         const st = state[unit.id]
+        const isCollapsed = collapsed[unit.id]
+        const chkDone = checklistItems.filter(it => st.checklist[it]?.result === 'pass' || st.checklist[it]?.result === 'fail').length
+        const statusLabel = STATUS_OPTIONS.find(o => o.value === st.status)?.label ?? ''
         return (
           <div key={unit.id} className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
-            <div className="flex items-center gap-2.5 mb-4">
-              <span className="w-7 h-7 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center font-bold text-sm">{idx + 1}</span>
+            <button type="button" onClick={() => toggleCollapse(unit.id)}
+              className="w-full flex items-center gap-2.5 text-left" aria-expanded={!isCollapsed}>
+              <span className="w-7 h-7 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center font-bold text-sm shrink-0">{idx + 1}</span>
               <span className="text-[15px] font-bold tnum">{unit.serialNo}</span>
-            </div>
+              {isCollapsed && (
+                <span className="flex items-center gap-2 text-[12px]">
+                  {checklistItems.length > 0 && (
+                    <span className="font-semibold px-2 py-0.5 rounded-full" style={chkDone >= checklistItems.length ? { background: '#E2F3EA', color: '#157F4C' } : { background: '#EEF1F5', color: '#8492A6' }}>✓ {chkDone}/{checklistItems.length}</span>
+                  )}
+                  {statusLabel && <span className="text-[#8492A6]">· {statusLabel}</span>}
+                  {saved[unit.id] && <span className="font-semibold text-[#157F4C]">· บันทึกแล้ว ✓</span>}
+                </span>
+              )}
+              <span className="ml-auto text-[#A2AEC0] text-lg leading-none shrink-0">{isCollapsed ? '▸' : '▾'}</span>
+            </button>
+
+            {!isCollapsed && (<>
+            <div className="mt-4" />
 
             {unit.items.length > 0 && (
               <div className="mb-4 rounded-xl bg-[#F8FAFD] border border-[#EEF2F8] px-4 py-3">
@@ -258,6 +291,7 @@ export function QcForm({
               </button>
               {saved[unit.id] && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
             </div>
+            </>)}
           </div>
         )
       })}
