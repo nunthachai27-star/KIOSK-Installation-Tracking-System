@@ -15,11 +15,14 @@ const CAT_TONE: Record<string, { bg: string; fg: string }> = {
 }
 
 export function KioskProductShowcase({ products, admin }: { products: Product[]; admin: boolean }) {
-  const [open, setOpen] = useState<Product | null>(null)
-  const [interest, setInterest] = useState<Product | null>(null)
+  const [items, setItems] = useState<Product[]>(products)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [interestId, setInterestId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const [imgv, setImgv] = useState(0) // bump to refresh images after upload
   const notify = (m: string) => { setToast(m); window.setTimeout(() => setToast(''), 3000) }
+  const open = items.find((p) => p.id === openId) || null
+  const interest = items.find((p) => p.id === interestId) || null
 
   return (
     <div className="kpx">
@@ -37,10 +40,10 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
       </header>
 
       <main className="kpx-grid">
-        {products.map((p) => {
+        {items.map((p) => {
           const tone = CAT_TONE[p.category ?? ''] ?? { bg: '#EEF1F5', fg: '#5A6B82' }
           return (
-            <article className="kpx-card" key={p.id} onClick={() => setOpen(p)}>
+            <article className="kpx-card" key={p.id} onClick={() => setOpenId(p.id)}>
               <div className="kpx-thumb">
                 {p.imageId
                   ? <img src={`${imgUrl(p.imageId)}?v=${imgv}`} alt={p.name} loading="lazy" />
@@ -56,7 +59,7 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
                 </ul>
                 <div className="kpx-foot">
                   <div className="kpx-price">{p.priceLabel || 'สอบถามราคา'}</div>
-                  <button className="kpx-btn ghost" onClick={(e) => { e.stopPropagation(); setOpen(p) }}>ดูรายละเอียด →</button>
+                  <button className="kpx-btn ghost" onClick={(e) => { e.stopPropagation(); setOpenId(p.id) }}>ดูรายละเอียด →</button>
                 </div>
               </div>
             </article>
@@ -71,12 +74,12 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
 
       {open && (
         <Detail p={open} admin={admin} imgv={imgv}
-          onClose={() => setOpen(null)}
-          onInterest={() => { setInterest(open); setOpen(null) }}
-          onUploaded={() => { setImgv((v) => v + 1); notify('เปลี่ยนรูปแล้ว') }}
+          onClose={() => setOpenId(null)}
+          onInterest={() => { setInterestId(open.id); setOpenId(null) }}
+          onUploaded={(imageId) => { setItems((arr) => arr.map((x) => x.id === open.id ? { ...x, imageId } : x)); setImgv((v) => v + 1); notify('เปลี่ยนรูปแล้ว') }}
           notify={notify} />
       )}
-      {interest && <InterestForm p={interest} onClose={() => setInterest(null)} onDone={(m) => { setInterest(null); notify(m) }} />}
+      {interest && <InterestForm p={interest} onClose={() => setInterestId(null)} onDone={(m) => { setInterestId(null); notify(m) }} />}
       {toast && createPortal(<div className="kpx-toast">{toast}</div>, document.body)}
     </div>
   )
@@ -84,7 +87,7 @@ export function KioskProductShowcase({ products, admin }: { products: Product[];
 
 function Detail({ p, admin, imgv, onClose, onInterest, onUploaded, notify }: {
   p: Product; admin: boolean; imgv: number
-  onClose: () => void; onInterest: () => void; onUploaded: () => void; notify: (m: string) => void
+  onClose: () => void; onInterest: () => void; onUploaded: (imageId: string) => void; notify: (m: string) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -95,7 +98,7 @@ function Detail({ p, admin, imgv, onClose, onInterest, onUploaded, notify }: {
       const fd = new FormData(); fd.append('file', f)
       const r = await fetch(`/api/kiosk-products/${p.id}/image`, { method: 'POST', body: fd })
       const j = await r.json().catch(() => ({}))
-      if (r.ok) onUploaded(); else notify(j.message || 'อัปโหลดไม่สำเร็จ')
+      if (r.ok && j.imageId) onUploaded(j.imageId); else notify(j.message || 'อัปโหลดไม่สำเร็จ')
     } finally { setBusy(false) }
   }
   return createPortal(
