@@ -62,10 +62,13 @@ export function RunningCritter() {
     let sleepTarget = 0
     let onArrive: (() => void) | null = null
     let timers: number[] = []
+    let wandering = false, dir = Math.random() * 6.283, wanderSpeed = 90
 
     const after = (ms: number, fn: () => void) => { const g = gen; const t = window.setTimeout(() => { if (alive && g === gen) fn() }, ms); timers.push(t) }
     const clearTimers = () => { timers.forEach(clearTimeout); timers = [] }
     const rand = (a: number, b: number) => a + Math.random() * (b - a)
+    // เลี้ยวมุมแบบ shortest-path (กันกระตุกตอนข้ามค่า ±π)
+    const angLerp = (a: number, b: number, t: number) => { let d = ((b - a + Math.PI) % (2 * Math.PI)) - Math.PI; if (d < -Math.PI) d += 2 * Math.PI; return a + d * t }
 
     const goTo = (nx: number, ny: number, speed: number, arrive: () => void) => {
       tx = clamp(nx, 10, vw() - SIZE - 10); ty = clamp(ny, 66, vh() - SIZE - 10)
@@ -75,12 +78,17 @@ export function RunningCritter() {
     const hideBall = () => { bl.style.opacity = '0' }
 
     // ── สเตตพฤติกรรม (เปลี่ยนเป้าหมาย/แฟลก ให้ rAF ค่อยๆ ทำให้ลื่น) ──────────
-    const roam = () => { mode = 'roam'; groom = 0; sleepTarget = 0; goTo(rand(10, vw() - SIZE - 10), rand(66, vh() - SIZE - 10), 118, () => after(rand(500, 1500), next)) }
-    const rest = () => { mode = 'rest'; sleepTarget = 0; onArrive = null; groom = Math.random() < 0.6 ? 1 : 0; after(rand(2000, 4200), () => { groom = 0; next() }) }
-    const chase = () => { mode = 'chase'; groom = 0; sleepTarget = 0; goTo(mx - 30, my - 20, 300, () => after(rand(500, 1300), next)) }
-    const sleepMode = () => { mode = 'sleep'; groom = 0; sleepTarget = 1; onArrive = null; after(rand(9000, 20000), () => { sleepTarget = 0; after(900, next) }) }
+    const roam = () => {
+      mode = 'roam'; groom = 0; sleepTarget = 0; wandering = true; onArrive = null
+      dir = (Math.abs(vx) + Math.abs(vy) > 5) ? Math.atan2(vy, vx) : rand(0, 6.283) // เดินต่อจากทิศเดิม
+      wanderSpeed = rand(58, 122)
+      after(rand(4000, 9000), next) // เดินวนสักพักแล้วค่อยเปลี่ยนพฤติกรรม
+    }
+    const rest = () => { mode = 'rest'; wandering = false; sleepTarget = 0; onArrive = null; groom = Math.random() < 0.6 ? 1 : 0; after(rand(2000, 4200), () => { groom = 0; next() }) }
+    const chase = () => { mode = 'chase'; wandering = false; groom = 0; sleepTarget = 0; goTo(mx - 30, my - 20, 300, () => after(rand(500, 1300), next)) }
+    const sleepMode = () => { mode = 'sleep'; wandering = false; groom = 0; sleepTarget = 1; onArrive = null; after(rand(9000, 20000), () => { sleepTarget = 0; after(900, next) }) }
     const play = () => {
-      mode = 'ball'; groom = 0; sleepTarget = 0
+      mode = 'ball'; wandering = false; groom = 0; sleepTarget = 0
       let bx = clamp(x + rand(-140, 140), 20, vw() - 46), by = clamp(y + rand(-90, 90), 66, vh() - 46)
       setBall(bx, by, 0.3)
       let hits = 2 + Math.floor(Math.random() * 3)
@@ -95,7 +103,7 @@ export function RunningCritter() {
     }
     const next = () => {
       if (!alive) return
-      gen++; onArrive = null
+      gen++; onArrive = null; wandering = false
       const cx = x + 30, cy = y + 22, idle = Date.now() - mouseAt
       const near = idle < 4000 && Math.hypot(mx - cx, my - cy) < 420
       if (idle > 14000 && Math.random() < 0.6) return sleepMode()
@@ -121,17 +129,31 @@ export function RunningCritter() {
       const dt = last ? clamp((t - last) / 1000, 0, 0.05) : 0.016
       last = t
 
-      // เคลื่อนที่แบบเร่ง-ชะลอนุ่ม เข้าหาเป้าหมาย
-      const dx = tx - x, dy = ty - y, dist = Math.hypot(dx, dy)
-      if (dist > 1) {
-        const want = Math.min(maxSpeed, dist * 3.2) // ชะลอเมื่อใกล้
-        const nx = dx / dist, ny = dy / dist
-        vx = lerp(vx, nx * want, 1 - Math.pow(0.0016, dt))
-        vy = lerp(vy, ny * want, 1 - Math.pow(0.0016, dt))
-      } else { vx = lerp(vx, 0, 0.2); vy = lerp(vy, 0, 0.2) }
-      x += vx * dt; y += vy * dt
+      if (wandering) {
+        // เดินวนแบบสัตว์จริง: ค่อยๆ ส่ายทิศทีละนิด + เลี้ยวกลับเมื่อใกล้ขอบจอ
+        dir += (Math.random() - 0.5) * 2.4 * dt
+        const bw = vw(), bh = vh(), m = 46
+        if (x < m || x > bw - SIZE - m || y < 74 || y > bh - SIZE - m) {
+          const toC = Math.atan2((bh * 0.56) - y, (bw / 2) - x)
+          dir = angLerp(dir, toC, 1 - Math.pow(0.02, dt))
+        }
+        const tvx = Math.cos(dir) * wanderSpeed, tvy = Math.sin(dir) * wanderSpeed
+        vx = lerp(vx, tvx, 1 - Math.pow(0.02, dt))
+        vy = lerp(vy, tvy, 1 - Math.pow(0.02, dt))
+        x = clamp(x + vx * dt, 6, bw - SIZE - 6); y = clamp(y + vy * dt, 66, bh - SIZE - 6)
+      } else {
+        // เคลื่อนที่แบบเร่ง-ชะลอนุ่ม เข้าหาเป้าหมาย (ไล่เมาส์/ไล่บอล)
+        const dx = tx - x, dy = ty - y, dist = Math.hypot(dx, dy)
+        if (dist > 1) {
+          const want = Math.min(maxSpeed, dist * 3.2)
+          const nx = dx / dist, ny = dy / dist
+          vx = lerp(vx, nx * want, 1 - Math.pow(0.0016, dt))
+          vy = lerp(vy, ny * want, 1 - Math.pow(0.0016, dt))
+        } else { vx = lerp(vx, 0, 0.2); vy = lerp(vy, 0, 0.2) }
+        x += vx * dt; y += vy * dt
+        if (onArrive && dist < 8) { const cb = onArrive; onArrive = null; cb() }
+      }
       const speed = Math.hypot(vx, vy)
-      if (onArrive && dist < 8) { const cb = onArrive; onArrive = null; cb() }
 
       // ทิศหันหน้า (นุ่ม)
       if (Math.abs(vx) > 6) facing = vx < 0 ? -1 : 1
