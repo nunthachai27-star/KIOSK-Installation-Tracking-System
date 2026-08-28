@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { str, reqIp } from '@/lib/kioskProductServer'
+import { pushLine } from '@/lib/lineNotify'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,5 +32,15 @@ export async function POST(req: Request) {
   }
 
   await prisma.kioskLead.create({ data: { productId, productName, hospital, contact, phone, email, note, ip } })
+  // แจ้งเตือน LINE (best-effort — ถ้าตั้งค่า env ไว้)
+  pushLine(
+    `🔔 มีผู้สนใจโปรดัก Kiosk ใหม่\n` +
+    `รุ่น: ${productName || '-'}\n` +
+    `รพ./หน่วยงาน: ${hospital}\n` +
+    `ผู้ติดต่อ: ${contact || '-'}\n` +
+    `โทร: ${phone || '-'}\n` +
+    `อีเมล: ${email || '-'}` +
+    (note ? `\nหมายเหตุ: ${note}` : ''),
+  )
   return NextResponse.json({ ok: true, message: 'ส่งข้อมูลเรียบร้อย ทีมงานจะติดต่อกลับโดยเร็ว' }, { status: 201 })
 }

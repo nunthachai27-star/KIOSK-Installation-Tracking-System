@@ -12,6 +12,8 @@ export async function GET() {
     orderBy: { createdAt: 'desc' }, take: 500,
     select: { id: true, productName: true, hospital: true, contact: true, phone: true, email: true, note: true, createdAt: true },
   })
+  // เปิดดูแล้ว = ล้างสถานะยังไม่ได้ดู (เคลียร์แจ้งเตือน)
+  await prisma.kioskLead.updateMany({ where: { seenAt: null }, data: { seenAt: new Date() } })
   return NextResponse.json(
     { leads: rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })), total: rows.length },
     { headers: { 'Cache-Control': 'no-store' } },

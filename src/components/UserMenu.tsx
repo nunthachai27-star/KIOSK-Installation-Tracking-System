@@ -9,8 +9,9 @@ import { AvatarEditor } from './AvatarEditor'
 import { ThemePicker } from './ThemePicker'
 
 // Avatar + name + role in the header, opening a dropdown with change-password + sign-out.
-export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: string; name: string; role: string; avatar: AvatarData; theme: string | null; bg: string | null }) {
+export function UserMenu({ userId, name, role, avatar, theme, bg, leadsUnread = 0 }: { userId: string; name: string; role: string; avatar: AvatarData; theme: string | null; bg: string | null; leadsUnread?: number }) {
   const router = useRouter()
+  const [unread, setUnread] = useState(leadsUnread)
   const [open, setOpen] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -32,7 +33,10 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full pl-1 pr-2 py-1 hover:bg-[#F6F9FC]">
+        className="relative flex items-center gap-2 rounded-full pl-1 pr-2 py-1 hover:bg-[#F6F9FC]">
+        {unread > 0 && (
+          <span className="absolute -top-0.5 left-5 z-10 min-w-[17px] h-[17px] px-1 rounded-full bg-[#C13540] text-white text-[10px] font-bold grid place-items-center border-2 border-white" title={`มีผู้สนใจใหม่ ${unread} ราย`}>{unread > 9 ? '9+' : unread}</span>
+        )}
         <Avatar user={{ name, ...avatar }} size={32} />
         <span className="hidden lg:flex flex-col items-start leading-tight">
           <span className="text-[13px] font-semibold text-[#1C1917] max-w-[140px] truncate">{name}</span>
@@ -95,6 +99,7 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
           <button onClick={() => setProdSub((v) => !v)}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             🖥️ โปรดัก Kiosk
+            {unread > 0 && <span className="min-w-[17px] h-[17px] px-1 rounded-full bg-[#C13540] text-white text-[10px] font-bold grid place-items-center">{unread > 9 ? '9+' : unread}</span>}
             <span className={`ml-auto text-[#A8A29E] text-[10px] transition-transform ${prodSub ? 'rotate-180' : ''}`}>▾</span>
           </button>
           {prodSub && (
@@ -109,9 +114,10 @@ export function UserMenu({ userId, name, role, avatar, theme, bg }: { userId: st
                 className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
                 {copiedP ? '✓ คัดลอกลิงก์แล้ว' : '🔗 คัดลอกลิงก์โปรดัก'}
               </button>
-              <button onClick={() => { setOpen(false); setLeadsOpen(true) }}
+              <button onClick={() => { setOpen(false); setLeadsOpen(true); setUnread(0) }}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#5A6B82] hover:bg-[#F0EEEC] flex items-center gap-2">
                 📋 รายชื่อผู้สนใจ
+                {unread > 0 && <span className="ml-auto min-w-[17px] h-[17px] px-1 rounded-full bg-[#C13540] text-white text-[10px] font-bold grid place-items-center">{unread > 9 ? '9+' : unread}</span>}
               </button>
             </div>
           )}

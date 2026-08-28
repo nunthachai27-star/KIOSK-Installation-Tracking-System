@@ -846,10 +846,12 @@ model KioskLead {
   email       String?
   note        String?
   ip          String?                // audit + rate limit
+  seenAt      DateTime?              // เจ้าหน้าที่เปิดดูแล้วเมื่อไหร่ (null = ยังไม่ได้ดู → แจ้งเตือน)
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
   @@index([ip, createdAt])
+  @@index([seenAt])
 }
 
 // งานสรุปที่ "พิมพ์เอง" เพิ่มในหน้าสรุปงานรายวัน — ต่อผู้ใช้ + ต่อวัน.

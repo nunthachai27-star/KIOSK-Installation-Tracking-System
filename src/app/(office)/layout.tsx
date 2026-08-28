@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { OfficeNav } from '@/components/OfficeNav'
 import { BrandRefresh } from '@/components/BrandRefresh'
 import { RunningCritter } from '@/components/RunningCritter'
+import { LeadNotifier } from '@/components/LeadNotifier'
 import { MobileMenu } from '@/components/MobileMenu'
 import { NotificationBell } from '@/components/NotificationBell'
 import { UserMenu } from '@/components/UserMenu'
@@ -24,11 +25,12 @@ export default async function OfficeLayout({ children }: { children: React.React
 
   // Attention counts for the notification bell + the current user's avatar.
   const now = new Date()
-  const [pendingClaims, overdue, overdueLoans, me] = await Promise.all([
+  const [pendingClaims, overdue, overdueLoans, me, leadsUnread] = await Promise.all([
     prisma.issue.count({ where: { status: 'RECEIVED' } }),
     prisma.job.count({ where: { isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
     prisma.loan.count({ where: { status: 'BORROWED', dueDate: { lt: now } } }),
     session?.user?.id ? prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true, avatarIcon: true, avatarColor: true, theme: true, bg: true } }) : Promise.resolve(null),
+    prisma.kioskLead.count({ where: { seenAt: null } }),
   ])
 
   return (
@@ -52,6 +54,7 @@ export default async function OfficeLayout({ children }: { children: React.React
             <NotificationBell pendingClaims={pendingClaims} overdue={overdue} overdueLoans={overdueLoans} />
             <span className="w-px h-6 bg-[#ECEFF3]" />
             <UserMenu userId={session?.user?.id ?? ''} name={name} role={role} theme={me?.theme ?? null} bg={me?.bg ?? null}
+              leadsUnread={leadsUnread}
               avatar={{ avatarUrl: me?.avatarUrl, avatarIcon: me?.avatarIcon, avatarColor: me?.avatarColor }} />
           </div>
           {/* mobile menu */}
@@ -61,6 +64,7 @@ export default async function OfficeLayout({ children }: { children: React.React
       </header>
       {children}
       <RunningCritter />
+      <LeadNotifier />
     </div>
   )
 }
