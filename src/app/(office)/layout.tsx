@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { OfficeNav } from '@/components/OfficeNav'
 import { BrandRefresh } from '@/components/BrandRefresh'
+import { RunningCritter } from '@/components/RunningCritter'
 import { MobileMenu } from '@/components/MobileMenu'
 import { NotificationBell } from '@/components/NotificationBell'
 import { UserMenu } from '@/components/UserMenu'
@@ -59,6 +60,7 @@ export default async function OfficeLayout({ children }: { children: React.React
         </div>
       </header>
       {children}
+      <RunningCritter />
     </div>
   )
 }
