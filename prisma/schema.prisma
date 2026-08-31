@@ -835,7 +835,7 @@ model KioskProduct {
   @@index([sortOrder])
 }
 
-// ผู้สนใจโปรดัก (leads) — ส่งจากหน้าสาธารณะ.
+// ผู้สนใจโปรดัก (leads) — ส่งจากหน้าสาธารณะ. เจ้าหน้าที่ติดตาม+อัปเดตสถานะได้.
 model KioskLead {
   id          String   @id @default(cuid())
   productId   String?
@@ -845,13 +845,30 @@ model KioskLead {
   phone       String?
   email       String?
   note        String?
+  status      String   @default("NEW") // NEW/CONTACTED/QUOTED/WON/LOST
   ip          String?                // audit + rate limit
   seenAt      DateTime?              // เจ้าหน้าที่เปิดดูแล้วเมื่อไหร่ (null = ยังไม่ได้ดู → แจ้งเตือน)
+  notes       KioskLeadNote[]
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@index([createdAt])
   @@index([ip, createdAt])
   @@index([seenAt])
+  @@index([status])
+}
+
+// ไทม์ไลน์ติดตามผู้สนใจ (บันทึก/เปลี่ยนสถานะ) — คงประวัติแม้ผู้ใช้ถูกลบ.
+model KioskLeadNote {
+  id        String   @id @default(cuid())
+  lead      KioskLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId    String
+  actorName String?
+  toStatus  String?                  // ถ้าเป็นการเปลี่ยนสถานะ
+  text      String?                  // บันทึกการติดตาม
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
 }
 
 // งานสรุปที่ "พิมพ์เอง" เพิ่มในหน้าสรุปงานรายวัน — ต่อผู้ใช้ + ต่อวัน.

@@ -10,7 +10,7 @@ export async function GET() {
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const rows = await prisma.kioskLead.findMany({
     orderBy: { createdAt: 'desc' }, take: 500,
-    select: { id: true, productName: true, hospital: true, contact: true, phone: true, email: true, note: true, createdAt: true },
+    select: { id: true, productName: true, hospital: true, contact: true, phone: true, email: true, note: true, status: true, createdAt: true },
   })
   // เปิดดูแล้ว = ล้างสถานะยังไม่ได้ดู (เคลียร์แจ้งเตือน)
   await prisma.kioskLead.updateMany({ where: { seenAt: null }, data: { seenAt: new Date() } })

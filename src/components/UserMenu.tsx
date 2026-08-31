@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react'
 import { Avatar, type AvatarData } from './Avatar'
 import { AvatarEditor } from './AvatarEditor'
 import { ThemePicker } from './ThemePicker'
+import { LEAD_STATUSES, LEAD_META, type LeadStatus } from '@/lib/lead'
 
 // Avatar + name + role in the header, opening a dropdown with change-password + sign-out.
 export function UserMenu({ userId, name, role, avatar, theme, bg, leadsUnread = 0 }: { userId: string; name: string; role: string; avatar: AvatarData; theme: string | null; bg: string | null; leadsUnread?: number }) {
@@ -143,12 +144,17 @@ export function UserMenu({ userId, name, role, avatar, theme, bg, leadsUnread = 
 }
 
 // รายชื่อผู้สนใจโปรดัก Kiosk (leads) — เฉพาะเจ้าหน้าที่ (API ตรวจสิทธิ์อยู่แล้ว)
-type Lead = { id: string; productName: string | null; hospital: string; contact: string | null; phone: string | null; email: string | null; note: string | null; createdAt: string }
+type Lead = { id: string; productName: string | null; hospital: string; contact: string | null; phone: string | null; email: string | null; note: string | null; status: string; createdAt: string }
+function statusChip(s: string) {
+  const m = LEAD_META[s as LeadStatus] ?? LEAD_META.NEW
+  return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ color: m.color, background: m.bg }}>{m.emoji} {m.label}</span>
+}
 function KioskLeadsModal({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<Lead[] | null>(null)
   const [err, setErr] = useState('')
+  const [detailId, setDetailId] = useState<string | null>(null)
   async function load() {
-    setErr(''); setRows(null)
+    setErr('')
     try {
       const res = await fetch('/api/kiosk-products/leads', { cache: 'no-store' })
       if (!res.ok) { setErr('โหลดข้อมูลไม่สำเร็จ'); setRows([]); return }
@@ -165,10 +171,11 @@ function KioskLeadsModal({ onClose }: { onClose: () => void }) {
           <div className="text-[16px] font-bold text-[#1C1917]">📋 รายชื่อผู้สนใจโปรดัก Kiosk</div>
           <button type="button" onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
         </div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <div className="text-[12.5px] text-[#8492A6]">รวม <b className="text-[#1C1917]">{rows?.length ?? 0}</b> รายการ (ล่าสุด 500)</div>
           <button onClick={load} className="text-[12.5px] font-semibold text-[var(--brand)] hover:underline">รีเฟรช</button>
         </div>
+        <div className="text-[11.5px] text-[#9AAABF] mb-3">คลิกแถวเพื่อเข้าไปติดตาม/อัปเดตสถานะ</div>
         {err && <div className="text-sm text-[#C13540] mb-2">{err}</div>}
         <div className="overflow-auto border border-[#ECEFF3] rounded-xl">
           <table className="w-full text-[13px] border-collapse">
@@ -177,9 +184,9 @@ function KioskLeadsModal({ onClose }: { onClose: () => void }) {
                 <th className="px-3 py-2 font-bold">วันที่</th>
                 <th className="px-3 py-2 font-bold">โรงพยาบาล/หน่วยงาน</th>
                 <th className="px-3 py-2 font-bold">สนใจรุ่น</th>
+                <th className="px-3 py-2 font-bold whitespace-nowrap">สถานะ</th>
                 <th className="px-3 py-2 font-bold">ผู้ติดต่อ</th>
                 <th className="px-3 py-2 font-bold whitespace-nowrap">เบอร์/อีเมล</th>
-                <th className="px-3 py-2 font-bold">หมายเหตุ</th>
               </tr>
             </thead>
             <tbody>
@@ -188,22 +195,113 @@ function KioskLeadsModal({ onClose }: { onClose: () => void }) {
               ) : rows.length === 0 ? (
                 <tr><td colSpan={6} className="px-3 py-6 text-center text-[#9AAABF]">ยังไม่มีผู้สนใจ</td></tr>
               ) : rows.map((r) => (
-                <tr key={r.id} className="border-t border-[#F1F3F6] hover:bg-[#F7FAFD] align-top">
+                <tr key={r.id} onClick={() => setDetailId(r.id)} className="border-t border-[#F1F3F6] hover:bg-[#F0F5FB] align-top cursor-pointer">
                   <td className="px-3 py-2 whitespace-nowrap text-[#5A6B82]">{fmt(r.createdAt)}</td>
                   <td className="px-3 py-2 font-semibold text-[#1C1917]">{r.hospital}</td>
                   <td className="px-3 py-2 text-[#3C4A5E]">{r.productName || '—'}</td>
+                  <td className="px-3 py-2">{statusChip(r.status)}</td>
                   <td className="px-3 py-2 text-[#3C4A5E]">{r.contact || '—'}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-[#3C4A5E]">
                     {r.phone && <div>{r.phone}</div>}
                     {r.email && <div className="text-[11.5px] text-[#8492A6]">{r.email}</div>}
                     {!r.phone && !r.email && '—'}
                   </td>
-                  <td className="px-3 py-2 text-[#5A6B82] max-w-[220px] whitespace-pre-wrap">{r.note || '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+      {detailId && <LeadDetail id={detailId} onClose={() => setDetailId(null)} onChanged={load} />}
+    </div>
+  )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
+}
+
+type LeadFull = Lead & { updatedAt: string; notes: { id: string; actorName: string | null; toStatus: string | null; text: string | null; createdAt: string }[] }
+function LeadDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const [lead, setLead] = useState<LeadFull | null>(null)
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  async function load() {
+    try { const r = await fetch(`/api/kiosk-products/leads/${id}`, { cache: 'no-store' }); if (r.ok) { const d = await r.json(); setLead(d.lead) } } catch { setErr('โหลดไม่สำเร็จ') }
+  }
+  useEffect(() => { load() }, [id])
+  const fmt = (s: string) => { try { return new Date(s).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) } catch { return '' } }
+
+  async function patch(body: { status?: string; note?: string }) {
+    setBusy(true); setErr('')
+    try {
+      const r = await fetch(`/api/kiosk-products/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const j = await r.json().catch(() => ({}))
+      if (r.ok) { setLead(j.lead); setNote(''); onChanged() } else setErr(j.message || j.error || 'บันทึกไม่สำเร็จ')
+    } finally { setBusy(false) }
+  }
+
+  const modal = (
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#EEF0F3]">
+          <div className="text-[15.5px] font-bold text-[#1C1917] truncate">{lead?.hospital ?? 'กำลังโหลด…'}</div>
+          <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC] shrink-0">✕</button>
+        </div>
+        {!lead ? <div className="p-8 text-center text-[#9AAABF] text-sm">กำลังโหลด…</div> : (
+          <div className="p-5 overflow-y-auto flex flex-col gap-4">
+            <div className="text-[12.5px] text-[#5A6B82] flex flex-col gap-1">
+              {lead.productName && <div>สนใจรุ่น: <b className="text-[#1C1917]">{lead.productName}</b></div>}
+              {lead.contact && <div>ผู้ติดต่อ: {lead.contact}</div>}
+              {lead.phone && <div>โทร: <a href={`tel:${lead.phone}`} className="text-[var(--brand)]">{lead.phone}</a></div>}
+              {lead.email && <div>อีเมล: <a href={`mailto:${lead.email}`} className="text-[var(--brand)]">{lead.email}</a></div>}
+              {lead.note && <div className="mt-1 bg-[#F7FAFD] border border-[#ECEFF3] rounded-lg p-2.5 whitespace-pre-wrap text-[#3C4A5E]">💬 {lead.note}</div>}
+              <div className="text-[11px] text-[#A8A29E]">ส่งเมื่อ {fmt(lead.createdAt)}</div>
+            </div>
+
+            <div>
+              <div className="text-[12px] font-bold text-[#96A2B5] uppercase tracking-wide mb-1.5">สถานะติดตาม</div>
+              <div className="flex flex-wrap gap-1.5">
+                {LEAD_STATUSES.map((s) => {
+                  const m = LEAD_META[s], active = lead.status === s
+                  return (
+                    <button key={s} disabled={busy || active} onClick={() => patch({ status: s })}
+                      className="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg border"
+                      style={active ? { borderColor: m.color, background: m.bg, color: m.color } : { borderColor: '#DCE4EE', color: '#5A6B82' }}>
+                      {m.emoji} {m.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[12px] font-bold text-[#96A2B5] uppercase tracking-wide mb-1.5">บันทึกการติดตาม</div>
+              <div className="flex gap-2">
+                <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000} placeholder="เช่น โทรแล้ว นัดส่งใบเสนอราคาวันจันทร์…"
+                  className="flex-1 border border-[#D6DFEA] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[var(--brand)] resize-y" />
+                <button disabled={busy || !note.trim()} onClick={() => patch({ note })}
+                  className="shrink-0 text-[12.5px] font-semibold px-3.5 py-2 rounded-lg bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)] disabled:opacity-50">บันทึก</button>
+              </div>
+            </div>
+
+            {lead.notes.length > 0 && (
+              <div>
+                <div className="text-[12px] font-bold text-[#96A2B5] uppercase tracking-wide mb-2">ไทม์ไลน์</div>
+                <div className="flex flex-col gap-2.5 pl-1">
+                  {[...lead.notes].reverse().map((n) => (
+                    <div key={n.id} className="border-l-2 border-[#E8EDF3] pl-3">
+                      <div className="text-[11px] text-[#A8A29E]">{fmt(n.createdAt)} · {n.actorName || 'เจ้าหน้าที่'}</div>
+                      <div className="text-[12.5px] text-[#3C4A5E] mt-0.5">
+                        {n.toStatus && <span className="mr-1">{statusChip(n.toStatus)}</span>}
+                        {n.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {err && <div className="text-[12.5px] text-[#C13540]">{err}</div>}
+          </div>
+        )}
       </div>
     </div>
   )
