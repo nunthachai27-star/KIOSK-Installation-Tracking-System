@@ -29,6 +29,10 @@ services:
       AUTH_URL: ${AUTH_URL}
       AUTH_TRUST_HOST: "true"
       NODE_ENV: production
+      # แจ้งเตือนผู้สนใจโปรดักเข้า LINE (ไม่ใส่ = ปิดเงียบ). ตั้งค่าใน .env ของ prod:
+      #   LINE_CHANNEL_TOKEN=<channel access token>  ·  LINE_TO=<userId/groupId, คั่นหลายที่ด้วย ,>
+      LINE_CHANNEL_TOKEN: ${LINE_CHANNEL_TOKEN:-}
+      LINE_TO: ${LINE_TO:-}
     depends_on:
       db:
         condition: service_healthy
