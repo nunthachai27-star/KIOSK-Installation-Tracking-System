@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic'
 
 const DOC_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'])
 const DOC_MAX = 15 * 1024 * 1024 // 15MB
-const CATEGORIES = new Set(['contract', 'quotation', 'delivery', 'receipt', 'other'])
 
 // ── GET: รายการเอกสารของงาน ─────────────────────────────────────────────────
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -37,8 +36,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!DOC_TYPES.has(file.type) || file.size <= 0 || file.size > DOC_MAX) {
     return NextResponse.json({ error: 'bad file', message: 'รองรับรูป (PNG/JPG/WebP/GIF) หรือ PDF ไม่เกิน 15MB' }, { status: 400 })
   }
-  const catRaw = String(form?.get('category') || 'other')
-  const category = CATEGORIES.has(catRaw) ? catRaw : 'other'
+  // ชนิดเอกสารแก้ไขได้ (จาก ตั้งค่า › ชนิดเอกสารงาน) — รับข้อความอิสระ, คุมความยาว
+  const category = String(form?.get('category') || '').replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'อื่นๆ'
 
   const att = await saveUpload(file, 'JobDoc', id, session.user.id, category)
   await logAction(session.user, 'CREATE', 'เอกสารงาน', `แนบ ${file.name}`)

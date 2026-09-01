@@ -4,20 +4,18 @@ import { enhanceImage } from '@/lib/enhanceImage'
 
 type Doc = { id: string; fileName: string; fileType: string; category: string | null; fileSize: number; uploadedAt: string }
 
-const CATS: { key: string; label: string }[] = [
-  { key: 'contract', label: 'สัญญา / PO' },
-  { key: 'quotation', label: 'ใบเสนอราคา' },
-  { key: 'delivery', label: 'ใบส่งของ' },
-  { key: 'receipt', label: 'ใบเสร็จ/ภาษี' },
-  { key: 'other', label: 'อื่นๆ' },
-]
-const catLabel = (k: string | null) => CATS.find((c) => c.key === k)?.label ?? 'อื่นๆ'
+// ชนิดเอกสารเริ่มต้น (ถ้ายังไม่ได้ตั้งค่า) — จริง ๆ ดึงจากตั้งค่า › ชนิดเอกสารงาน
+const DEFAULT_CATS = ['สัญญา / PO', 'ใบเสนอราคา', 'ใบส่งของ', 'ใบเสร็จ/ภาษี', 'อื่นๆ']
+// รองรับค่าคีย์เดิม (ก่อนเปลี่ยนมาเก็บเป็นชื่อไทย)
+const LEGACY: Record<string, string> = { contract: 'สัญญา / PO', quotation: 'ใบเสนอราคา', delivery: 'ใบส่งของ', receipt: 'ใบเสร็จ/ภาษี', other: 'อื่นๆ' }
+const catLabel = (c: string | null) => (c ? (LEGACY[c] ?? c) : 'อื่นๆ')
 const isImage = (t: string) => t.startsWith('image/')
 const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
 
 export function JobDocuments({ jobId }: { jobId: string }) {
   const [docs, setDocs] = useState<Doc[]>([])
-  const [cat, setCat] = useState('contract')
+  const [cats, setCats] = useState<string[]>(DEFAULT_CATS)
+  const [cat, setCat] = useState(DEFAULT_CATS[0])
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState('')
   const [enhance, setEnhance] = useState(true)
@@ -30,6 +28,15 @@ export function JobDocuments({ jobId }: { jobId: string }) {
     fetch(`/api/jobs/${jobId}/documents`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : { documents: [] }))
       .then((j) => { if (alive) setDocs(j.documents ?? []) })
+      .catch(() => {})
+    // ดึงชนิดเอกสารที่ตั้งค่าไว้ (แก้ได้ที่ ตั้งค่า › ชนิดเอกสารงาน)
+    fetch('/api/settings/options?category=JOB_DOC_TYPE', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((items: { value: string; active: boolean }[]) => {
+        if (!alive) return
+        const vals = (items || []).filter((i) => i.active).map((i) => i.value)
+        if (vals.length) { setCats(vals); setCat(vals[0]) }
+      })
       .catch(() => {})
     return () => { alive = false }
   }, [jobId])
@@ -68,12 +75,13 @@ export function JobDocuments({ jobId }: { jobId: string }) {
 
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span className="text-[12.5px] font-semibold text-[#5A6B82]">ชนิดเอกสาร:</span>
-        {CATS.map((c) => (
-          <button key={c.key} type="button" onClick={() => setCat(c.key)}
-            className={`text-[12.5px] font-semibold px-3 py-1.5 rounded-full border ${cat === c.key ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>
-            {c.label}
+        {cats.map((c) => (
+          <button key={c} type="button" onClick={() => setCat(c)}
+            className={`text-[12.5px] font-semibold px-3 py-1.5 rounded-full border ${cat === c ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>
+            {c}
           </button>
         ))}
+        <a href="/settings/JOB_DOC_TYPE" target="_blank" rel="noopener" className="text-[11.5px] text-[#8492A6] underline hover:text-[var(--brand)]">แก้ไขชนิด</a>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-3">
