@@ -4,7 +4,7 @@ import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
-type TemplateId = 'kiosk-activation'
+type TemplateId = 'kiosk-activation' | 'delivery-handover'
 type Template = { id: TemplateId; title: string; desc: string; defaultCat: string; accent: string }
 const TEMPLATES: Template[] = [
   {
@@ -13,6 +13,13 @@ const TEMPLATES: Template[] = [
     desc: 'แบบฟอร์มขออนุมัติเปิดสิทธิ์ BMS Smart Hospital Kiosk (ส่งตรวจ) — แก้ไขได้ทุกช่อง',
     defaultCat: 'สัญญา / PO',
     accent: '#C6303A',
+  },
+  {
+    id: 'delivery-handover',
+    title: 'แบบฟอร์มแจ้งส่งมอบ',
+    desc: 'แจ้งทำหนังสือส่งมอบงาน / แจ้งหน่วยงานภายนอก — ติ๊ก/แก้ไขได้ทุกช่อง',
+    defaultCat: 'ใบแจ้งส่งมอบงาน',
+    accent: '#1E7F4C',
   },
 ]
 
@@ -130,11 +137,97 @@ function buildKioskActivation(): string {
   </div>`
 }
 
+// แบบฟอร์มแจ้งทำหนังสือส่งมอบงาน / แจ้งหน่วยงานภายนอก
+function buildDeliveryHandover(): string {
+  const ed = 'contenteditable="true"'
+  const font = "'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif"
+  const box = (on = false) => `<span class="ff-check" data-checked="${on ? 1 : 0}" style="display:inline-block;width:15px;height:15px;border:1.2px solid #000;text-align:center;line-height:13px;font-size:12px;cursor:pointer;vertical-align:middle;">${on ? '✓' : ''}</span>`
+  const L = (txt = '', min = '') => `<span ${ed} style="border-bottom:1px dotted #000;padding:0 5px;${min ? `display:inline-block;min-width:${min};` : ''}">${txt}</span>`
+  const ck = (on: boolean, label: string) => `<label style="display:inline-flex;align-items:center;gap:5px;">${box(on)} ${label}</label>`
+  const grid = [
+    ck(false, 'เข้าปฏิบัติงานติดตั้ง'),
+    `<span>${box(false)} Re-visit ครั้งที่ ${L('', '28px')}/${L('', '28px')}</span>`,
+    ck(false, 'ตอบกลับวิทยากร'),
+    `<span>${box(false)} MA ครั้งที่ ${L('', '28px')}/${L('', '28px')}</span>`,
+    ck(false, 'นำเสนอโปรแกรม เชิงรุก/เชิงรับ'),
+    `<span>${box(false)} อื่นๆ ระบุ ${L('', '80px')}</span>`,
+    ck(false, 'สำรวจระบบ'),
+    `<span>${box(true)} ส่งมอบงาน ${L('KIOSK 1 เครื่อง', '140px')}</span>`,
+    ck(false, 'ขอคัดลอกฐานข้อมูล'),
+  ].join('')
+  const names = [1, 2, 3, 4, 5].map((n) => `<div style="margin-top:7px;padding-left:26px;">${n}. ชื่อ-สกุล ${L('', '250px')} ตำแหน่ง ${L('', '180px')}</div>`).join('')
+  return `
+  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:13.5px;line-height:1.7;padding:22px 34px 26px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="flex:0 0 auto;">${bmsLogoImg(46)}</div>
+        <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
+      </div>
+      <div style="white-space:nowrap;padding-top:16px;">No. ${L('', '90px')}</div>
+    </div>
+
+    <div style="margin-top:14px;font-weight:600;">วันที่ ${L('19 ธันวาคม 2567', '200px')}</div>
+
+    <div style="margin-top:10px;">ชื่อ-นามสกุล นาย/นาง/นางสาว ${L('ธนิตา สายวารี', '200px')} ตำแหน่ง ${L('ชำนาญการ', '160px')}</div>
+    <div style="margin-top:7px;">แผนก/ฝ่าย ${L('การขายและการตลาด', '200px')} ขอแจ้งความประสงค์ทำหนังสือแจ้งหน่วยงานภายนอก</div>
+    <div style="margin-top:7px;">สิ่งที่ส่งมาด้วย จำนวน ${L('', '46px')} ฉบับ ${L('', '46px')} แผ่น</div>
+
+    <div style="margin-top:8px;padding-left:24px;display:grid;grid-template-columns:190px 200px 1fr;gap:8px 12px;align-items:center;">
+      ${ck(false, 'BMS-HOSxP')} ${ck(false, 'BMS-HOSxP XE')} <span>${box(true)} อื่นๆ ระบุ ${L('KIOSK 1 เครื่อง', '150px')}</span>
+      ${ck(false, 'BMS Data Center')} ${ck(false, 'BMS-INVENTORY')} <span></span>
+    </div>
+
+    <div style="margin-top:14px;"><b>เรื่องที่ให้ดำเนินการ</b>&nbsp;&nbsp;&nbsp;&nbsp;${ck(true, 'เซ็นสัญญาแล้ว')}&nbsp;&nbsp;&nbsp;&nbsp;${ck(false, 'ยังไม่เซ็นสัญญา')}</div>
+    <div style="margin-top:8px;padding-left:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px 12px;align-items:center;">${grid}</div>
+
+    <div style="margin-top:14px;">วันที่ดำเนินงาน ${L('', '120px')} ถึง ${L('', '120px')} สถานที่ <span id="ff-hospital" ${ed} style="border-bottom:1px dotted #000;padding:0 5px;">รพ.สามพราน จ.นครปฐม</span></div>
+
+    <div style="margin-top:12px;">รายชื่อผู้เข้าปฏิบัติงาน <span style="font-size:11px;color:#333;">(ใส่ข้อมูลเฉพาะกรณีแจ้งออกหนังสือเพื่อเข้าปฏิบัติงาน)</span></div>
+    ${names}
+
+    <div style="margin-top:16px;"><b>หนังสือแจ้งถึง</b></div>
+    <div style="margin-top:6px;padding-left:24px;display:flex;flex-wrap:wrap;gap:6px 40px;">
+      ${ck(true, 'เรียน ผู้อำนวยการโรงพยาบาล')} ${ck(false, 'นายแพทย์สำนักงานสาธารณสุข')}
+    </div>
+    <div style="margin-top:7px;padding-left:24px;"><span>${box(false)} อื่นๆ โปรดระบุ ${L('', '160px')} เรียน ${L('', '160px')}</span></div>
+
+    <div style="margin-top:16px;"><b>หนังสือแจ้งเพื่อ</b></div>
+    <div style="margin-top:6px;padding-left:24px;">${ck(false, 'เพื่อทราบ')}</div>
+    <div style="margin-top:7px;padding-left:24px;">
+      <span style="display:flex;gap:7px;align-items:flex-start;">${box(false)}<span>ให้คณะกรรมการดำเนินการตรวจรับและเบิกจ่ายเงินต่อไป <span style="font-size:11px;color:#333;">(กรณีที่ตรวจรับเบิกจ่ายเงิน ถ้าเป็นสัญญาจ้าง ให้ระบุเลขที่สัญญา, วันที่ลงนามในสัญญา, แต่ถ้าตอบรับใบเสนอราคา ให้ระบุใบเสนอราคา)</span></span></span>
+      <div style="padding-left:24px;margin-top:6px;">สัญญาเลขที่ ${L('', '160px')} จำนวน ${L('', '100px')} บาท</div>
+      <div style="padding-left:24px;margin-top:4px;">ลงวันที่ ${L('', '160px')}</div>
+      <div style="padding-left:24px;margin-top:4px;">ใบเสนอราคา เลขที่ ${L('', '210px')}</div>
+    </div>
+
+    <div style="margin-top:16px;">ช่องทางที่ต้องการให้จัดส่ง&nbsp;&nbsp;&nbsp;${box(true)} ทางไปรษณีย์ EMS จ่าหน้าซอง พัสดุ ติดต่อคุณหนึ่ง 083-2487205</div>
+    <div style="margin-top:6px;padding-left:172px;">${box(true)} ทาง E-mail ${L('', '190px')}</div>
+    <div style="margin-top:6px;padding-left:78px;">CC E-mail ${L('tanitasofia9641@gmail.com', '220px')}</div>
+    <div style="margin-top:16px;text-align:center;font-weight:700;">** แนบพร้อมใบส่งของ/ใบแจ้งหนี้ **</div>
+  </div>`
+}
+
 function buildSheet(id: TemplateId): string {
   switch (id) {
     case 'kiosk-activation': return buildKioskActivation()
+    case 'delivery-handover': return buildDeliveryHandover()
     default: return ''
   }
+}
+
+// จัดรูปแบบข้อความที่เลือก (ตัวหนา/บาง/ขีดเส้นใต้) เฉพาะจุด — ทำงานบนช่อง contenteditable
+function execFmt(cmd: 'bold' | 'underline' | 'italic') {
+  try { document.execCommand('styleWithCSS', false, 'true') } catch { /* บางเบราว์เซอร์ */ }
+  try { document.execCommand(cmd) } catch { /* ไม่รองรับ */ }
+}
+// กำหนดน้ำหนักฟอนต์ตามค่าที่ต้องการ (เช่น 300 บาง, 400 ปกติ, 700 หนา) ให้ช่วงที่เลือก
+function setSelWeight(w: number) {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
+  const range = sel.getRangeAt(0)
+  const span = document.createElement('span')
+  span.style.fontWeight = String(w)
+  try { span.appendChild(range.extractContents()); range.insertNode(span); sel.removeAllRanges() } catch { /* ช่วงเลือกซับซ้อน */ }
 }
 
 // HTML ของเอกสารที่สะอาด (ตัดปุ่ม/ตัวช่วยที่ไม่ต้องพิมพ์ออก) — ใช้ทำรูป/พิมพ์/Word
@@ -589,6 +682,20 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
                   <span className="flex-1 text-center text-[12.5px] tabular-nums">{lineH.toFixed(2)}</span>
                   <button type="button" onClick={() => setLineH((v) => Math.min(2.4, +(v + 0.1).toFixed(2)))} className="px-2.5 py-1.5 text-[15px] font-bold text-[#5A6B82] hover:bg-[#F4F7FB]">＋</button>
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[11.5px] font-semibold text-[#5A6B82] mb-1">จัดข้อความที่เลือก <span className="font-normal text-[#96A2B5]">(ลากคลุมข้อความในเอกสารก่อน)</span></div>
+              <div className="grid grid-cols-4 gap-1.5">
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); execFmt('bold') }} title="ตัวหนา"
+                  className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)] text-[13px] font-bold">หนา</button>
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); setSelWeight(300) }} title="ตัวบาง"
+                  className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)] text-[13px]" style={{ fontWeight: 300 }}>บาง</button>
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); setSelWeight(400) }} title="ปกติ"
+                  className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)] text-[13px]">ปกติ</button>
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); execFmt('underline') }} title="ขีดเส้นใต้"
+                  className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)] text-[13px] underline">ใต้</button>
               </div>
             </div>
 
