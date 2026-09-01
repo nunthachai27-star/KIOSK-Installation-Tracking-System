@@ -962,3 +962,12 @@ model DevBoardToken {
   createdAt DateTime @default(now())
   createdBy String?
 }
+
+// ผูก "อุปกรณ์ในประเภทสินค้า" (ProductComponent) กับ "สินค้าในคลัง" (StockProduct)
+// ใช้เฉพาะ "รายงานคงเหลือตามประเภทสินค้า" เท่านั้น — ไม่มี logic เดิมตัวใดอ่าน (ไม่กระทบการตัด/คลัง)
+model StockReportMap {
+  id             String   @id @default(cuid())
+  componentId    String   @unique // = ProductComponent.id
+  stockProductId String              // = StockProduct.id
+  updatedAt      DateTime @updatedAt
+}

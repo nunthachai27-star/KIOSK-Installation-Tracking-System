@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getStockSummary } from '@/lib/stock'
 import { StockDashboard } from '@/components/StockDashboard'
 import { StockAnomalyButton } from '@/components/StockAnomalyButton'
+import { StockReportButton } from '@/components/StockReportButton'
 
 export default async function StockPage() {
   const { kpi, groups } = await getStockSummary()
@@ -16,6 +17,7 @@ export default async function StockPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <StockReportButton />
           <StockAnomalyButton />
           <Link href="/stock/new" className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
             ＋ เพิ่มสินค้า / รับเข้า
