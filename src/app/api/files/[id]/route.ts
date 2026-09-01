@@ -15,7 +15,7 @@ const INLINE_TYPES = new Set([
   'application/pdf',
 ])
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   // Require an authenticated session (defence-in-depth beyond middleware).
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -30,9 +30,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'not found' }, { status: 404 })
   }
 
+  // ?dl=1 → บังคับดาวน์โหลด (แนบไฟล์) แทนการเปิดดูในแท็บ
+  const forceDownload = new URL(req.url).searchParams.get('dl') === '1'
   const isInline = INLINE_TYPES.has(att.fileType)
   const contentType = isInline ? att.fileType : 'application/octet-stream'
-  const disposition = isInline ? 'inline' : 'attachment'
+  const disposition = isInline && !forceDownload ? 'inline' : 'attachment'
 
   const buf = await readFile(path.join(process.cwd(), att.filePath.replace(/^\//, '')))
   return new NextResponse(new Uint8Array(buf), {

@@ -123,6 +123,8 @@ export function JobDocuments({ jobId }: { jobId: string }) {
                 <div className="text-[11px] text-[#3C4A5E] truncate" title={d.fileName}>{d.fileName}</div>
                 <div className="text-[10px] text-[#96A2B5]">{fmtSize(d.fileSize)}</div>
               </div>
+              <a href={`/api/files/${d.id}?dl=1`} download={d.fileName} title="ดาวน์โหลด"
+                className="absolute top-1.5 left-1.5 w-6 h-6 grid place-items-center rounded-md bg-[rgba(15,22,33,0.6)] text-white text-[12px] hover:bg-[var(--brand)]">⬇</a>
               <button type="button" onClick={() => del(d.id)} title="ลบ"
                 className="absolute top-1.5 right-1.5 w-6 h-6 grid place-items-center rounded-md bg-[rgba(15,22,33,0.6)] text-white text-[11px] hover:bg-[#C13540]">✕</button>
             </div>
