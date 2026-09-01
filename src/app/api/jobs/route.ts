@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     })
   }
   if (status) and.push({ currentStatus: status as never })
-  if (q) and.push({ OR: [{ jobCode: { contains: q } }, { hospital: { name: { contains: q } } }] })
+  if (q) and.push({ OR: [{ jobCode: { contains: q } }, { contractNo: { contains: q } }, { hospital: { name: { contains: q } } }] })
 
   const jobs = await prisma.job.findMany({
     where: and.length ? { AND: and } : {},

@@ -16,6 +16,7 @@ export const NAV_ITEMS = [
   { href: '/stock', label: 'คลังสินค้า', icon: 'stock' },
   { href: '/loans', label: 'ยืม-คืน', icon: 'loan' },
   { href: '/notes', label: 'โน้ต', icon: 'note' },
+  { href: '/forms', label: 'แบบฟอร์ม', icon: 'form' },
   { href: '/dev', label: 'พัฒนา', icon: 'dev' },
   // สรุปงาน (/report) และ ตั้งค่า (/settings) ย้ายไปอยู่ในเมนูผู้ใช้แล้ว
 ] as const
@@ -38,6 +39,7 @@ function NavIcon({ name }: { name: string }) {
     case 'loan': return <svg {...common}><path d="M3 11.5l3-3 3.5 1.5 4-1 3.5 3" /><path d="M6 8.5V5.5h8v3" /><path d="M3 14.5h14" /></svg>
     case 'note': return <svg {...common}><path d="M5 3h10a1 1 0 0 1 1 1v9l-4 4H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M7 7h6M7 10h4M11.5 17v-3.5a1 1 0 0 1 1-1H16" /></svg>
     case 'dev': return <svg {...common}><path d="M8 5.5 3.5 10 8 14.5M12 5.5 16.5 10 12 14.5" /></svg>
+    case 'form': return <svg {...common}><path d="M5 2.5h6l3.5 3.5V16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" /><path d="M11 2.5V6h3.5" /><path d="M6.5 10h4.5M6.5 12.7h3" /><path d="m13.4 11.2 1.6 1.6-3 3-1.7.2.2-1.7z" /></svg>
 
     case 'report': return <svg {...common}><path d="M4 16V9M9 16V5M14 16v-6" /><path d="M3 17h14" /></svg>
     case 'settings': return <svg {...common}><circle cx="10" cy="10" r="2.4" /><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M15.3 4.7l-1.6 1.6M6.3 13.7l-1.6 1.6" /></svg>
@@ -117,4 +119,7 @@ const NAV_ANIM = `
   /* พัฒนา — วงเล็บถ่าง */
   .nav-link:hover .ni-dev{ animation:na-spread .55s ease; }
   @keyframes na-spread{ 0%{transform:scaleX(1)} 45%{transform:scaleX(1.28)} 100%{transform:scaleX(1)} }
+  /* แบบฟอร์ม — ปั๊มตรา */
+  .nav-link:hover .ni-form{ animation:na-stamp .55s cubic-bezier(.3,.9,.4,1); }
+  @keyframes na-stamp{ 0%{transform:scale(1) rotate(0)} 40%{transform:scale(.82) rotate(-6deg)} 70%{transform:scale(1.08) rotate(2deg)} 100%{transform:scale(1) rotate(0)} }
 }`
