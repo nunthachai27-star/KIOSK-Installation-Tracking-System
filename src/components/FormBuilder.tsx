@@ -137,12 +137,18 @@ function buildSheet(id: TemplateId): string {
   }
 }
 
-// ── DOM → PNG ด้วย SVG foreignObject (ไม่พึ่ง library) ────────────────────────
-async function nodeToPngBlob(node: HTMLElement, scale = 2): Promise<Blob> {
+// HTML ของเอกสารที่สะอาด (ตัดปุ่ม/ตัวช่วยที่ไม่ต้องพิมพ์ออก) — ใช้ทำรูป/พิมพ์/Word
+function cleanSheetClone(node: HTMLElement): HTMLElement {
   const clone = node.cloneNode(true) as HTMLElement
   clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
   clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
   clone.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
+  return clone
+}
+
+// ── DOM → Canvas ด้วย SVG foreignObject (ไม่พึ่ง library) ─────────────────────
+async function nodeToCanvas(node: HTMLElement, scale = 2): Promise<HTMLCanvasElement> {
+  const clone = cleanSheetClone(node)
   clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml')
   const w = node.offsetWidth || A4_W
   const h = node.scrollHeight || node.offsetHeight
@@ -158,7 +164,56 @@ async function nodeToPngBlob(node: HTMLElement, scale = 2): Promise<Blob> {
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
   ctx.scale(scale, scale)
   ctx.drawImage(img, 0, 0)
+  return canvas
+}
+
+async function nodeToPngBlob(node: HTMLElement, scale = 2): Promise<Blob> {
+  const canvas = await nodeToCanvas(node, scale)
   return await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('blob'))), 'image/png'))
+}
+
+// ── Canvas (JPEG) → PDF หน้าเดียวขนาด A4 (สร้าง PDF เองแบบไม่พึ่ง library) ─────
+async function canvasToPdfBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  const jpeg = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('jpeg'))), 'image/jpeg', 0.92))
+  const jb = new Uint8Array(await jpeg.arrayBuffer())
+  const iw = canvas.width, ih = canvas.height
+  const pageW = 595.28, pageH = 841.89, margin = 28 // A4 @72dpi
+  const s = Math.min((pageW - 2 * margin) / iw, (pageH - 2 * margin) / ih)
+  const w = iw * s, h = ih * s
+  const x = (pageW - w) / 2, y = pageH - margin - h // ชิดบน
+  const enc = new TextEncoder()
+  const chunks: Uint8Array[] = []
+  let len = 0
+  const off: number[] = []
+  const push = (u: Uint8Array) => { chunks.push(u); len += u.length }
+  const put = (str: string) => push(enc.encode(str))
+  const obj = (n: number, body: string) => { off[n] = len; put(`${n} 0 obj\n${body}\nendobj\n`) }
+  put('%PDF-1.4\n')
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>')
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
+  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>`)
+  const content = `q\n${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm\n/Im0 Do\nQ\n`
+  obj(4, `<< /Length ${content.length} >>\nstream\n${content}endstream`)
+  off[5] = len
+  put(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jb.length} >>\nstream\n`)
+  push(jb)
+  put('\nendstream\nendobj\n')
+  const xrefStart = len
+  let xref = 'xref\n0 6\n0000000000 65535 f \n'
+  for (let i = 1; i <= 5; i++) xref += String(off[i]).padStart(10, '0') + ' 00000 n \n'
+  put(xref)
+  put(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
+  const out = new Uint8Array(len)
+  let o = 0
+  for (const c of chunks) { out.set(c, o); o += c.length }
+  return new Blob([out], { type: 'application/pdf' })
+}
+
+// ── เอกสาร → Word (.doc) : HTML ที่ Word เปิดได้ (ไม่พึ่ง library) ─────────────
+function sheetToDocBlob(node: HTMLElement, title: string): Blob {
+  const inner = cleanSheetClone(node).outerHTML
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${title}</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>@page{size:A4;margin:1.2cm}body{margin:0}</style></head><body>${inner}</body></html>`
+  return new Blob(['﻿', html], { type: 'application/msword' })
 }
 
 export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
@@ -176,6 +231,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const [fontPx, setFontPx] = useState(13.5)
   const [lineH, setLineH] = useState(1.55)
   const [layout, setLayout] = useState(false)
+  const [fmt, setFmt] = useState<'pdf' | 'png' | 'doc'>('pdf')
   const sheetWrap = useRef<HTMLDivElement>(null)
   const fitRef = useRef<HTMLDivElement>(null)
   const scalerRef = useRef<HTMLDivElement>(null)
@@ -339,27 +395,53 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     } finally { setSearching(false) }
   }
 
+  // สร้างไฟล์ตามรูปแบบที่เลือก (pdf / png / doc)
+  async function makeFile(): Promise<{ blob: Blob; ext: string; mime: string }> {
+    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
+    if (!sheet) throw new Error('no sheet')
+    if (fmt === 'doc') return { blob: sheetToDocBlob(sheet, tpl?.title ?? 'แบบฟอร์ม'), ext: 'doc', mime: 'application/msword' }
+    const canvas = await nodeToCanvas(sheet, 3)
+    if (fmt === 'pdf') return { blob: await canvasToPdfBlob(canvas), ext: 'pdf', mime: 'application/pdf' }
+    const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'))
+    return { blob, ext: 'png', mime: 'image/png' }
+  }
+  const baseName = () => `${tpl?.title ?? 'แบบฟอร์ม'}${job ? '-' + job.jobCode : ''}`.replace(/[\\/:*?"<>|]+/g, '-')
+
   async function saveToJob() {
-    const wrap = sheetWrap.current
-    const sheet = wrap?.querySelector('#ff-sheet') as HTMLElement | null
+    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
     if (!sheet || !tpl) return
     if (!job) { setMsg({ kind: 'err', text: 'เลือกงานปลายทางก่อน (ค้นหาด้วยเลขสัญญา/รหัสงาน)' }); return }
     setBusy(true); setMsg(null)
     try {
       setPhase('กำลังสร้างเอกสาร…')
-      const blob = await nodeToPngBlob(sheet, 3)
-      const fname = `${tpl.title}-${job.jobCode}.png`.replace(/[\\/:*?"<>|]+/g, '-')
-      const file = new File([blob], fname, { type: 'image/png' })
+      const { blob, ext, mime } = await makeFile()
+      const file = new File([blob], `${baseName()}.${ext}`, { type: mime })
       setPhase('กำลังบันทึกเข้าเอกสารงาน…')
       const fd = new FormData()
       fd.append('file', file)
       fd.append('category', cat || tpl.defaultCat)
       const r = await fetch(`/api/jobs/${job.id}/documents`, { method: 'POST', body: fd })
       const j = await r.json().catch(() => ({}))
-      if (r.ok) setMsg({ kind: 'ok', text: `บันทึกเข้าเอกสารงาน ${job.jobCode} แล้ว` })
+      if (r.ok) setMsg({ kind: 'ok', text: `บันทึกเข้าเอกสารงาน ${job.jobCode} แล้ว (${ext.toUpperCase()})` })
       else setMsg({ kind: 'err', text: j.message || 'บันทึกไม่สำเร็จ' })
     } catch {
       setMsg({ kind: 'err', text: 'สร้างเอกสารไม่สำเร็จ (เบราว์เซอร์ไม่รองรับการเรนเดอร์) — ลองใช้ Chrome/Edge' })
+    } finally { setBusy(false); setPhase('') }
+  }
+
+  // ดาวน์โหลดลงเครื่องตามรูปแบบที่เลือก (ไม่ต้องแนบเข้างาน)
+  async function downloadFile() {
+    setBusy(true); setMsg(null)
+    try {
+      setPhase('กำลังสร้างไฟล์…')
+      const { blob, ext } = await makeFile()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `${baseName()}.${ext}`
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
+    } catch {
+      setMsg({ kind: 'err', text: 'สร้างไฟล์ไม่สำเร็จ — ลองใช้ Chrome/Edge' })
     } finally { setBusy(false); setPhase('') }
   }
 
@@ -533,13 +615,28 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
 
           <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2">
             <div className="text-[13px] font-bold text-[#233047] mb-1">4) บันทึก / พิมพ์</div>
+            <div>
+              <div className="text-[11.5px] font-semibold text-[#5A6B82] mb-1">รูปแบบไฟล์</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {([['pdf', 'PDF'], ['png', 'รูป (PNG)'], ['doc', 'Word']] as const).map(([k, label]) => (
+                  <button key={k} type="button" onClick={() => setFmt(k)}
+                    className={`text-[12px] font-semibold px-2 py-1.5 rounded-lg border ${fmt === k ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button type="button" onClick={saveToJob} disabled={busy}
               className="w-full text-[13.5px] font-semibold px-3 py-2.5 rounded-lg bg-[#157F4C] text-white hover:bg-[#0F6B3E] disabled:opacity-60">
-              💾 บันทึกเข้าเอกสารงาน
+              💾 บันทึกเข้าเอกสารงาน ({fmt.toUpperCase()})
+            </button>
+            <button type="button" onClick={downloadFile} disabled={busy}
+              className="w-full text-[13px] font-semibold px-3 py-2.5 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)]">
+              ⬇ ดาวน์โหลดลงเครื่อง ({fmt.toUpperCase()})
             </button>
             <button type="button" onClick={printSheet} disabled={busy}
               className="w-full text-[13px] font-semibold px-3 py-2.5 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)]">
-              🖨️ พิมพ์ / บันทึกเป็น PDF
+              🖨️ พิมพ์
             </button>
             {busy && <div className="text-[12.5px] text-[var(--brand)] font-semibold">{phase || 'กำลังทำงาน…'}</div>}
             {msg && (

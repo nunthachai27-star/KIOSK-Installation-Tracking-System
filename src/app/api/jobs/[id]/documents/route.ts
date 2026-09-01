@@ -6,7 +6,7 @@ import { logAction } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
-const DOC_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'])
+const DOC_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf', 'application/msword'])
 const DOC_MAX = 15 * 1024 * 1024 // 15MB
 
 // ── GET: รายการเอกสารของงาน ─────────────────────────────────────────────────
@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const file = form?.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'missing file' }, { status: 400 })
   if (!DOC_TYPES.has(file.type) || file.size <= 0 || file.size > DOC_MAX) {
-    return NextResponse.json({ error: 'bad file', message: 'รองรับรูป (PNG/JPG/WebP/GIF) หรือ PDF ไม่เกิน 15MB' }, { status: 400 })
+    return NextResponse.json({ error: 'bad file', message: 'รองรับรูป (PNG/JPG/WebP/GIF), PDF หรือ Word (.doc) ไม่เกิน 15MB' }, { status: 400 })
   }
   // ชนิดเอกสารแก้ไขได้ (จาก ตั้งค่า › ชนิดเอกสารงาน) — รับข้อความอิสระ, คุมความยาว
   const category = String(form?.get('category') || '').replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'อื่นๆ'
