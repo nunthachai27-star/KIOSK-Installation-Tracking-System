@@ -20,6 +20,16 @@ type JobHit = { id: string; jobCode: string; contractNo: string | null; province
 
 const A4_W = 794 // px @ ~96dpi
 
+// ฟอนต์ให้เลือก (ฟอนต์ไทยที่มักติดตั้งในเครื่อง Windows)
+const FONTS: { key: string; label: string; stack: string }[] = [
+  { key: 'sarabun', label: 'Sarabun', stack: "'Sarabun','TH Sarabun New','Leelawadee UI',sans-serif" },
+  { key: 'thsarabun', label: 'TH Sarabun New', stack: "'TH Sarabun New','TH SarabunPSK','Sarabun',sans-serif" },
+  { key: 'angsana', label: 'Angsana New', stack: "'Angsana New','AngsanaUPC','TH Sarabun New',serif" },
+  { key: 'cordia', label: 'Cordia New', stack: "'Cordia New','CordiaUPC','Leelawadee UI',sans-serif" },
+  { key: 'tahoma', label: 'Tahoma', stack: "Tahoma,'Leelawadee UI',sans-serif" },
+  { key: 'system', label: 'ค่าเริ่มต้นระบบ', stack: "system-ui,'Segoe UI','Leelawadee UI',sans-serif" },
+]
+
 // ── ตัวสร้าง HTML ของฟอร์ม (inline style ล้วน เพื่อเรนเดอร์เป็นรูปได้ครบ) ──────
 // โลโก้ BMS ใช้ไฟล์ทางการฝังเป็น data URI (ทำงานทั้งบนจอ, ตอนเรนเดอร์เป็นรูป และพิมพ์)
 function bmsLogoImg(w = 84) {
@@ -28,90 +38,94 @@ function bmsLogoImg(w = 84) {
 
 const esc = (s: string) => String(s).replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'))
 
-// แถวตาราง ตู้ที่ / BMS Serial / MAC Address (ใช้ร่วมทั้งตอนสร้างฟอร์มและเติมข้อมูลงาน)
+// บรรทัดรายการเครื่อง (ตู้ที่ / BMS Serial / MAC) แบบมีเส้นบรรทัด ตามฟอร์มต้นฉบับ
 function unitRowHtml(i: number, serial = '', mac = ''): string {
-  const cell = 'padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;'
+  const s = esc(serial), m = esc(mac)
+  const text = (s || m)
+    ? `- ตู้ที่ ${i} &nbsp;&nbsp;MAC Address&nbsp;&nbsp; เลข BMS Serial: ${s}${m ? ` : ${m}` : ''}`
+    : '&nbsp;'
   return `<tr>
-      <td style="${cell}text-align:center;width:52px;" contenteditable="true">${i}</td>
-      <td style="${cell}" contenteditable="true">${esc(serial)}</td>
-      <td style="${cell}" contenteditable="true">${esc(mac)}</td>
-      <td class="ff-noprint" style="width:34px;text-align:center;border:0;"><button type="button" class="ff-delrow" title="ลบแถว" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:24px;height:24px;cursor:pointer;font-weight:700;">✕</button></td>
+      <td class="ff-unit" style="border-bottom:1px solid #000;padding:5px 6px 5px 18px;" contenteditable="true">${text}</td>
+      <td class="ff-noprint" style="width:28px;text-align:center;border:0;vertical-align:middle;"><button type="button" class="ff-delrow" title="ลบบรรทัด" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:22px;height:22px;cursor:pointer;font-weight:700;">✕</button></td>
     </tr>`
 }
 
+const COMPANY_LINES = 'บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)<br>เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร<br>โทรศัพท์ 0-2427-9991 โทรสาร 0-2873-0292<br>เลขที่ประจำตัวผู้เสียภาษี 0105548152334'
+
 function buildKioskActivation(): string {
   const ed = 'contenteditable="true"'
-  const cell = 'padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;'
-  const row = (i: number) => unitRowHtml(i, `BMS-KI69-0${29 + i}`, '')
+  const sig = 'border-bottom:1px dotted #000;height:1px;margin-bottom:6px;'
+  const chk = '<span class="ff-check" data-checked="0" style="display:inline-block;width:17px;height:17px;border:1.3px solid #000;text-align:center;line-height:15px;font-size:13px;cursor:pointer;vertical-align:middle;"></span>'
+  // ตัวอย่างเริ่มต้น 3 บรรทัด + บรรทัดว่างมีเส้น 3 บรรทัด (ให้ดูเป็นฟอร์มเหมือนต้นฉบับ)
+  const rows = [1, 2, 3].map((i) => unitRowHtml(i, `BMS-KI69-0${29 + i}`)).concat([unitRowHtml(0), unitRowHtml(0), unitRowHtml(0)]).join('')
   return `
-  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#1b1b1b;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif;font-size:15px;line-height:1.65;">
-    <div style="border:1px solid #2a2a2a;padding:18px 26px 18px;">
-      <div style="display:flex;align-items:flex-start;gap:14px;">
-        <div style="flex:0 0 auto;">${bmsLogoImg(84)}</div>
-        <div ${ed} style="font-size:11.5px;line-height:1.5;color:#333;">บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)<br>เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร<br>โทรศัพท์ 0-2427-9991 โทรสาร 0-2873-0292<br>เลขที่ประจำตัวผู้เสียภาษี 0105548152334</div>
+  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif;font-size:13.5px;line-height:1.55;">
+    <div style="border:1px solid #000;">
+
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid #000;">
+        <div style="flex:0 0 auto;">${bmsLogoImg(48)}</div>
+        <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
       </div>
 
-      <h1 ${ed} style="text-align:center;text-decoration:underline;font-size:17px;font-weight:700;margin:12px 0 10px;">เอกสารการขออนุมัติเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ)</h1>
-
-      <p style="margin:8px 0;">ชื่อผู้ร้องขอ(BMS)&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 4px;">นางสาวธนิตา สายวารี</span>&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 4px;">เจ้าหน้าที่ชำนาญการขายและการตลาด</span></p>
-
-      <p ${ed} style="margin:8px 0;">ขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติรุ่น Smart Kiosk Hi-End และเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้ ดังนี้</p>
-
-      <p style="margin:12px 0 6px;">1. <span id="ff-hospital" ${ed} style="border-bottom:1px dotted #999;padding:0 4px;font-weight:600;">โรงพยาบาล………………………</span>&nbsp;&nbsp;จังหวัด <span id="ff-province" ${ed} style="border-bottom:1px dotted #999;padding:0 4px;">………………</span></p>
-
-      <table style="width:100%;border-collapse:collapse;margin:6px 0 4px;">
-        <thead>
-          <tr>
-            <th style="${cell}background:#f4f4f4;text-align:center;width:52px;">ตู้ที่</th>
-            <th style="${cell}background:#f4f4f4;text-align:left;">เลข BMS Serial</th>
-            <th style="${cell}background:#f4f4f4;text-align:left;">MAC Address</th>
-            <th class="ff-noprint" style="width:34px;border:0;"></th>
-          </tr>
-        </thead>
-        <tbody id="ff-units">${row(1)}${row(2)}${row(3)}</tbody>
-      </table>
-      <div class="ff-noprint" style="margin:2px 0 12px;"><button type="button" id="ff-addrow" style="border:1px dashed #b9c2cf;background:#f7f9fc;color:#3c4a5e;border-radius:8px;padding:4px 12px;font-size:12.5px;font-weight:600;cursor:pointer;">＋ เพิ่มแถว</button></div>
-
-      <p ${ed} style="margin:10px 0;">ดังนั้นฝ่ายการตลาด จึงขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติ รุ่น Smart Kiosk Hi-End และเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้</p>
-
-      <p style="margin:12px 0;">เริ่มตั้งแต่วันที่&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 40px;"></span></p>
-
-      <p style="margin:12px 0 4px;">จึงเรียนมาเพื่อโปรดพิจารณา</p>
-      <div style="display:flex;gap:26px;margin:4px 0 6px;padding-left:8px;">
-        <label style="display:inline-flex;align-items:center;gap:8px;"><span class="ff-check" data-checked="0" style="display:inline-block;width:16px;height:16px;border:1.4px solid #333;border-radius:3px;text-align:center;line-height:14px;font-size:13px;cursor:pointer;"></span>อนุมัติ</label>
-        <label style="display:inline-flex;align-items:center;gap:8px;"><span class="ff-check" data-checked="0" style="display:inline-block;width:16px;height:16px;border:1.4px solid #333;border-radius:3px;text-align:center;line-height:14px;font-size:13px;cursor:pointer;"></span>ไม่อนุมัติ</label>
+      <div style="text-align:center;padding:7px 12px;border-bottom:1px solid #000;">
+        <span ${ed} style="text-decoration:underline;font-weight:700;font-size:15px;">เอกสารการขออนุมัติเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ)</span>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
-        <div style="text-align:center;min-width:260px;">
-          <div style="border-bottom:1px dotted #888;height:26px;"></div>
-          <div style="margin-top:4px;">( <span ${ed}>นางสาวนิธยาภรณ์ สุทธินุ่น</span> )</div>
+      <div style="text-align:center;padding:6px 12px;border-bottom:1px solid #000;">
+        ชื่อผู้ร้องขอ(BMS)&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 6px;">นางสาวธนิตา สายวารี</span>&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 6px;">เจ้าหน้าที่ชำนาญการขายและการตลาด</span>
+      </div>
+
+      <div style="padding:8px 12px 0;">
+        <p ${ed} style="margin:0 0 8px;">ขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติรุ่น Smart Kiosk Hi-End และเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้ ดังนี้</p>
+        <div style="border-bottom:1px solid #000;padding:2px 0 4px 6px;">1. <span id="ff-hospital" ${ed} style="padding:0 4px;font-weight:600;">โรงพยาบาล………………………</span>&nbsp;จังหวัด <span id="ff-province" ${ed} style="padding:0 4px;">………………</span></div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tbody id="ff-units">${rows}</tbody>
+        </table>
+        <div class="ff-noprint" style="margin:6px 0 2px;"><button type="button" id="ff-addrow" style="border:1px dashed #b9c2cf;background:#f7f9fc;color:#3c4a5e;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;">＋ เพิ่มบรรทัด</button></div>
+      </div>
+
+      <div ${ed} style="padding:6px 12px;border-bottom:1px solid #000;">ดังนั้นฝ่ายการตลาด จึงขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติ รุ่น Smart Kiosk Hi-End และเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้</div>
+
+      <div style="padding:12px 12px 4px;">เริ่มตั้งแต่วันที่&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 46px;"></span></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 16px 0;">
+        <div>
+          <div style="margin-bottom:4px;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+          <div style="padding-left:26px;">
+            <div style="margin:5px 0;">${chk}&nbsp;อนุมัติ</div>
+            <div style="margin:5px 0;">${chk}&nbsp;ไม่อนุมัติ</div>
+          </div>
+        </div>
+        <div style="text-align:center;min-width:250px;margin-top:26px;">
+          <div style="${sig}"></div>
+          <div>( <span ${ed}>นางสาวนิธยาภรณ์ สุทธินุ่น</span> )</div>
           <div ${ed}>ผู้อนุมัติ</div>
         </div>
       </div>
 
-      <p ${ed} style="margin:10px 0;font-size:14px;">ฝ่ายการตลาดรับทราบและดำเนินการแจ้งทีม Call Center เพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ) ต่อไป</p>
+      <div ${ed} style="padding:8px 12px 0;">ฝ่ายการตลาดรับทราบและดำเนินการแจ้งทีม Call Center เพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ) ต่อไป</div>
 
-      <div style="display:flex;justify-content:center;margin:20px 0 8px;">
-        <div style="text-align:center;min-width:260px;">
-          <div style="border-bottom:1px dotted #888;height:26px;"></div>
-          <div style="margin-top:4px;">( <span ${ed}>นางสาวธนิตา สายวารี</span> )</div>
+      <div style="display:flex;justify-content:center;padding:18px 12px 0;">
+        <div style="text-align:center;min-width:250px;">
+          <div style="${sig}"></div>
+          <div>( <span ${ed}>นางสาวธนิตา สายวารี</span> )</div>
           <div ${ed}>ผู้จัดทำ</div>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;margin-top:24px;gap:24px;">
+      <div style="display:flex;justify-content:space-between;gap:30px;padding:26px 24px 16px;">
         <div style="text-align:center;flex:1;">
-          <div style="border-bottom:1px dotted #888;height:22px;"></div>
-          <div style="margin-top:4px;">(<span ${ed}>นางสาวภัคธินันท์ วิโรจน์ธานีกุล</span>)</div>
+          <div style="${sig}"></div>
+          <div>(<span ${ed}>นางสาวภัคธินันท์ วิโรจน์ธานีกุล</span>)</div>
           <div ${ed}>หัวหน้าแผนกการขายและการตลาด</div>
         </div>
         <div style="text-align:center;flex:1;">
-          <div style="border-bottom:1px dotted #888;height:22px;"></div>
-          <div style="margin-top:4px;">(<span ${ed}>นางสาวปราณี มีเกาะ</span>)</div>
+          <div style="${sig}"></div>
+          <div>(<span ${ed}>นางสาวปราณี มีเกาะ</span>)</div>
           <div ${ed}>ผู้ดำเนินการเปิด Activation</div>
         </div>
       </div>
+
     </div>
   </div>`
 }
@@ -128,6 +142,7 @@ async function nodeToPngBlob(node: HTMLElement, scale = 2): Promise<Blob> {
   const clone = node.cloneNode(true) as HTMLElement
   clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
   clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
+  clone.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
   clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml')
   const w = node.offsetWidth || A4_W
   const h = node.scrollHeight || node.offsetHeight
@@ -157,9 +172,14 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState('')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [fontKey, setFontKey] = useState('sarabun')
+  const [fontPx, setFontPx] = useState(13.5)
+  const [lineH, setLineH] = useState(1.55)
+  const [layout, setLayout] = useState(false)
   const sheetWrap = useRef<HTMLDivElement>(null)
   const fitRef = useRef<HTMLDivElement>(null)
   const scalerRef = useRef<HTMLDivElement>(null)
+  const selBlock = useRef<HTMLElement | null>(null)
 
   // ชนิดเอกสาร (จาก ตั้งค่า › ชนิดเอกสารงาน)
   useEffect(() => {
@@ -243,11 +263,67 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
         if (!alive) return
         const tbody = wrap.querySelector('#ff-units') as HTMLTableSectionElement | null
         const units = j.units || []
-        if (tbody && units.length) tbody.innerHTML = units.map((u, i) => unitRowHtml(i + 1, u.serialNo, u.mac)).join('')
+        if (tbody && units.length) {
+          const rowsHtml = units.map((u, i) => unitRowHtml(i + 1, u.serialNo, u.mac))
+          for (let i = units.length; i < 6; i++) rowsHtml.push(unitRowHtml(0)) // บรรทัดว่างมีเส้น
+          tbody.innerHTML = rowsHtml.join('')
+        }
       })
       .catch(() => {})
     return () => { alive = false }
   }, [job, tpl])
+
+  // ฟอนต์ / ขนาดตัวอักษร / ระยะบรรทัด — ตั้งที่ root ของเอกสาร (ติดไปตอนบันทึก/พิมพ์ด้วย)
+  useEffect(() => {
+    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
+    if (!sheet) return
+    sheet.style.fontFamily = (FONTS.find((f) => f.key === fontKey) ?? FONTS[0]).stack
+    sheet.style.fontSize = fontPx + 'px'
+    sheet.style.lineHeight = String(lineH)
+  }, [tpl, job, fontKey, fontPx, lineH])
+
+  // โหมดจัดวาง — คลิกเลือกบล็อก/บรรทัด แล้วเลื่อนขึ้น-ลง/เว้นระยะ/เยื้องได้
+  useEffect(() => {
+    const wrap = sheetWrap.current
+    const sheet = wrap?.querySelector('#ff-sheet') as HTMLElement | null
+    const container = sheet?.firstElementChild as HTMLElement | null
+    if (!wrap || !sheet || !container) return
+    if (!layout) return
+    const editables = Array.from(sheet.querySelectorAll('[contenteditable="true"]')) as HTMLElement[]
+    editables.forEach((e) => e.setAttribute('contenteditable', 'false')) // ปิดพิมพ์ชั่วคราวเพื่อคลิกเลือก
+    sheet.classList.add('ff-layout')
+    const onClick = (e: Event) => {
+      let el = e.target as HTMLElement | null
+      while (el && el.parentElement !== container) el = el.parentElement // หาบล็อกระดับบนสุด
+      if (!el) return
+      wrap.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
+      el.classList.add('ff-sel')
+      selBlock.current = el
+    }
+    container.addEventListener('click', onClick)
+    return () => {
+      container.removeEventListener('click', onClick)
+      sheet.classList.remove('ff-layout')
+      wrap.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
+      editables.forEach((e) => e.setAttribute('contenteditable', 'true'))
+      selBlock.current = null
+    }
+  }, [layout, tpl, job])
+
+  function moveBlock(dir: -1 | 1) {
+    const el = selBlock.current, par = el?.parentElement
+    if (!el || !par) return
+    const sib = dir < 0 ? el.previousElementSibling : el.nextElementSibling
+    if (!sib) return
+    if (dir < 0) par.insertBefore(el, sib)
+    else par.insertBefore(sib, el)
+  }
+  function nudge(prop: 'marginTop' | 'marginLeft', d: number) {
+    const el = selBlock.current
+    if (!el) return
+    const cur = parseFloat(el.style[prop] || '0') || 0
+    el.style[prop] = Math.max(0, cur + d) + 'px'
+  }
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault()
@@ -271,7 +347,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     setBusy(true); setMsg(null)
     try {
       setPhase('กำลังสร้างเอกสาร…')
-      const blob = await nodeToPngBlob(sheet, 2)
+      const blob = await nodeToPngBlob(sheet, 3)
       const fname = `${tpl.title}-${job.jobCode}.png`.replace(/[\\/:*?"<>|]+/g, '-')
       const file = new File([blob], fname, { type: 'image/png' })
       setPhase('กำลังบันทึกเข้าเอกสารงาน…')
@@ -350,7 +426,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   // ── หน้าแก้ไข + บันทึก ───────────────────────────────────────────────────────
   return (
     <div className="max-w-[1160px] mx-auto px-4 sm:px-6 py-6">
-      <style>{`#ff-sheet [contenteditable]:hover{background:#fff8e6}#ff-sheet [contenteditable]:focus{outline:2px solid var(--brand);outline-offset:1px;background:#fffdf5;border-radius:3px}`}</style>
+      <style>{`#ff-sheet [contenteditable]:hover{background:#fff8e6}#ff-sheet [contenteditable]:focus{outline:2px solid var(--brand);outline-offset:1px;background:#fffdf5;border-radius:3px}#ff-sheet.ff-layout,#ff-sheet.ff-layout *{cursor:pointer}#ff-sheet.ff-layout>div>*{outline:1px dashed #C3D0E0;outline-offset:-1px}#ff-sheet .ff-sel{outline:2px solid var(--brand)!important;background:#FFF6E0}`}</style>
 
       <div className="flex items-center gap-2 mb-4">
         <button type="button" onClick={() => { setTpl(null); setJob(null); setHits([]); setMsg(null) }}
@@ -406,8 +482,57 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
             </div>
           </div>
 
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-3">
+            <div className="text-[13px] font-bold text-[#233047]">3) ฟอนต์ &amp; รูปแบบ</div>
+            <div>
+              <div className="text-[11.5px] font-semibold text-[#5A6B82] mb-1">ฟอนต์</div>
+              <select value={fontKey} onChange={(e) => setFontKey(e.target.value)}
+                className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-[var(--brand)]">
+                {FONTS.map((f) => <option key={f.key} value={f.key} style={{ fontFamily: f.stack }}>{f.label}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <div className="text-[11.5px] font-semibold text-[#5A6B82] mb-1">ขนาดตัวอักษร</div>
+                <div className="flex items-center border border-[#DCE4EE] rounded-lg overflow-hidden">
+                  <button type="button" onClick={() => setFontPx((v) => Math.max(11, +(v - 0.5).toFixed(1)))} className="px-2.5 py-1.5 text-[15px] font-bold text-[#5A6B82] hover:bg-[#F4F7FB]">−</button>
+                  <span className="flex-1 text-center text-[12.5px] tabular-nums">{fontPx}px</span>
+                  <button type="button" onClick={() => setFontPx((v) => Math.min(20, +(v + 0.5).toFixed(1)))} className="px-2.5 py-1.5 text-[15px] font-bold text-[#5A6B82] hover:bg-[#F4F7FB]">＋</button>
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="text-[11.5px] font-semibold text-[#5A6B82] mb-1">ระยะบรรทัด</div>
+                <div className="flex items-center border border-[#DCE4EE] rounded-lg overflow-hidden">
+                  <button type="button" onClick={() => setLineH((v) => Math.max(1.1, +(v - 0.1).toFixed(2)))} className="px-2.5 py-1.5 text-[15px] font-bold text-[#5A6B82] hover:bg-[#F4F7FB]">−</button>
+                  <span className="flex-1 text-center text-[12.5px] tabular-nums">{lineH.toFixed(2)}</span>
+                  <button type="button" onClick={() => setLineH((v) => Math.min(2.4, +(v + 0.1).toFixed(2)))} className="px-2.5 py-1.5 text-[15px] font-bold text-[#5A6B82] hover:bg-[#F4F7FB]">＋</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-1 border-t border-[#F0F3F7]">
+              <button type="button" onClick={() => setLayout((v) => !v)}
+                className={`w-full text-[13px] font-semibold px-3 py-2 rounded-lg border ${layout ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#3C4A5E] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>
+                {layout ? '✓ โหมดจัดวาง (กำลังเปิด)' : '↕ โหมดจัดวาง (เลื่อนบรรทัด/ตำแหน่ง)'}
+              </button>
+              {layout && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-[11px] text-[#96A2B5] leading-relaxed">คลิกเลือกบรรทัด/บล็อกในเอกสาร แล้วใช้ปุ่มด้านล่างเลื่อน (ในโหมดนี้พิมพ์แก้ข้อความไม่ได้ชั่วคราว)</p>
+                  <div className="grid grid-cols-2 gap-1.5 text-[12px] font-semibold">
+                    <button type="button" onClick={() => moveBlock(-1)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">▲ เลื่อนขึ้น</button>
+                    <button type="button" onClick={() => moveBlock(1)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">▼ เลื่อนลง</button>
+                    <button type="button" onClick={() => nudge('marginTop', 4)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">＋ เว้นบน</button>
+                    <button type="button" onClick={() => nudge('marginTop', -4)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">− เว้นบน</button>
+                    <button type="button" onClick={() => nudge('marginLeft', 8)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">→ เยื้องขวา</button>
+                    <button type="button" onClick={() => nudge('marginLeft', -8)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">← เยื้องซ้าย</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2">
-            <div className="text-[13px] font-bold text-[#233047] mb-1">3) บันทึก / พิมพ์</div>
+            <div className="text-[13px] font-bold text-[#233047] mb-1">4) บันทึก / พิมพ์</div>
             <button type="button" onClick={saveToJob} disabled={busy}
               className="w-full text-[13.5px] font-semibold px-3 py-2.5 rounded-lg bg-[#157F4C] text-white hover:bg-[#0F6B3E] disabled:opacity-60">
               💾 บันทึกเข้าเอกสารงาน
