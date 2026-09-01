@@ -151,6 +151,8 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const [phase, setPhase] = useState('')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const sheetWrap = useRef<HTMLDivElement>(null)
+  const fitRef = useRef<HTMLDivElement>(null)
+  const scalerRef = useRef<HTMLDivElement>(null)
 
   // ชนิดเอกสาร (จาก ตั้งค่า › ชนิดเอกสารงาน)
   useEffect(() => {
@@ -201,6 +203,26 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
       }
     }, { signal: ac.signal })
     return () => ac.abort()
+  }, [tpl])
+
+  // ย่อเอกสารให้พอดีความกว้างที่มี (ไม่เกินขนาดจริง) — กันแถบเลื่อนแนวนอน
+  // แต่ยังเรนเดอร์/พิมพ์ที่ความละเอียดเต็ม A4 เพราะ transform ไม่กระทบ layout box
+  useEffect(() => {
+    const outer = fitRef.current
+    const inner = scalerRef.current
+    if (!outer || !inner) return
+    const apply = () => {
+      const avail = outer.clientWidth
+      const natW = inner.offsetWidth || 1
+      const s = Math.min(1, avail / natW)
+      inner.style.transformOrigin = 'top left'
+      inner.style.transform = `scale(${s})`
+      outer.style.height = inner.offsetHeight * s + 'px'
+    }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(outer); ro.observe(inner)
+    return () => ro.disconnect()
   }, [tpl])
 
   // เติมชื่อโรงพยาบาล/จังหวัดลงฟอร์มเมื่อเลือกงาน (เฉพาะช่องที่ผูกไว้)
@@ -366,9 +388,9 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
           </div>
         </div>
 
-        {/* ตัวเอกสาร (แก้ไขได้) */}
-        <div className="overflow-auto">
-          <div className="inline-block bg-[#EEF1F5] rounded-2xl p-4 shadow-inner">
+        {/* ตัวเอกสาร (แก้ไขได้) — ย่อพอดีจอ ไม่มีแถบเลื่อนล่าง */}
+        <div ref={fitRef} className="min-w-0 overflow-hidden">
+          <div ref={scalerRef} className="inline-block bg-[#EEF1F5] rounded-2xl p-4 shadow-inner">
             <div ref={sheetWrap} className="bg-white shadow-[0_10px_40px_-16px_rgba(18,45,90,0.4)]" />
           </div>
         </div>
