@@ -26,16 +26,23 @@ function bmsLogoImg(w = 84) {
   return `<img src="${BMS_LOGO_DATA_URL}" alt="BMS" width="${w}" height="${w}" style="display:block;width:${w}px;height:${w}px;object-fit:contain;" />`
 }
 
-function buildKioskActivation(): string {
+const esc = (s: string) => String(s).replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'))
+
+// แถวตาราง ตู้ที่ / BMS Serial / MAC Address (ใช้ร่วมทั้งตอนสร้างฟอร์มและเติมข้อมูลงาน)
+function unitRowHtml(i: number, serial = '', mac = ''): string {
   const cell = 'padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;'
-  const ed = 'contenteditable="true"'
-  const row = (i: number) =>
-    `<tr>
-      <td style="${cell}text-align:center;width:52px;" ${ed}>${i}</td>
-      <td style="${cell}" ${ed}>BMS-KI69-0${29 + i}</td>
-      <td style="${cell}" ${ed}></td>
+  return `<tr>
+      <td style="${cell}text-align:center;width:52px;" contenteditable="true">${i}</td>
+      <td style="${cell}" contenteditable="true">${esc(serial)}</td>
+      <td style="${cell}" contenteditable="true">${esc(mac)}</td>
       <td class="ff-noprint" style="width:34px;text-align:center;border:0;"><button type="button" class="ff-delrow" title="ลบแถว" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:24px;height:24px;cursor:pointer;font-weight:700;">✕</button></td>
     </tr>`
+}
+
+function buildKioskActivation(): string {
+  const ed = 'contenteditable="true"'
+  const cell = 'padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;'
+  const row = (i: number) => unitRowHtml(i, `BMS-KI69-0${29 + i}`, '')
   return `
   <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#1b1b1b;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif;font-size:15px;line-height:1.65;">
     <div style="border:1px solid #2a2a2a;padding:22px 26px 30px;">
@@ -183,14 +190,9 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     const ac = new AbortController()
     const tbody = wrap.querySelector('#ff-units') as HTMLTableSectionElement | null
     function makeRow(): HTMLTableRowElement {
-      const tr = document.createElement('tr')
-      const n = (tbody?.rows.length ?? 0) + 1
-      tr.innerHTML =
-        `<td style="padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;text-align:center;width:52px;" contenteditable="true">${n}</td>` +
-        `<td style="padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;" contenteditable="true"></td>` +
-        `<td style="padding:5px 8px;border:1px solid #c9c9c9;font-size:14px;" contenteditable="true"></td>` +
-        `<td class="ff-noprint" style="width:34px;text-align:center;border:0;"><button type="button" class="ff-delrow" title="ลบแถว" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:24px;height:24px;cursor:pointer;font-weight:700;">✕</button></td>`
-      return tr
+      const tbl = document.createElement('tbody')
+      tbl.innerHTML = unitRowHtml((tbody?.rows.length ?? 0) + 1)
+      return tbl.rows[0]
     }
     wrap.addEventListener('click', (e) => {
       const t = e.target as HTMLElement
@@ -225,14 +227,26 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     return () => ro.disconnect()
   }, [tpl])
 
-  // เติมชื่อโรงพยาบาล/จังหวัดลงฟอร์มเมื่อเลือกงาน (เฉพาะช่องที่ผูกไว้)
+  // เติมข้อมูลงานเมื่อเลือก: ชื่อ รพ./จังหวัด + ตาราง BMS Serial & MAC จากงานจริง
   useEffect(() => {
     const wrap = sheetWrap.current
     if (!wrap || !job) return
+    let alive = true
     const h = wrap.querySelector('#ff-hospital')
     const p = wrap.querySelector('#ff-province')
     if (h && job.hospital?.name) h.textContent = job.hospital.name
     if (p && job.province) p.textContent = job.province
+    // ดึง Serial + MAC ของเครื่องในงาน มาเติมตาราง
+    fetch(`/api/jobs/${job.id}/units`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { units: [] }))
+      .then((j: { units: { serialNo: string; mac: string }[] }) => {
+        if (!alive) return
+        const tbody = wrap.querySelector('#ff-units') as HTMLTableSectionElement | null
+        const units = j.units || []
+        if (tbody && units.length) tbody.innerHTML = units.map((u, i) => unitRowHtml(i + 1, u.serialNo, u.mac)).join('')
+      })
+      .catch(() => {})
+    return () => { alive = false }
   }, [job, tpl])
 
   async function search(e?: React.FormEvent) {
