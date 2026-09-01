@@ -45,13 +45,13 @@ function buildKioskActivation(): string {
   const row = (i: number) => unitRowHtml(i, `BMS-KI69-0${29 + i}`, '')
   return `
   <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#1b1b1b;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif;font-size:15px;line-height:1.65;">
-    <div style="border:1px solid #2a2a2a;padding:22px 26px 30px;">
+    <div style="border:1px solid #2a2a2a;padding:18px 26px 18px;">
       <div style="display:flex;align-items:flex-start;gap:14px;">
         <div style="flex:0 0 auto;">${bmsLogoImg(84)}</div>
         <div ${ed} style="font-size:11.5px;line-height:1.5;color:#333;">บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)<br>เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร<br>โทรศัพท์ 0-2427-9991 โทรสาร 0-2873-0292<br>เลขที่ประจำตัวผู้เสียภาษี 0105548152334</div>
       </div>
 
-      <h1 ${ed} style="text-align:center;text-decoration:underline;font-size:17px;font-weight:700;margin:16px 0 14px;">เอกสารการขออนุมัติเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ)</h1>
+      <h1 ${ed} style="text-align:center;text-decoration:underline;font-size:17px;font-weight:700;margin:12px 0 10px;">เอกสารการขออนุมัติเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ)</h1>
 
       <p style="margin:8px 0;">ชื่อผู้ร้องขอ(BMS)&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 4px;">นางสาวธนิตา สายวารี</span>&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 4px;">เจ้าหน้าที่ชำนาญการขายและการตลาด</span></p>
 
@@ -74,15 +74,15 @@ function buildKioskActivation(): string {
 
       <p ${ed} style="margin:10px 0;">ดังนั้นฝ่ายการตลาด จึงขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติ รุ่น Smart Kiosk Hi-End และเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้</p>
 
-      <p style="margin:16px 0;">เริ่มตั้งแต่วันที่&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 40px;"></span></p>
+      <p style="margin:12px 0;">เริ่มตั้งแต่วันที่&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #999;padding:0 40px;"></span></p>
 
-      <p style="margin:16px 0 4px;">จึงเรียนมาเพื่อโปรดพิจารณา</p>
+      <p style="margin:12px 0 4px;">จึงเรียนมาเพื่อโปรดพิจารณา</p>
       <div style="display:flex;gap:26px;margin:4px 0 6px;padding-left:8px;">
         <label style="display:inline-flex;align-items:center;gap:8px;"><span class="ff-check" data-checked="0" style="display:inline-block;width:16px;height:16px;border:1.4px solid #333;border-radius:3px;text-align:center;line-height:14px;font-size:13px;cursor:pointer;"></span>อนุมัติ</label>
         <label style="display:inline-flex;align-items:center;gap:8px;"><span class="ff-check" data-checked="0" style="display:inline-block;width:16px;height:16px;border:1.4px solid #333;border-radius:3px;text-align:center;line-height:14px;font-size:13px;cursor:pointer;"></span>ไม่อนุมัติ</label>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;margin-top:28px;">
+      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
         <div style="text-align:center;min-width:260px;">
           <div style="border-bottom:1px dotted #888;height:26px;"></div>
           <div style="margin-top:4px;">( <span ${ed}>นางสาวนิธยาภรณ์ สุทธินุ่น</span> )</div>
@@ -90,9 +90,9 @@ function buildKioskActivation(): string {
         </div>
       </div>
 
-      <p ${ed} style="margin:14px 0;font-size:14px;">ฝ่ายการตลาดรับทราบและดำเนินการแจ้งทีม Call Center เพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ) ต่อไป</p>
+      <p ${ed} style="margin:10px 0;font-size:14px;">ฝ่ายการตลาดรับทราบและดำเนินการแจ้งทีม Call Center เพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ) ต่อไป</p>
 
-      <div style="display:flex;justify-content:center;margin:30px 0 10px;">
+      <div style="display:flex;justify-content:center;margin:20px 0 8px;">
         <div style="text-align:center;min-width:260px;">
           <div style="border-bottom:1px dotted #888;height:26px;"></div>
           <div style="margin-top:4px;">( <span ${ed}>นางสาวธนิตา สายวารี</span> )</div>
@@ -100,7 +100,7 @@ function buildKioskActivation(): string {
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;margin-top:38px;gap:24px;">
+      <div style="display:flex;justify-content:space-between;margin-top:24px;gap:24px;">
         <div style="text-align:center;flex:1;">
           <div style="border-bottom:1px dotted #888;height:22px;"></div>
           <div style="margin-top:4px;">(<span ${ed}>นางสาวภัคธินันท์ วิโรจน์ธานีกุล</span>)</div>
@@ -287,18 +287,42 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     } finally { setBusy(false); setPhase('') }
   }
 
+  // พิมพ์ผ่าน iframe + Blob URL (เสถียรกว่า window.open('about:blank') ที่ Chrome มัก
+  // พิมพ์ไม่ผ่าน) และรอให้รูปโหลดเสร็จก่อนสั่งพิมพ์ กัน "Print Failed"
   function printSheet() {
     const wrap = sheetWrap.current
     const sheet = wrap?.querySelector('#ff-sheet') as HTMLElement | null
     if (!sheet) return
     const clone = sheet.cloneNode(true) as HTMLElement
     clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
-    const w = window.open('', '_blank', 'width=900,height=1100')
-    if (!w) { setMsg({ kind: 'err', text: 'เปิดหน้าต่างพิมพ์ไม่ได้ — โปรดอนุญาต pop-up' }); return }
-    w.document.open()
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${tpl?.title ?? 'แบบฟอร์ม'}</title><style>@page{size:A4;margin:12mm}body{margin:0;display:flex;justify-content:center}</style></head><body>${clone.outerHTML}</body></html>`)
-    w.document.close()
-    setTimeout(() => { try { w.focus(); w.print() } catch { /* ผู้ใช้ปิดไปก่อน */ } }, 400)
+    clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
+    // ย่อให้พอดี 1 หน้า A4 เสมอ (A4 @96dpi = 794×1123px, เว้นขอบ ~9mm)
+    const PAGE_W = 794, PAGE_H = 1123, PAD = 34
+    const sheetH = sheet.scrollHeight || sheet.offsetHeight
+    const scale = Math.min((PAGE_W - 2 * PAD) / A4_W, (PAGE_H - 2 * PAD) / sheetH, 1)
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${tpl?.title ?? 'แบบฟอร์ม'}</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}.pg{width:${PAGE_W}px;height:${PAGE_H}px;box-sizing:border-box;padding:${PAD}px;display:flex;justify-content:center;align-items:flex-start;overflow:hidden}.ft{transform:scale(${scale});transform-origin:top center}</style></head><body><div class="pg"><div class="ft">${clone.outerHTML}</div></div></body></html>`
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+    const ifr = document.createElement('iframe')
+    ifr.setAttribute('aria-hidden', 'true')
+    ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+    ifr.src = url
+    ifr.onload = () => {
+      const w = ifr.contentWindow
+      if (!w) return
+      const go = () => { try { w.focus(); w.print() } catch { /* ผู้ใช้ยกเลิก */ } }
+      // รอรูป (โลโก้) ให้พร้อมก่อนพิมพ์
+      const imgs = Array.from(w.document.images)
+      const pending = imgs.filter((im) => !im.complete)
+      if (!pending.length) setTimeout(go, 150)
+      else {
+        let left = pending.length
+        const done = () => { if (--left <= 0) setTimeout(go, 100) }
+        pending.forEach((im) => { im.addEventListener('load', done); im.addEventListener('error', done) })
+        setTimeout(go, 1500) // กันค้าง
+      }
+      setTimeout(() => { URL.revokeObjectURL(url); ifr.remove() }, 60000)
+    }
+    document.body.appendChild(ifr)
   }
 
   const catList = cats.length ? cats : [tpl?.defaultCat ?? 'สัญญา / PO']
