@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
@@ -20,8 +21,9 @@ type JobHit = { id: string; jobCode: string; contractNo: string | null; province
 const A4_W = 794 // px @ ~96dpi
 
 // ── ตัวสร้าง HTML ของฟอร์ม (inline style ล้วน เพื่อเรนเดอร์เป็นรูปได้ครบ) ──────
-function heartSvg(color: string) {
-  return `<svg width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-7.5-4.9-10-9.3C.4 8.6 1.9 5 5.3 5c2 0 3.4 1.2 4.2 2.4C10.3 6.2 11.7 5 13.7 5 17.1 5 18.6 8.6 17 11.7 14.5 16.1 12 21 12 21z" fill="${color}"/><text x="12" y="14.5" text-anchor="middle" font-size="6" font-weight="700" fill="#fff" font-family="Arial">BMS</text></svg>`
+// โลโก้ BMS ใช้ไฟล์ทางการฝังเป็น data URI (ทำงานทั้งบนจอ, ตอนเรนเดอร์เป็นรูป และพิมพ์)
+function bmsLogoImg(w = 84) {
+  return `<img src="${BMS_LOGO_DATA_URL}" alt="BMS" width="${w}" height="${w}" style="display:block;width:${w}px;height:${w}px;object-fit:contain;" />`
 }
 
 function buildKioskActivation(): string {
@@ -37,8 +39,8 @@ function buildKioskActivation(): string {
   return `
   <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#1b1b1b;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif;font-size:15px;line-height:1.65;">
     <div style="border:1px solid #2a2a2a;padding:22px 26px 30px;">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="flex:0 0 auto;">${heartSvg('#C6303A')}</div>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div style="flex:0 0 auto;">${bmsLogoImg(84)}</div>
         <div ${ed} style="font-size:11.5px;line-height:1.5;color:#333;">บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)<br>เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร<br>โทรศัพท์ 0-2427-9991 โทรสาร 0-2873-0292<br>เลขที่ประจำตัวผู้เสียภาษี 0105548152334</div>
       </div>
 
