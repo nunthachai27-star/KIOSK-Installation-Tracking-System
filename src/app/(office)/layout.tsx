@@ -8,6 +8,7 @@ import { LeadNotifier } from '@/components/LeadNotifier'
 import { MobileMenu } from '@/components/MobileMenu'
 import { NotificationBell } from '@/components/NotificationBell'
 import { UserMenu } from '@/components/UserMenu'
+import { TodoDock } from '@/components/TodoDock'
 
 const ROLE_LABEL: Record<string, string> = {
   OFFICE: 'เจ้าหน้าที่สำนักงาน',
@@ -63,6 +64,7 @@ export default async function OfficeLayout({ children }: { children: React.React
         </div>
       </header>
       {children}
+      <TodoDock />
       <RunningCritter />
       <LeadNotifier />
     </div>

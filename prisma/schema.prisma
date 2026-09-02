@@ -971,3 +971,16 @@ model StockReportMap {
   stockProductId String              // = StockProduct.id
   updatedAt      DateTime @updatedAt
 }
+
+// To-Do ส่วนตัวของผู้ใช้ (แสดงในแถบลอยด้านซ้ายทุกหน้า) — ผูกกับ userId, เห็นเฉพาะเจ้าของ
+model TodoItem {
+  id        String   @id @default(cuid())
+  userId    String
+  text      String
+  done      Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
