@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
 import { ShipLabel } from '@/components/ShipLabel'
+import { EquipSetLabel } from '@/components/EquipSetLabel'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
@@ -501,6 +502,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const [layout, setLayout] = useState(false)
   const [fmt, setFmt] = useState<'pdf' | 'png' | 'doc'>('pdf')
   const [ship, setShip] = useState(false)
+  const [equip, setEquip] = useState(false)
   const [reload, setReload] = useState(0)
   const [savedExists, setSavedExists] = useState(false)
   const sheetWrap = useRef<HTMLDivElement>(null)
@@ -793,8 +795,9 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
 
   const catList = cats.length ? cats : [tpl?.defaultCat ?? 'สัญญา / PO']
 
-  // ── ป้ายที่อยู่จัดส่ง (เครื่องมือแยก) ─────────────────────────────────────────
+  // ── เครื่องมือแยก (ค้นหา รพ./งาน) ─────────────────────────────────────────────
   if (ship) return <ShipLabel onBack={() => setShip(false)} />
+  if (equip) return <EquipSetLabel onBack={() => setEquip(false)} />
 
   // ── หน้าเลือกแม่แบบ ─────────────────────────────────────────────────────────
   if (!tpl) {
@@ -816,6 +819,12 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
             <div className="w-10 h-10 grid place-items-center rounded-xl mb-3 text-white text-[18px]" style={{ background: '#0EA5A0' }}>📦</div>
             <div className="text-[15px] font-bold text-[#233047] mb-1">ป้ายที่อยู่จัดส่ง</div>
             <div className="text-[12.5px] text-[#8492A6] leading-relaxed">ค้นหาโรงพยาบาล → ดึงที่อยู่/ผู้ติดต่อ · ปรับแนว+ขนาดกระดาษเอง ไว้ปริ้นแปะกล่องพัสดุ</div>
+          </button>
+          <button type="button" onClick={() => setEquip(true)}
+            className="text-left bg-white border border-[#E7EDF4] rounded-2xl p-5 hover:border-[var(--brand)] hover:shadow-[0_12px_30px_-16px_rgba(18,45,90,0.35)] transition">
+            <div className="w-10 h-10 grid place-items-center rounded-xl mb-3 text-white text-[18px]" style={{ background: '#7A44C6' }}>🏷️</div>
+            <div className="text-[15px] font-bold text-[#233047] mb-1">จัดชุดอุปกรณ์</div>
+            <div className="text-[12.5px] text-[#8492A6] leading-relaxed">ค้นหางาน → ดึงชื่อ รพ./จังหวัด/ประเภทสินค้า/S/N BMS · A4 แนวนอน ออก 1 ใบต่อ 1 เครื่อง</div>
           </button>
         </div>
       </div>
