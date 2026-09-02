@@ -27,6 +27,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const parsed = jobInput.partial().safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   const job = await prisma.job.update({ where: { id }, data: parsed.data })
+  // ให้ "ยอดขาย" (ข้อมูลงาน) กับ "มูลค่า" (งานบิล) เป็นค่าเดียวกัน — กรอกยอดขายแล้วอัปเดตมูลค่าในใบบิลด้วย (ถ้ามีบิลอยู่)
+  if (parsed.data.salesAmount !== undefined) {
+    await prisma.invoiceRecord.updateMany({ where: { jobId: id }, data: { invoiceAmount: parsed.data.salesAmount } })
+  }
   await logAction(session.user, 'UPDATE', 'งาน', `แก้ไขงาน ${job.jobCode}`)
   return NextResponse.json(job)
 }

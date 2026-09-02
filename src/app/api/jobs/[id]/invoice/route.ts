@@ -40,5 +40,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     update: record,
   })
 
+  // ให้ "มูลค่า" (งานบิล) กับ "ยอดขาย" (ข้อมูลงาน) เป็นค่าเดียวกัน — กรอกที่นี่แล้วอัปเดตยอดขายด้วย
+  if (data.invoiceAmount !== undefined) {
+    await prisma.job.update({ where: { id }, data: { salesAmount: data.invoiceAmount ?? 0 } })
+  }
+
   return NextResponse.json(invoice)
 }

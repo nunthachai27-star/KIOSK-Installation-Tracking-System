@@ -31,12 +31,14 @@ type InvoiceFormState = {
   remark: string
 }
 
-function initialInvoice(invoice: SerializedInvoice | null): InvoiceFormState {
+function initialInvoice(invoice: SerializedInvoice | null, salesAmount?: number | string | null): InvoiceFormState {
+  // "มูลค่า" ใช้ค่าเดียวกับ "ยอดขาย" — ถ้าใบบิลยังไม่มีมูลค่า ให้ดึงยอดขายมาแสดง
+  const sales = salesAmount != null && Number(salesAmount) > 0 ? String(Number(salesAmount)) : ''
   return {
     status: invoice?.status ?? 'PENDING',
     invoiceDate: toDateInput(invoice?.invoiceDate),
     invoiceNo: invoice?.invoiceNo ?? '',
-    invoiceAmount: invoice?.invoiceAmount != null ? String(invoice.invoiceAmount) : '',
+    invoiceAmount: invoice?.invoiceAmount != null ? String(invoice.invoiceAmount) : sales,
     remark: invoice?.remark ?? '',
   }
 }
@@ -51,7 +53,7 @@ export function InvoiceForm({
   handoverStatus: HandoverStatus
 }) {
   const router = useRouter()
-  const [iForm, setIForm] = useState<InvoiceFormState>(() => initialInvoice(invoice))
+  const [iForm, setIForm] = useState<InvoiceFormState>(() => initialInvoice(invoice, job.salesAmount))
 
   const [iSaving, setISaving] = useState(false)
   const [iSaved, setISaved] = useState(false)
@@ -164,7 +166,7 @@ export function InvoiceForm({
                 <input value={iForm.invoiceNo} onChange={e => setI('invoiceNo', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">มูลค่า (บาท)</label>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">มูลค่า (บาท) <span className="font-normal text-[11.5px] text-[#96A2B5]">· ใช้ค่าเดียวกับยอดขาย</span></label>
                 <input type="number" min={0} step="0.01" value={iForm.invoiceAmount} onChange={e => setI('invoiceAmount', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
               </div>
               <div className="col-span-2">
