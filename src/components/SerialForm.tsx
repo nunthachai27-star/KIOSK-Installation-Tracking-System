@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { alertDialog } from '@/lib/dialog'
+import { alertDialog, confirmDialog } from '@/lib/dialog'
 import type { SerialNumber, SerialType, SerialStatus } from '@prisma/client'
 import { SERIAL_TYPE_LABELS } from '@/lib/serial-types'
 import { addBusinessDays } from '@/lib/workdays'
@@ -59,6 +59,11 @@ export function SerialForm({
 
   // Which serial is waiting for the user to say *which product* to deduct from.
   const [choice, setChoice] = useState<{ serialId: string; serialNo: string; candidates: Candidate[] } | null>(null)
+
+  // แก้ไขเลข S/N BMS ของเครื่อง (inline)
+  const [editUnit, setEditUnit] = useState<string | null>(null)
+  const [editVal, setEditVal] = useState('')
+  const [renaming, setRenaming] = useState(false)
 
   // Deduct an assigned component serial that still shows IN_STOCK (issue it to this job).
   // The same factory serial can exist in several products, so when the server reports the
@@ -154,6 +159,29 @@ export function SerialForm({
   async function removeSerial(id: string) {
     const res = await fetch(`/api/jobs/${jobId}/serials/${id}`, { method: 'DELETE' })
     if (res.ok) { setRows(r => r.filter(x => x.id !== id && x.parentId !== id)); router.refresh() }
+  }
+
+  async function saveRename(unit: SerialNumber) {
+    const nv = (editVal ?? '').trim()
+    if (!nv || nv === unit.serialNo) { setEditUnit(null); return }
+    const ok = await confirmDialog({
+      title: 'เปลี่ยน S/N BMS',
+      message: `เปลี่ยน "${unit.serialNo}" → "${nv}" ?\nระบบจะไล่อัปเดตเลขนี้ที่ผูกไว้ส่วนอื่นให้ด้วย (คลังสินค้าของอุปกรณ์ที่ตัดออกให้เครื่องนี้ และรายการเคลมที่ผูกกับเครื่องนี้)`,
+      confirmText: 'เปลี่ยนเลข', cancelText: 'ยกเลิก',
+    })
+    if (!ok) return
+    setRenaming(true)
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/serials/${unit.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serialNo: nv }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) { await alertDialog({ title: 'เปลี่ยนไม่สำเร็จ', message: d?.message || 'ลองใหม่อีกครั้ง' }); return }
+      setRows(r => r.map(x => (x.id === unit.id ? { ...x, serialNo: nv } : x)))
+      setEditUnit(null)
+      router.refresh()
+      await alertDialog({ title: 'เปลี่ยนเลขแล้ว', message: `${unit.serialNo} → ${nv}\nอัปเดตในคลัง ${d.stockUpdated ?? 0} รายการ · เคลม ${d.issueUpdated ?? 0} รายการ` })
+    } finally { setRenaming(false) }
   }
 
   // สแกนบาร์โค้ด/QR → หา Serial ในคลังที่ตรง (ตัดช่องว่าง/ขีดออกก่อนเทียบ) แล้วจ่ายออกให้อัตโนมัติ.
@@ -277,7 +305,22 @@ export function SerialForm({
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <div className="flex items-center gap-2.5">
               <span className="w-7 h-7 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] grid place-items-center font-bold text-sm">{idx + 1}</span>
-              <span className="text-[15px] font-bold tnum">{unit.serialNo}</span>
+              {editUnit === unit.id ? (
+                <span className="flex items-center gap-1.5">
+                  <input value={editVal} onChange={e => setEditVal(e.target.value)} autoFocus disabled={renaming}
+                    onKeyDown={e => { if (e.key === 'Enter') saveRename(unit); if (e.key === 'Escape') setEditUnit(null) }}
+                    className="text-[15px] font-bold tnum border border-[#D6DFEA] rounded-lg px-2.5 py-1 outline-none focus:border-[var(--brand)] w-[220px]" />
+                  <button type="button" onClick={() => saveRename(unit)} disabled={renaming}
+                    className="text-[12px] font-semibold text-white bg-[var(--brand)] rounded-lg px-2.5 py-1.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">{renaming ? '…' : 'บันทึก'}</button>
+                  <button type="button" onClick={() => setEditUnit(null)} disabled={renaming} className="text-[12px] text-[#8492A6] hover:text-[#3C4A5E] px-1">ยกเลิก</button>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-[15px] font-bold tnum">{unit.serialNo}</span>
+                  <button type="button" onClick={() => { setEditUnit(unit.id); setEditVal(unit.serialNo) }}
+                    title="แก้ไขเลข S/N BMS" className="text-[#8492A6] hover:text-[var(--brand)] text-[13px]">✎</button>
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {kids.length > 0 && (
