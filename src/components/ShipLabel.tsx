@@ -1,0 +1,235 @@
+'use client'
+import { useEffect, useRef, useState } from 'react'
+import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
+
+type Contact = { name: string; phone: string | null; position: string | null }
+type Hosp = { id: string; name: string; province: string; code: string | null; address: string | null; contacts: Contact[] }
+
+// สไตล์ของป้าย (หน่วย mm = ขนาดจริงบนกระดาษ) — ใช้ทั้งพรีวิวและตอนพิมพ์
+const LABEL_CSS = `
+.sl-label{background:#fff;color:#111;border:2px solid #111;border-radius:6px;display:flex;flex-direction:column;
+  padding:5mm;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',sans-serif;box-sizing:border-box;overflow:hidden}
+.sl-from{display:flex;gap:3mm;align-items:center;border-bottom:1.5px dashed #999;padding-bottom:3mm;margin-bottom:3mm}
+.sl-logo{width:14mm;height:14mm;object-fit:contain;flex:0 0 auto}
+.sl-fromtxt{font-size:2.9mm;line-height:1.35;color:#222}
+.sl-to{flex:1;display:flex;flex-direction:column;gap:2mm;min-height:0}
+.sl-tag{font-size:3mm;font-weight:800;color:#fff;background:#111;align-self:flex-start;padding:.6mm 3mm;border-radius:3px;letter-spacing:.05em}
+.sl-name{font-size:6.5mm;font-weight:800;line-height:1.15}
+.sl-addr{font-size:4.2mm;line-height:1.45}
+.sl-contact{font-size:4.2mm;font-weight:700;margin-top:auto}
+.sl-phone{font-size:5.2mm}
+.sl-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:6px;border-top:1.5px dashed #999;padding-top:2.5mm;margin-top:3mm}
+.sl-box{font-size:3.4mm;font-weight:700}
+.sl-fragile{border:2px solid #C0271F;color:#C0271F;font-weight:800;font-size:3.6mm;padding:1mm 3mm;border-radius:4px;transform:rotate(-2deg)}
+`
+
+function labelHtml(): string {
+  const ed = 'contenteditable="true"'
+  return `
+  <div class="sl-label">
+    <div class="sl-from">
+      <img class="sl-logo" src="${BMS_LOGO_DATA_URL}" alt="BMS" />
+      <div class="sl-fromtxt" ${ed}>บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)<br>เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร 10140<br>โทร. 0-2427-9991</div>
+    </div>
+    <div class="sl-to">
+      <span class="sl-tag">ผู้รับ · TO</span>
+      <div class="sl-name" ${ed}>โรงพยาบาล………………………</div>
+      <div class="sl-addr" ${ed}>ที่อยู่……………………………………………………………………………</div>
+      <div class="sl-contact"><span class="sl-cname" ${ed}>ผู้ติดต่อ ………………</span>&nbsp;&nbsp;โทร. <span class="sl-phone" ${ed}>…………………</span></div>
+    </div>
+    <div class="sl-foot">
+      <div class="sl-box">กล่อง <b class="sl-boxes">1</b> กล่อง<span class="sl-boxnowrap" style="display:none"> · ที่ <b class="sl-boxno"></b></span></div>
+      <div class="sl-fragile">⚠ ระวังแตก · ห้ามโยน</div>
+    </div>
+  </div>`
+}
+
+const CM = 37.8 // px ต่อ 1 ซม. (96dpi)
+const SIZES: Record<string, [number, number]> = {
+  a6: [10.5, 14.8], a5: [14.8, 21], a4: [21, 29.7], s1015: [10, 15], l46: [10.16, 15.24],
+}
+
+export function ShipLabel({ onBack }: { onBack: () => void }) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<Hosp[]>([])
+  const [searching, setSearching] = useState(false)
+  const [sizeKey, setSizeKey] = useState('a6')
+  const [cw, setCw] = useState(10)
+  const [ch, setCh] = useState(15)
+  const [orient, setOrient] = useState<'portrait' | 'landscape'>('portrait')
+  const [fragile, setFragile] = useState(true)
+  const [showFrom, setShowFrom] = useState(true)
+  const [boxes, setBoxes] = useState('1')
+  const [boxno, setBoxno] = useState('')
+  const [meta, setMeta] = useState('')
+  const fit = useRef<HTMLDivElement>(null)
+  const scaler = useRef<HTMLDivElement>(null)
+
+  // วางป้ายลง DOM ครั้งเดียว (ช่องแก้ได้ไม่โดน React รีเซ็ต)
+  useEffect(() => { if (scaler.current) scaler.current.innerHTML = labelHtml() }, [])
+
+  function dims(): [number, number] {
+    let [w, h] = sizeKey === 'custom' ? [cw || 10, ch || 15] : SIZES[sizeKey]
+    if (orient === 'landscape' && w < h) [w, h] = [h, w]
+    if (orient === 'portrait' && w > h) [w, h] = [h, w]
+    return [w, h]
+  }
+
+  // ขนาด/แนว → ตั้งขนาดป้าย (ซม.จริง) แล้วย่อให้พอดีพื้นที่พรีวิว
+  useEffect(() => {
+    const s = scaler.current, f = fit.current
+    const label = s?.querySelector('.sl-label') as HTMLElement | null
+    if (!s || !f || !label) return
+    const [w, h] = dims()
+    label.style.width = w + 'cm'; label.style.height = h + 'cm'
+    const avail = f.clientWidth - 8
+    const sc = Math.min(avail / (w * CM), 520 / (h * CM), 1.5)
+    s.style.transformOrigin = 'top center'; s.style.transform = `scale(${sc})`
+    f.style.height = h * CM * sc + 'px'
+    setMeta(`${w.toFixed(1)} × ${h.toFixed(1)} ซม. · ${orient === 'portrait' ? 'แนวตั้ง' : 'แนวนอน'}`)
+  }, [sizeKey, cw, ch, orient])
+
+  useEffect(() => { const el = scaler.current?.querySelector('.sl-fragile') as HTMLElement | null; if (el) el.style.display = fragile ? '' : 'none' }, [fragile])
+  useEffect(() => { const el = scaler.current?.querySelector('.sl-from') as HTMLElement | null; if (el) el.style.display = showFrom ? '' : 'none' }, [showFrom])
+  useEffect(() => {
+    const b = scaler.current?.querySelector('.sl-boxes'); if (b) b.textContent = boxes || '1'
+    const w = scaler.current?.querySelector('.sl-boxnowrap') as HTMLElement | null
+    const n = scaler.current?.querySelector('.sl-boxno')
+    if (n) n.textContent = boxno.trim()
+    if (w) w.style.display = boxno.trim() ? '' : 'none'
+  }, [boxes, boxno])
+
+  async function search(e?: React.FormEvent) {
+    e?.preventDefault()
+    setSearching(true)
+    try {
+      const r = await fetch(`/api/hospitals/search?q=${encodeURIComponent(q.trim())}`, { cache: 'no-store' })
+      const j = r.ok ? await r.json() : { items: [] }
+      setResults(j.items ?? [])
+    } finally { setSearching(false) }
+  }
+
+  function pick(h: Hosp) {
+    const s = scaler.current; if (!s) return
+    const set = (sel: string, txt: string) => { const el = s.querySelector(sel); if (el) el.textContent = txt }
+    set('.sl-name', h.name)
+    set('.sl-addr', h.address || 'ที่อยู่……………………………………………')
+    const c = h.contacts[0]
+    set('.sl-cname', c ? `ผู้ติดต่อ ${c.name}${c.position ? ` (${c.position})` : ''}` : 'ผู้ติดต่อ ………………')
+    set('.sl-phone', c?.phone || '…………………')
+    setResults([]); setQ(h.name)
+  }
+
+  // พิมพ์ตามขนาดจริง (iframe + Blob) รอรูปโลโก้พร้อมก่อนพิมพ์
+  function printLabel() {
+    const src = scaler.current?.querySelector('.sl-label') as HTMLElement | null
+    if (!src) return
+    const clone = src.cloneNode(true) as HTMLElement
+    clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
+    clone.removeAttribute('style')
+    const [w, h] = dims()
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>ป้ายที่อยู่จัดส่ง</title>
+      <style>${LABEL_CSS}@page{size:${w}cm ${h}cm;margin:0}html,body{margin:0;padding:0}
+      .sl-label{width:${w}cm;height:${h}cm;border-radius:0}</style></head><body>${clone.outerHTML}</body></html>`
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+    const ifr = document.createElement('iframe')
+    ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+    ifr.src = url
+    ifr.onload = () => {
+      const w2 = ifr.contentWindow; if (!w2) return
+      const go = () => { try { w2.focus(); w2.print() } catch { /* ผู้ใช้ยกเลิก */ } }
+      const imgs = Array.from(w2.document.images).filter((im) => !im.complete)
+      if (!imgs.length) setTimeout(go, 150)
+      else { let n = imgs.length; const d = () => { if (--n <= 0) setTimeout(go, 80) }; imgs.forEach((im) => { im.addEventListener('load', d); im.addEventListener('error', d) }); setTimeout(go, 1500) }
+      setTimeout(() => { URL.revokeObjectURL(url); ifr.remove() }, 60000)
+    }
+    document.body.appendChild(ifr)
+  }
+
+  return (
+    <div className="max-w-[1160px] mx-auto px-4 sm:px-6 py-6">
+      <style>{`.sl-label [contenteditable]:hover{background:#fff8e6}.sl-label [contenteditable]:focus{outline:2px solid var(--brand);outline-offset:1px}${LABEL_CSS}`}</style>
+
+      <div className="flex items-center gap-2 mb-4">
+        <button type="button" onClick={onBack} className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold">← เลือกแบบฟอร์มอื่น</button>
+        <span className="text-[#C9D3E0]">/</span>
+        <span className="text-[15px] font-bold text-[#233047]">📦 ป้ายที่อยู่จัดส่ง</span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
+        <div className="lg:sticky lg:top-20 self-start space-y-4">
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4">
+            <div className="text-[13px] font-bold text-[#233047] mb-2">1) ค้นหาโรงพยาบาล</div>
+            <form onSubmit={search} className="flex gap-2">
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ชื่อโรงพยาบาล / จังหวัด / รหัส"
+                className="flex-1 text-[13px] border border-[#DCE4EE] rounded-lg px-3 py-2 focus:outline-none focus:border-[var(--brand)]" />
+              <button type="submit" disabled={searching} className="text-[13px] font-semibold px-3 py-2 rounded-lg bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)] disabled:opacity-60">{searching ? '…' : 'ค้นหา'}</button>
+            </form>
+            {results.length > 0 && (
+              <div className="mt-2 border border-[#EEF2F7] rounded-xl divide-y divide-[#F1F4F8] max-h-64 overflow-auto">
+                {results.map((h) => (
+                  <button key={h.id} type="button" onClick={() => pick(h)} className="w-full text-left px-3 py-2 hover:bg-[#F7F9FC]">
+                    <div className="text-[13px] font-semibold text-[#233047]">{h.name}</div>
+                    <div className="text-[11.5px] text-[#8492A6]">{h.province}{h.contacts[0] ? ` · ${h.contacts[0].name}${h.contacts[0].phone ? ` ${h.contacts[0].phone}` : ''}` : ''}{h.address ? '' : ' · (ยังไม่มีที่อยู่)'}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-[#96A2B5] mt-2 leading-relaxed">ดึงชื่อ/ที่อยู่/ผู้ติดต่อจากฐานโรงพยาบาล · แก้ในป้ายได้ทุกช่อง (คลิกที่ข้อความ)</p>
+          </div>
+
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-3">
+            <div className="text-[13px] font-bold text-[#233047]">2) ขนาดกระดาษ &amp; แนววาง</div>
+            <select value={sizeKey} onChange={(e) => setSizeKey(e.target.value)}
+              className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-[var(--brand)]">
+              <option value="a6">A6 (10.5 × 14.8 ซม.)</option>
+              <option value="a5">A5 (14.8 × 21 ซม.)</option>
+              <option value="a4">A4 (21 × 29.7 ซม.)</option>
+              <option value="s1015">สติกเกอร์ 10 × 15 ซม.</option>
+              <option value="l46">ลาเบล 4 × 6 นิ้ว</option>
+              <option value="custom">กำหนดเอง…</option>
+            </select>
+            {sizeKey === 'custom' && (
+              <div className="grid grid-cols-2 gap-2">
+                <div><div className="text-[11px] font-semibold text-[#5A6B82] mb-1">กว้าง (ซม.)</div>
+                  <input type="number" step="0.1" min="4" value={cw} onChange={(e) => setCw(+e.target.value)} className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-1.5" /></div>
+                <div><div className="text-[11px] font-semibold text-[#5A6B82] mb-1">สูง (ซม.)</div>
+                  <input type="number" step="0.1" min="4" value={ch} onChange={(e) => setCh(+e.target.value)} className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-1.5" /></div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-1.5">
+              {(['portrait', 'landscape'] as const).map((o) => (
+                <button key={o} type="button" onClick={() => setOrient(o)}
+                  className={`text-[13px] font-semibold px-2 py-2 rounded-lg border ${orient === o ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>
+                  {o === 'portrait' ? '⬍ แนวตั้ง' : '⬌ แนวนอน'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2.5">
+            <div className="text-[13px] font-bold text-[#233047]">3) ตัวเลือก</div>
+            <label className="flex items-center gap-2 text-[13px] text-[#3C4A5E] cursor-pointer"><input type="checkbox" checked={fragile} onChange={(e) => setFragile(e.target.checked)} className="accent-[var(--brand)]" /> ป้าย “ระวังแตก / ห้ามโยน”</label>
+            <label className="flex items-center gap-2 text-[13px] text-[#3C4A5E] cursor-pointer"><input type="checkbox" checked={showFrom} onChange={(e) => setShowFrom(e.target.checked)} className="accent-[var(--brand)]" /> แสดงผู้ส่ง (โลโก้ BMS + ที่อยู่)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div><div className="text-[11px] font-semibold text-[#5A6B82] mb-1">จำนวนกล่อง</div>
+                <input value={boxes} onChange={(e) => setBoxes(e.target.value)} className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-1.5" /></div>
+              <div><div className="text-[11px] font-semibold text-[#5A6B82] mb-1">กล่องที่ (เช่น 1/3)</div>
+                <input value={boxno} onChange={(e) => setBoxno(e.target.value)} className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-1.5" /></div>
+            </div>
+          </div>
+
+          <button type="button" onClick={printLabel}
+            className="w-full text-[13.5px] font-semibold px-3 py-2.5 rounded-lg bg-[#157F4C] text-white hover:bg-[#0F6B3E]">🖨️ พิมพ์ป้าย</button>
+        </div>
+
+        <div>
+          <div className="text-[12px] text-[#8492A6] mb-2 text-center">{meta}</div>
+          <div ref={fit} className="min-w-0 overflow-hidden bg-[#EEF1F5] rounded-2xl p-4 flex justify-center">
+            <div ref={scaler} className="shadow-[0_10px_40px_-16px_rgba(18,45,90,0.4)]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
