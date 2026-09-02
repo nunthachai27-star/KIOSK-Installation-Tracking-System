@@ -106,6 +106,8 @@ export function RunningCritter() {
     let last = 0, raf = 0
     const frame = (t: number) => {
       if (!alive) return
+      // หยุดคำนวณ/วาดเมื่อสลับไปแท็บ/หน้าต่างอื่น (ลด CPU) — กลับมาค่อยวิ่งต่อ
+      if (typeof document !== 'undefined' && document.hidden) { last = 0; raf = requestAnimationFrame(frame); return }
       const dt = last ? clamp((t - last) / 1000, 0, 0.05) : 0.016
       last = t
 

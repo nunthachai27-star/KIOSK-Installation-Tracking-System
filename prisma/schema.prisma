@@ -313,6 +313,12 @@ model Job {
   invoice           InvoiceRecord?
   activities        JobActivity[]
   stockItems        StockItem[]
+
+  @@index([isPlanned, currentStatus])
+  @@index([currentStatus])
+  @@index([deliveryDueDate])
+  @@index([createdAt])
+  @@index([contractStartDate])
 }
 
 model SerialNumber {

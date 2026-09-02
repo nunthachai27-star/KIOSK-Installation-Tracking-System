@@ -123,6 +123,45 @@ export async function getJobList(
   return withMemo.sort((a, b) => PROGRESS_RANK[a.currentStatus] - PROGRESS_RANK[b.currentStatus])
 }
 
+// งานที่ปิดแล้ว — แบ่งหน้าที่ฐานข้อมูล (take/skip + count) ไม่ต้องดึงทั้งหมดมาตัดในหน่วยความจำ
+export async function getClosedJobsPaged(
+  opts: { productType?: string; year?: number; q?: string; skip?: number; take?: number } = {},
+) {
+  const { productType, year, q, skip = 0, take = 10 } = opts
+  const where: Prisma.JobWhereInput = { currentStatus: 'CLOSED', isPlanned: false }
+  if (productType) where.productType = productType
+  if (year) {
+    const ce = year - 543
+    where.contractStartDate = { gte: new Date(Date.UTC(ce, 0, 1)), lt: new Date(Date.UTC(ce + 1, 0, 1)) }
+  }
+  if (q) where.OR = [
+    { jobCode: { contains: q, mode: 'insensitive' } },
+    { hospital: { name: { contains: q, mode: 'insensitive' } } },
+    { province: { contains: q, mode: 'insensitive' } },
+    { productType: { contains: q, mode: 'insensitive' } },
+  ]
+  const [rows, total] = await Promise.all([
+    prisma.job.findMany({
+      where, skip, take,
+      include: {
+        hospital: true,
+        delivery: { select: { shippedDate: true } },
+        installation: { select: { remoteDate: true, result: true } },
+        handover: { select: { checklistReceivedDate: true, handoverDate: true } },
+        invoice: { select: { warrantyEndDate: true } },
+      },
+      orderBy: [
+        { contractStartDate: { sort: 'desc', nulls: 'last' } },
+        { contractEndDate: { sort: 'desc', nulls: 'last' } },
+        { updatedAt: 'desc' },
+      ],
+    }),
+    prisma.job.count({ where }),
+  ])
+  // งานปิดแล้ว = ไม่ต้องเตือน MEMO
+  return { rows: rows.map((j) => ({ ...j, memoStatus: 'DONE' as const })), total }
+}
+
 export async function countClosed(): Promise<number> {
   return prisma.job.count({ where: { currentStatus: 'CLOSED', isPlanned: false } })
 }

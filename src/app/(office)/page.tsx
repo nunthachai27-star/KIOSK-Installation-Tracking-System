@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { getSummary, getJobList, countClosed, getProductTypes, getContractYears, countPlanned } from '@/lib/dashboard'
+import { getSummary, getJobList, getClosedJobsPaged, countClosed, getProductTypes, getContractYears, countPlanned } from '@/lib/dashboard'
 import { prisma } from '@/lib/prisma'
 import { stepForStatus } from '@/lib/status'
-import { JobRow } from '@/components/JobRow'
+import { JobRow, type JobRowData } from '@/components/JobRow'
 import { JobFilters } from '@/components/JobFilters'
 import { JobSearch } from '@/components/JobSearch'
 import { formatQty } from '@/lib/format'
@@ -39,7 +39,9 @@ export default async function Home({
     getContractYears(),
     countPlanned(),
     prisma.job.count({ where: { isPlanned: false, createdAt: { gte: monthStart } } }),
-    closedMode ? getJobList({ status: 'CLOSED', productType: type || undefined, year: year ? Number(year) : undefined, planned: false }) : Promise.resolve([]),
+    closedMode
+      ? getClosedJobsPaged({ productType: type || undefined, year: year ? Number(year) : undefined, q: q || undefined, skip: (page - 1) * PER_PAGE, take: PER_PAGE })
+      : Promise.resolve({ rows: [], total: 0 }),
   ])
 
   const ql = q.toLowerCase()
@@ -50,13 +52,12 @@ export default async function Home({
   const stepCounts = [0, 0, 0, 0, 0, 0]
   for (const j of openFiltered) stepCounts[stepForStatus(j.currentStatus) - 1]++
 
-  const displayed = closedMode
-    ? applyQ(closedJobs)
-    : stepNum ? openFiltered.filter((j) => stepForStatus(j.currentStatus) === stepNum) : openFiltered
-  const totalRows = displayed.length
+  // งานปิดแล้ว: แบ่งหน้าที่ DB · งานเปิด: ตัดหน้าในหน่วยความจำ (รายการน้อย)
+  const openDisplayed = stepNum ? openFiltered.filter((j) => stepForStatus(j.currentStatus) === stepNum) : openFiltered
+  const totalRows = closedMode ? closedJobs.total : openDisplayed.length
   const pageCount = Math.max(1, Math.ceil(totalRows / PER_PAGE))
   const curPage = Math.min(page, pageCount)
-  const pageItems = displayed.slice((curPage - 1) * PER_PAGE, curPage * PER_PAGE)
+  const pageItems: JobRowData[] = closedMode ? closedJobs.rows : openDisplayed.slice((curPage - 1) * PER_PAGE, curPage * PER_PAGE)
   const rangeFrom = totalRows === 0 ? 0 : (curPage - 1) * PER_PAGE + 1
   const rangeTo = Math.min(curPage * PER_PAGE, totalRows)
 
