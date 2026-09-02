@@ -81,6 +81,13 @@ export function MobileMenu({ userId, name, avatar, theme, bg }: { userId: string
               🎨 ธีมสีเว็บ
             </button>
             <Link
+              href="/dashboard"
+              onClick={close}
+              className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#3C4A5E] hover:bg-[#F6F9FC]"
+            >
+              📊 แดชบอร์ด
+            </Link>
+            <Link
               href="/report"
               onClick={close}
               className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#3C4A5E] hover:bg-[#F6F9FC]"

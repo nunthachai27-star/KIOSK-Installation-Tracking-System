@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export const NAV_ITEMS = [
-  { href: '/dashboard', label: 'แดชบอร์ด', icon: 'dashboard' },
   { href: '/', label: 'งานทั้งหมด', icon: 'jobs' },
   { href: '/planned', label: 'งานตามแผน', icon: 'planned' },
   { href: '/hospitals', label: 'โรงพยาบาล', icon: 'hospital' },
