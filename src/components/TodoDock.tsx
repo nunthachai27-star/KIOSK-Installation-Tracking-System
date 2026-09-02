@@ -12,13 +12,16 @@ export function TodoDock() {
   const [filter, setFilter] = useState<Filter>('all')
   const [text, setText] = useState('')
   const [left, setLeft] = useState(12)
+  const [fits, setFits] = useState(false) // ช่องว่างซ้ายกว้างพอให้กางค้างโดยไม่ทับเนื้อหาไหม
 
-  // สถานะเปิด/ปิด (จำไว้) — จอกว้างเปิดไว้, จอแคบย่อไว้
+  // สถานะเปิด/ปิด (จำไว้) — กางค้างเฉพาะจอที่ช่องว่างพอ, ไม่งั้นเริ่มเป็นปุ่มย่อ
   useEffect(() => {
+    const g0 = (window.innerWidth - 1160) / 2
+    const f0 = g0 >= 306
     let o = false
-    try { const s = localStorage.getItem(OPEN_KEY); o = s === null ? window.innerWidth >= 1400 : s === '1' }
-    catch { o = window.innerWidth >= 1400 }
-    setOpenState(o); setReady(true)
+    try { const s = localStorage.getItem(OPEN_KEY); o = f0 && (s === null ? true : s === '1') }
+    catch { o = f0 }
+    setFits(f0); setLeft(f0 ? Math.round(g0 - 288 - 10) : 12); setOpenState(o); setReady(true)
   }, [])
   const setOpen = (v: boolean) => { setOpenState(v); try { localStorage.setItem(OPEN_KEY, v ? '1' : '0') } catch { /* ignore */ } }
 
@@ -26,10 +29,10 @@ export function TodoDock() {
     fetch('/api/todos', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : { items: [] })).then((j) => setItems(j.items ?? [])).catch(() => {})
   }, [])
 
-  // วางในช่องว่างซ้าย ถ้ากว้างพอ ไม่งั้นชิดขอบ (จอแคบ)
+  // วางในช่องว่างซ้ายถ้ากว้างพอ (กางค้าง) ไม่งั้นเป็นแผงลอยชิดขอบ
   useEffect(() => {
-    const calc = () => { const g = (window.innerWidth - 1160) / 2; setLeft(g >= 304 ? Math.round(g - 288 - 10) : 12) }
-    calc(); window.addEventListener('resize', calc); return () => window.removeEventListener('resize', calc)
+    const calc = () => { const g = (window.innerWidth - 1160) / 2; const f = g >= 306; setFits(f); setLeft(f ? Math.round(g - 288 - 10) : 12) }
+    window.addEventListener('resize', calc); return () => window.removeEventListener('resize', calc)
   }, [])
 
   const add = useCallback(async () => {
@@ -72,8 +75,10 @@ export function TodoDock() {
         </button>
       )}
 
+      {open && !fits && <div className="td-backdrop" onClick={() => setOpen(false)} />}
+
       {open && (
-        <section className="td-dock" style={{ left }} aria-label="สิ่งที่ต้องทำ">
+        <section className={`td-dock${fits ? '' : ' td-dock--drawer'}`} style={{ left }} aria-label="สิ่งที่ต้องทำ">
           <div className="td-top">
             <div className="td-title">
               <b>✅ สิ่งที่ต้องทำ</b>
@@ -129,10 +134,12 @@ const CSS = `
 .td-fab__n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;
   background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
 
+.td-backdrop{position:fixed;inset:0;z-index:39;background:rgba(15,22,33,.28);backdrop-filter:blur(1px)}
 .td-dock{position:fixed;top:74px;z-index:30;width:min(288px,calc(100vw - 24px));
   max-height:calc(100dvh - 92px);display:flex;flex-direction:column;background:#fff;border:1px solid #E7EDF4;
   border-radius:18px;box-shadow:0 18px 46px -22px rgba(18,45,90,.5);overflow:hidden;
   font-family:'Sarabun','Leelawadee UI',system-ui,'Segoe UI',sans-serif}
+.td-dock--drawer{z-index:40;box-shadow:0 24px 60px -18px rgba(18,45,90,.6)}
 .td-top{padding:12px 14px 10px;border-bottom:1px solid #EEF1F5}
 .td-title{display:flex;align-items:center;gap:8px}
 .td-title b{font-size:14.5px;font-weight:700;color:#1F2A3C}
