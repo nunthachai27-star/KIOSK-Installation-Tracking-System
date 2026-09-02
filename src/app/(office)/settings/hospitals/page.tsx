@@ -6,11 +6,18 @@ import { HospitalManager } from '@/components/HospitalManager'
 
 export default async function SettingsHospitalsPage() {
   const [hospitals, provinces] = await Promise.all([
-    prisma.hospital.findMany({ include: { _count: { select: { jobs: true } } }, orderBy: { name: 'asc' } }),
+    prisma.hospital.findMany({
+      include: { _count: { select: { jobs: true } }, contacts: { orderBy: { sortOrder: 'asc' } } },
+      orderBy: { name: 'asc' },
+    }),
     getMasterValues('PROVINCE'),
   ])
 
-  const items = hospitals.map((h) => ({ id: h.id, name: h.name, province: h.province, jobCount: h._count.jobs }))
+  const items = hospitals.map((h) => ({
+    id: h.id, name: h.name, province: h.province, jobCount: h._count.jobs,
+    code: h.code ?? '', address: h.address ?? '',
+    contacts: h.contacts.map((c) => ({ name: c.name, phone: c.phone ?? '', position: c.position ?? '', note: c.note ?? '' })),
+  }))
   const provinceOptions = (provinces.length ? provinces : [...THAI_PROVINCES]).slice()
 
   return (
@@ -20,7 +27,7 @@ export default async function SettingsHospitalsPage() {
         <span className="text-[#C7D2E0]">/</span>
         <h1 className="text-xl font-bold text-[#1C1917]">โรงพยาบาล</h1>
       </div>
-      <p className="text-[13px] text-[#8492A6] -mt-2">แก้ไขชื่อ/จังหวัดของโรงพยาบาล · การเปลี่ยนชื่อจะมีผลกับทุกงานที่อ้างอิงโรงพยาบาลนั้นทันที · ลบได้เฉพาะโรงพยาบาลที่ยังไม่มีงาน</p>
+      <p className="text-[13px] text-[#8492A6] -mt-2">แก้ไขชื่อ/จังหวัด · กด “รายละเอียด” เพื่อกรอก รหัสสถานพยาบาล ที่อยู่ และผู้ติดต่อ (เพิ่มได้หลายคน) · การเปลี่ยนชื่อมีผลกับทุกงานที่อ้างอิงทันที · ลบได้เฉพาะที่ยังไม่มีงาน</p>
       <HospitalManager initial={items} provinceOptions={provinceOptions} />
     </div>
   )

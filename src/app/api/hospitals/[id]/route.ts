@@ -11,18 +11,39 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params
   const body = await req.json()
-  const data: { name?: string; province?: string; code?: string | null } = {}
+  const data: { name?: string; province?: string; code?: string | null; address?: string | null } = {}
   if (typeof body.name === 'string') {
     if (!body.name.trim()) return NextResponse.json({ error: 'name required' }, { status: 400 })
     data.name = body.name.trim()
   }
   if (typeof body.province === 'string') data.province = body.province.trim()
   if (body.code !== undefined) data.code = typeof body.code === 'string' && body.code.trim() ? body.code.trim() : null
-  if (!Object.keys(data).length) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
+  if (body.address !== undefined) data.address = typeof body.address === 'string' && body.address.trim() ? body.address.trim() : null
 
-  const updated = await prisma.hospital.update({ where: { id }, data }).catch(() => null)
-  if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  await logAction(session.user, 'UPDATE', 'โรงพยาบาล', `แก้ไข "${updated.name}"`)
+  // ผู้ติดต่อ (ถ้าส่งมา = แทนที่ทั้งชุด) — คุมความยาว, ตัดแถวที่ไม่มีชื่อ
+  const hasContacts = Array.isArray(body.contacts)
+  const clean = (s: unknown, n: number) => (typeof s === 'string' ? s.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '')
+  const contacts = hasContacts
+    ? (body.contacts as unknown[]).map((c) => {
+        const o = c as Record<string, unknown>
+        return { name: clean(o.name, 120), phone: clean(o.phone, 40), position: clean(o.position, 80), note: clean(o.note, 200) }
+      }).filter((c) => c.name)
+    : []
+
+  if (!Object.keys(data).length && !hasContacts) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
+
+  const exists = await prisma.hospital.findUnique({ where: { id }, select: { id: true } })
+  if (!exists) return NextResponse.json({ error: 'not found' }, { status: 404 })
+
+  await prisma.$transaction(async (tx) => {
+    if (Object.keys(data).length) await tx.hospital.update({ where: { id }, data })
+    if (hasContacts) {
+      await tx.hospitalContact.deleteMany({ where: { hospitalId: id } })
+      if (contacts.length) await tx.hospitalContact.createMany({ data: contacts.map((c, i) => ({ hospitalId: id, sortOrder: i, ...c })) })
+    }
+  })
+  const updated = await prisma.hospital.findUnique({ where: { id }, include: { contacts: { orderBy: { sortOrder: 'asc' } } } })
+  await logAction(session.user, 'UPDATE', 'โรงพยาบาล', `แก้ไข "${updated?.name ?? ''}"`)
   return NextResponse.json(updated)
 }
 

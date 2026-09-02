@@ -252,6 +252,23 @@ model Hospital {
   remark       String?
   jobs         Job[]
   stockItems   StockItem[]
+  contacts     HospitalContact[]
+}
+
+// ผู้ติดต่อของโรงพยาบาล (เพิ่มได้หลายคน) — ข้อมูลอ้างอิงไว้ใช้ต่อ ไม่ผูกกับงาน/สต็อก
+model HospitalContact {
+  id         String   @id @default(cuid())
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospitalId String
+  name       String
+  phone      String?
+  position   String?  // ตำแหน่ง / แผนก
+  note       String?
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([hospitalId])
 }
 
 model Job {
