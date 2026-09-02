@@ -501,6 +501,8 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const [layout, setLayout] = useState(false)
   const [fmt, setFmt] = useState<'pdf' | 'png' | 'doc'>('pdf')
   const [ship, setShip] = useState(false)
+  const [reload, setReload] = useState(0)
+  const [savedExists, setSavedExists] = useState(false)
   const sheetWrap = useRef<HTMLDivElement>(null)
   const fitRef = useRef<HTMLDivElement>(null)
   const scalerRef = useRef<HTMLDivElement>(null)
@@ -529,7 +531,10 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   useEffect(() => {
     const wrap = sheetWrap.current
     if (!wrap || !tpl) return
-    wrap.innerHTML = buildSheet(tpl.id)
+    let saved: string | null = null
+    try { saved = localStorage.getItem('kioskFormTpl:' + tpl.id) } catch { /* ignore */ }
+    wrap.innerHTML = saved || buildSheet(tpl.id)
+    setSavedExists(!!saved)
     setCat((c) => c || tpl.defaultCat)
 
     const ac = new AbortController()
@@ -550,7 +555,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
       }
     }, { signal: ac.signal })
     return () => ac.abort()
-  }, [tpl])
+  }, [tpl, reload])
 
   // ย่อเอกสารให้พอดีความกว้างที่มี (ไม่เกินขนาดจริง) — กันแถบเลื่อนแนวนอน
   // แต่ยังเรนเดอร์/พิมพ์ที่ความละเอียดเต็ม A4 เพราะ transform ไม่กระทบ layout box
@@ -597,6 +602,40 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
       .catch(() => {})
     return () => { alive = false }
   }, [job, tpl])
+
+  // จำค่าฟอนต์/ขนาด/ระยะบรรทัด ข้ามทุกฟอร์ม (โหลดตอนเปิด, บันทึกเมื่อเปลี่ยน)
+  useEffect(() => {
+    try {
+      const f = localStorage.getItem('kioskFormFont'); if (f) setFontKey(f)
+      const px = localStorage.getItem('kioskFormFontPx'); if (px != null) setFontPx(+px)
+      const lh = localStorage.getItem('kioskFormLineH'); if (lh != null) setLineH(+lh)
+    } catch { /* ignore */ }
+  }, [])
+  useEffect(() => {
+    try {
+      localStorage.setItem('kioskFormFont', fontKey)
+      localStorage.setItem('kioskFormFontPx', String(fontPx))
+      localStorage.setItem('kioskFormLineH', String(lineH))
+    } catch { /* ignore */ }
+  }, [fontKey, fontPx, lineH])
+
+  // จำ / คืนค่า "รูปแบบฟอร์มนี้" (ข้อความ/ติ๊ก/ฟอนต์/จัดวาง) — เก็บในเครื่องผู้ใช้
+  function saveTemplate() {
+    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
+    if (!sheet || !tpl) return
+    const clone = sheet.cloneNode(true) as HTMLElement
+    clone.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
+    clone.classList.remove('ff-layout')
+    clone.querySelectorAll('[contenteditable]').forEach((n) => n.setAttribute('contenteditable', 'true'))
+    try { localStorage.setItem('kioskFormTpl:' + tpl.id, clone.outerHTML); setSavedExists(true); setMsg({ kind: 'ok', text: 'จำรูปแบบฟอร์มนี้ไว้แล้ว — เปิดครั้งหน้าจะขึ้นตามนี้' }) }
+    catch { setMsg({ kind: 'err', text: 'บันทึกไม่สำเร็จ (พื้นที่เก็บเต็ม)' }) }
+  }
+  function resetTemplate() {
+    if (!tpl) return
+    try { localStorage.removeItem('kioskFormTpl:' + tpl.id) } catch { /* ignore */ }
+    setSavedExists(false); setLayout(false); setMsg({ kind: 'ok', text: 'คืนค่าเริ่มต้นของฟอร์มนี้แล้ว' })
+    setReload((n) => n + 1)
+  }
 
   // ฟอนต์ / ขนาดตัวอักษร / ระยะบรรทัด — ตั้งที่ root ของเอกสาร (ติดไปตอนบันทึก/พิมพ์ด้วย)
   useEffect(() => {
@@ -906,7 +945,21 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
           </div>
 
           <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2">
-            <div className="text-[13px] font-bold text-[#233047] mb-1">4) บันทึก / พิมพ์</div>
+            <div className="text-[13px] font-bold text-[#233047]">💾 จำรูปแบบฟอร์ม</div>
+            <p className="text-[11px] text-[#96A2B5] leading-relaxed">แก้ข้อความ/ติ๊ก/ฟอนต์/จัดวางในฟอร์มนี้ให้พอใจ แล้วกด “จำรูปแบบ” ครั้งเดียว — เปิดฟอร์มนี้ครั้งหน้าจะขึ้นตามที่จำไว้ (เก็บในเครื่องของคุณ) · ฟอนต์/ขนาด/ระยะบรรทัด จำข้ามทุกฟอร์มให้อัตโนมัติ</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={saveTemplate}
+                className="flex-1 text-[13px] font-semibold px-3 py-2 rounded-lg bg-[#3C4A5E] text-white hover:bg-[#2C3646]">💾 จำรูปแบบฟอร์มนี้</button>
+              {savedExists && (
+                <button type="button" onClick={resetTemplate}
+                  className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#5A6B82] hover:border-[#C13540] hover:text-[#C13540]">↺ คืนค่าเริ่มต้น</button>
+              )}
+            </div>
+            {savedExists && <div className="text-[11.5px] text-[#157F4C] font-semibold">✓ ฟอร์มนี้ใช้รูปแบบที่จำไว้อยู่</div>}
+          </div>
+
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2">
+            <div className="text-[13px] font-bold text-[#233047] mb-1">5) บันทึก / พิมพ์</div>
             <div>
               <div className="text-[11.5px] font-semibold text-[#5A6B82] mb-1">รูปแบบไฟล์</div>
               <div className="grid grid-cols-3 gap-1.5">

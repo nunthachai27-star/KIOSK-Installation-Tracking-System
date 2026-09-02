@@ -62,8 +62,11 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
   const [boxes, setBoxes] = useState('1')
   const [boxno, setBoxno] = useState('')
   const [meta, setMeta] = useState('')
+  const [layout, setLayout] = useState(false)
   const fit = useRef<HTMLDivElement>(null)
   const scaler = useRef<HTMLDivElement>(null)
+  const scaleRef = useRef(1)
+  const selRef = useRef<HTMLElement | null>(null)
 
   // วางป้ายลง DOM ครั้งเดียว (ช่องแก้ได้ไม่โดน React รีเซ็ต)
   useEffect(() => { if (scaler.current) scaler.current.innerHTML = labelHtml() }, [])
@@ -86,8 +89,61 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
     const sc = Math.min(avail / (w * CM), 520 / (h * CM), 1.5)
     s.style.transformOrigin = 'top center'; s.style.transform = `scale(${sc})`
     f.style.height = h * CM * sc + 'px'
+    scaleRef.current = sc
     setMeta(`${w.toFixed(1)} × ${h.toFixed(1)} ซม. · ${orient === 'portrait' ? 'แนวตั้ง' : 'แนวนอน'}`)
   }, [sizeKey, cw, ch, orient])
+
+  // โหมดจัดวาง: คลิกเลือก + ลากย้ายอิสระ (ปิดการพิมพ์แก้ชั่วคราว)
+  const DRAG_SEL = '.sl-fromtxt,.sl-logo,.sl-name,.sl-addr,.sl-contact,.sl-box,.sl-fragile,.sl-tag'
+  useEffect(() => {
+    const s = scaler.current
+    const label = s?.querySelector('.sl-label') as HTMLElement | null
+    if (!s || !label || !layout) return
+    const editables = Array.from(label.querySelectorAll('[contenteditable="true"]')) as HTMLElement[]
+    editables.forEach((e) => e.setAttribute('contenteditable', 'false'))
+    const drags = Array.from(label.querySelectorAll(DRAG_SEL)) as HTMLElement[]
+    drags.forEach((e) => e.classList.add('sl-drag'))
+    const select = (el: HTMLElement) => { label.querySelectorAll('.sl-sel').forEach((n) => n.classList.remove('sl-sel')); el.classList.add('sl-sel'); selRef.current = el }
+    const onDown = (e: PointerEvent) => {
+      const t = (e.target as HTMLElement).closest('.sl-drag') as HTMLElement | null
+      if (!t) return
+      select(t)
+      const sc = scaleRef.current || 1
+      const sx = e.clientX, sy = e.clientY
+      const bx = parseFloat(t.dataset.dx || '0'), by = parseFloat(t.dataset.dy || '0')
+      const move = (ev: PointerEvent) => {
+        const nx = bx + (ev.clientX - sx) / sc, ny = by + (ev.clientY - sy) / sc
+        t.dataset.dx = String(nx); t.dataset.dy = String(ny); t.style.translate = `${nx}px ${ny}px`
+      }
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+      e.preventDefault()
+    }
+    label.addEventListener('pointerdown', onDown)
+    label.classList.add('sl-editing')
+    return () => {
+      label.removeEventListener('pointerdown', onDown)
+      label.classList.remove('sl-editing')
+      label.querySelectorAll('.sl-sel').forEach((n) => n.classList.remove('sl-sel'))
+      drags.forEach((e) => e.classList.remove('sl-drag'))
+      editables.forEach((e) => e.setAttribute('contenteditable', 'true'))
+      selRef.current = null
+    }
+  }, [layout])
+
+  function fontStep(d: number) {
+    const el = selRef.current; if (!el) return
+    const px = parseFloat(getComputedStyle(el).fontSize) || 14
+    el.style.fontSize = Math.max(2, px / 3.7795 + d).toFixed(2) + 'mm'
+  }
+  function boldToggle() {
+    const el = selRef.current; if (!el) return
+    el.style.fontWeight = (parseInt(getComputedStyle(el).fontWeight, 10) || 400) >= 600 ? '400' : '700'
+  }
+  function resetPos() {
+    const el = selRef.current; if (!el) return
+    el.style.translate = ''; delete el.dataset.dx; delete el.dataset.dy
+  }
 
   useEffect(() => { const el = scaler.current?.querySelector('.sl-fragile') as HTMLElement | null; if (el) el.style.display = fragile ? '' : 'none' }, [fragile])
   useEffect(() => { const el = scaler.current?.querySelector('.sl-from') as HTMLElement | null; if (el) el.style.display = showFrom ? '' : 'none' }, [showFrom])
@@ -148,7 +204,7 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="max-w-[1160px] mx-auto px-4 sm:px-6 py-6">
-      <style>{`.sl-label [contenteditable]:hover{background:#fff8e6}.sl-label [contenteditable]:focus{outline:2px solid var(--brand);outline-offset:1px}${LABEL_CSS}`}</style>
+      <style>{`.sl-label [contenteditable]:hover{background:#fff8e6}.sl-label [contenteditable]:focus{outline:2px solid var(--brand);outline-offset:1px}.sl-editing .sl-drag{cursor:move}.sl-drag.sl-sel{outline:2px dashed var(--brand);outline-offset:2px}${LABEL_CSS}`}</style>
 
       <div className="flex items-center gap-2 mb-4">
         <button type="button" onClick={onBack} className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold">← เลือกแบบฟอร์มอื่น</button>
@@ -217,6 +273,25 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
               <div><div className="text-[11px] font-semibold text-[#5A6B82] mb-1">กล่องที่ (เช่น 1/3)</div>
                 <input value={boxno} onChange={(e) => setBoxno(e.target.value)} className="w-full text-[13px] border border-[#DCE4EE] rounded-lg px-2.5 py-1.5" /></div>
             </div>
+          </div>
+
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2.5">
+            <div className="text-[13px] font-bold text-[#233047]">4) จัดวาง &amp; ตัวอักษร</div>
+            <button type="button" onClick={() => setLayout((v) => !v)}
+              className={`w-full text-[13px] font-semibold px-3 py-2 rounded-lg border ${layout ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#3C4A5E] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>
+              {layout ? '✓ โหมดจัดวาง (ลากวางได้)' : '✥ โหมดจัดวาง (ลากวาง/ปรับตัวอักษร)'}
+            </button>
+            {layout && (
+              <>
+                <p className="text-[11px] text-[#96A2B5] leading-relaxed">คลิกเลือกข้อความในป้าย → ลากเพื่อย้าย หรือใช้ปุ่มปรับขนาด/ตัวหนา (โหมดนี้พิมพ์แก้ข้อความไม่ได้ชั่วคราว)</p>
+                <div className="grid grid-cols-4 gap-1.5 text-[12px] font-semibold">
+                  <button type="button" onClick={() => fontStep(-0.4)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">A−</button>
+                  <button type="button" onClick={() => fontStep(0.4)} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]">A＋</button>
+                  <button type="button" onClick={boldToggle} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)] font-bold">หนา</button>
+                  <button type="button" onClick={resetPos} className="px-2 py-1.5 rounded-lg border border-[#DCE4EE] hover:border-[var(--brand)]" title="คืนตำแหน่ง">↺</button>
+                </div>
+              </>
+            )}
           </div>
 
           <button type="button" onClick={printLabel}
