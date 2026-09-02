@@ -4,7 +4,7 @@ import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
-type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice'
+type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice'
 type Template = { id: TemplateId; title: string; desc: string; defaultCat: string; accent: string }
 const TEMPLATES: Template[] = [
   {
@@ -27,6 +27,13 @@ const TEMPLATES: Template[] = [
     desc: 'แจ้งทำหนังสือแจ้งเข้าดำเนินการ / เปลี่ยนอุปกรณ์ — ติ๊ก/แก้ไขได้ทุกช่อง',
     defaultCat: 'ใบแจ้งเข้าดำเนินการ',
     accent: '#2563C9',
+  },
+  {
+    id: 'shipment-notice',
+    title: 'แบบฟอร์มแจ้งจัดส่งอุปกรณ์',
+    desc: 'แจ้งทำหนังสือจัดส่งอุปกรณ์ (HW) ให้โรงพยาบาล — ติ๊ก/แก้ไขได้ทุกช่อง',
+    defaultCat: 'ใบแจ้งจัดส่งอุปกรณ์',
+    accent: '#B4740E',
   },
 ]
 
@@ -296,11 +303,88 @@ function buildWorkNotice(): string {
   </div>`
 }
 
+// แบบฟอร์มแจ้งทำหนังสือจัดส่งอุปกรณ์ (HW) ให้โรงพยาบาล (โครงเดียวกับแจ้งเข้าดำเนินการ)
+function buildShipmentNotice(): string {
+  const ed = 'contenteditable="true"'
+  const font = "'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif"
+  const cw = 'display:inline-flex;align-items:center;gap:5px;'
+  const box = (on = false) => `<span class="ff-check" data-checked="${on ? 1 : 0}" style="display:inline-block;width:15px;height:15px;border:1.2px solid #000;text-align:center;line-height:13px;font-size:12px;cursor:pointer;vertical-align:middle;">${on ? '✓' : ''}</span>`
+  const L = (txt = '', min = '') => `<span ${ed} style="border-bottom:1px dotted #000;padding:0 5px;${min ? `display:inline-block;min-width:${min};` : ''}">${txt}</span>`
+  const T = (txt: string, extra = '') => `<span ${ed} style="${extra}">${txt}</span>`
+  const Tb = (txt: string) => `<span ${ed} style="font-weight:700;">${txt}</span>`
+  const ck = (on: boolean, label: string) => `<span style="${cw}">${box(on)} ${T(label)}</span>`
+  const grid = [
+    ck(false, 'เข้าปฏิบัติงานติดตั้ง'),
+    `<span style="${cw}">${box(false)} ${T('Re-visit ครั้งที่')} ${L('', '28px')}/${L('', '28px')}</span>`,
+    ck(false, 'ตอบกลับวิทยากร'),
+    `<span style="${cw}">${box(false)} ${T('MA ครั้งที่')} ${L('', '28px')}/${L('', '28px')}</span>`,
+    ck(false, 'นำเสนอโปรแกรม เชิงรุก/เชิงรับ'),
+    `<span style="${cw}">${box(true)} ${T('อื่นๆ ระบุ')} ${L('', '80px')}</span>`,
+    ck(false, 'สำรวจระบบ'),
+    `<span style="${cw}">${box(false)} ${T('ส่งมอบงาน')} ${L('', '140px')}</span>`,
+    ck(false, 'ขอคัดลอกฐานข้อมูล'),
+  ].join('')
+  const names = [1, 2, 3, 4, 5].map((n) => `<div style="margin-top:7px;padding-left:26px;">${T(`${n}. ชื่อ-สกุล`)} ${L('', '250px')} ${T('ตำแหน่ง')} ${L('', '180px')}</div>`).join('')
+  const noteTxt = '** หนังสือแจ้งจัดส่งอุปกรณ์ (HW) ตู้ Kiosk BMS Smart Hospital จำนวน 1 ตู้ โดยจะจัดส่งถึงโรงพยาบาลแก่งกระจาน จังหวัดเพชรบุรี ในวันที่ 27 สิงหาคม 2569 และนัดติดตั้งในวันที่ 31 สิงหาคม 2569 โดยวิธีการรีโมทติดตั้ง'
+  return `
+  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:13.5px;line-height:1.7;padding:22px 34px 26px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="flex:0 0 auto;">${bmsLogoImg(46)}</div>
+        <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
+      </div>
+      <div style="white-space:nowrap;padding-top:16px;">${T('No.')} ${L('', '90px')}</div>
+    </div>
+
+    <div style="margin-top:14px;">${Tb('วันที่')} ${L('27 สิงหาคม 2569', '200px')}</div>
+
+    <div style="margin-top:10px;">${T('ชื่อ-นามสกุล นาย/นาง/นางสาว')} ${L('ณัฐฉัตร วงค์วันดี', '200px')} ${T('ตำแหน่ง')} ${L('เจ้าหน้าที่ประสานงานขาย', '190px')}</div>
+    <div style="margin-top:7px;">${T('แผนก/ฝ่าย')} ${L('คลังข้อมูล', '200px')} ${T('ขอแจ้งความประสงค์ทำหนังสือแจ้งหน่วยงานภายนอก')}</div>
+    <div style="margin-top:7px;">${T('สิ่งที่ส่งมาด้วย จำนวน')} ${L('', '46px')} ${T('ฉบับ')} ${L('', '46px')} ${T('แผ่น')}</div>
+
+    <div style="margin-top:6px;padding-left:24px;display:grid;grid-template-columns:190px 200px 1fr;gap:8px 12px;align-items:center;">
+      ${ck(false, 'BMS-HOSxP')} ${ck(false, 'BMS-HOSxP XE')} <span style="${cw}">${box(true)} ${T('อื่นๆ ระบุ')} ${L('', '150px')}</span>
+      ${ck(false, 'BMS Data Center')} ${ck(false, 'BMS-INVENTORY')} <span></span>
+    </div>
+
+    <div style="margin-top:14px;">${Tb('เรื่องที่ให้ดำเนินการ')}&nbsp;&nbsp;&nbsp;&nbsp;${ck(true, 'เซ็นสัญญาแล้ว')}&nbsp;&nbsp;&nbsp;&nbsp;${ck(false, 'ยังไม่เซ็นสัญญา')}</div>
+    <div style="margin-top:8px;padding-left:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px 12px;align-items:center;">${grid}</div>
+
+    <div style="margin-top:10px;padding-left:8px;">${Tb(noteTxt)}</div>
+
+    <div style="margin-top:12px;">${T('วันที่ดำเนินงาน')} ${L('', '210px')} ${T('สถานที่')} <span id="ff-hospital" ${ed} style="border-bottom:1px dotted #000;padding:0 5px;">โรงพยาบาลแก่งกระจาน จังหวัดเพชรบุรี</span></div>
+
+    <div style="margin-top:12px;">${T('รายชื่อผู้เข้าปฏิบัติงาน')} ${T('(ใส่ข้อมูลเฉพาะกรณีแจ้งออกหนังสือเพื่อเข้าปฏิบัติงาน)', 'font-size:11px;color:#333;')}</div>
+    ${names}
+
+    <div style="margin-top:16px;">${Tb('หนังสือแจ้งถึง')}</div>
+    <div style="margin-top:6px;padding-left:24px;display:flex;flex-wrap:wrap;gap:6px 40px;">
+      ${ck(true, 'เรียน ผู้อำนวยการโรงพยาบาล')} ${ck(false, 'นายแพทย์สำนักงานสาธารณสุข')}
+    </div>
+    <div style="margin-top:7px;padding-left:24px;"><span style="${cw}">${box(false)} ${T('อื่นๆ โปรดระบุ')} ${L('', '160px')} ${T('เรียน')} ${L('', '160px')}</span></div>
+
+    <div style="margin-top:16px;">${Tb('หนังสือแจ้งเพื่อ')}</div>
+    <div style="margin-top:6px;padding-left:24px;">${ck(true, 'เพื่อทราบ')}</div>
+    <div style="margin-top:7px;padding-left:24px;">
+      <span style="display:flex;gap:7px;align-items:flex-start;">${box(false)}<span>${T('ให้คณะกรรมการดำเนินการตรวจรับและเบิกจ่ายเงินต่อไป')} ${T('(กรณีที่ตรวจรับเบิกจ่ายเงิน ถ้าเป็นสัญญาจ้าง ให้ระบุเลขที่สัญญา, วันที่ลงนามในสัญญา, แต่ถ้าตอบรับใบเสนอราคา ให้ระบุใบเสนอราคา)', 'font-size:11px;color:#333;')}</span></span>
+      <div style="padding-left:24px;margin-top:6px;">${T('สัญญาเลขที่')} ${L('', '160px')} ${T('จำนวน')} ${L('', '100px')} ${T('บาท')}</div>
+      <div style="padding-left:24px;margin-top:4px;">${T('ลงวันที่')} ${L('', '60px')}/${L('', '60px')}/${L('', '70px')}</div>
+      <div style="padding-left:24px;margin-top:4px;">${T('ใบเสนอราคา เลขที่')} ${L('', '210px')}</div>
+    </div>
+
+    <div style="margin-top:16px;">${T('ช่องทางที่ต้องการให้จัดส่ง')}&nbsp;&nbsp;&nbsp;${box(true)} ${T('ทางไปรษณีย์ EMS จ่าหน้า คุณบิว งานพัสดุ 061-074-1921')}</div>
+    <div style="margin-top:6px;padding-left:172px;">${box(true)} ${T('ทาง E-mail')} ${L('it.kkch@gmail.com', '210px')}</div>
+    <div style="margin-top:6px;padding-left:78px;">${T('CC E-mail')} ${L('tanitasofia9641@gmail.com/ wong.nattachat@gmail.com', '320px')}</div>
+    <div style="margin-top:12px;">${Tb('หนังสือลงวันที่ย้อนหลัง')} ${T('ลงวันที่')} ${L('24 สิงหาคม 2569', '170px')}</div>
+  </div>`
+}
+
 function buildSheet(id: TemplateId): string {
   switch (id) {
     case 'kiosk-activation': return buildKioskActivation()
     case 'delivery-handover': return buildDeliveryHandover()
     case 'work-notice': return buildWorkNotice()
+    case 'shipment-notice': return buildShipmentNotice()
     default: return ''
   }
 }
