@@ -63,13 +63,36 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
   const [boxno, setBoxno] = useState('')
   const [meta, setMeta] = useState('')
   const [layout, setLayout] = useState(false)
+  const [savedExists, setSavedExists] = useState(false)
+  const [reload, setReload] = useState(0)
+  const [msg, setMsg] = useState('')
   const fit = useRef<HTMLDivElement>(null)
   const scaler = useRef<HTMLDivElement>(null)
   const scaleRef = useRef(1)
   const selRef = useRef<HTMLElement | null>(null)
 
-  // วางป้ายลง DOM ครั้งเดียว (ช่องแก้ได้ไม่โดน React รีเซ็ต)
-  useEffect(() => { if (scaler.current) scaler.current.innerHTML = labelHtml() }, [])
+  // วางป้ายลง DOM — ใช้รูปแบบที่จำไว้ถ้ามี (ช่องแก้ได้ไม่โดน React รีเซ็ต)
+  useEffect(() => {
+    if (!scaler.current) return
+    let html: string | null = null
+    try {
+      html = localStorage.getItem('kioskShipLabelHtml')
+      const raw = localStorage.getItem('kioskShipLabelCfg')
+      if (raw) {
+        const c = JSON.parse(raw)
+        if (c.sizeKey) setSizeKey(c.sizeKey)
+        if (c.cw != null) setCw(c.cw)
+        if (c.ch != null) setCh(c.ch)
+        if (c.orient) setOrient(c.orient)
+        if (typeof c.fragile === 'boolean') setFragile(c.fragile)
+        if (typeof c.showFrom === 'boolean') setShowFrom(c.showFrom)
+        if (c.boxes != null) setBoxes(c.boxes)
+        if (c.boxno != null) setBoxno(c.boxno)
+      }
+    } catch { /* ignore */ }
+    scaler.current.innerHTML = html || labelHtml()
+    setSavedExists(!!html)
+  }, [reload])
 
   function dims(): [number, number] {
     let [w, h] = sizeKey === 'custom' ? [cw || 10, ch || 15] : SIZES[sizeKey]
@@ -129,7 +152,7 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
       editables.forEach((e) => e.setAttribute('contenteditable', 'true'))
       selRef.current = null
     }
-  }, [layout])
+  }, [layout, reload])
 
   function fontStep(d: number) {
     const el = selRef.current; if (!el) return
@@ -143,6 +166,31 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
   function resetPos() {
     const el = selRef.current; if (!el) return
     el.style.translate = ''; delete el.dataset.dx; delete el.dataset.dy
+  }
+
+  // จำ / คืนค่ารูปแบบป้าย (ข้อความ/ฟอนต์/ตำแหน่ง + ขนาด/แนว/ตัวเลือก) — เก็บในเครื่อง
+  function saveLabel() {
+    const label = scaler.current?.querySelector('.sl-label') as HTMLElement | null
+    if (!label) return
+    const clone = label.cloneNode(true) as HTMLElement
+    clone.classList.remove('sl-editing')
+    clone.querySelectorAll('.sl-sel').forEach((n) => n.classList.remove('sl-sel'))
+    clone.querySelectorAll('.sl-drag').forEach((n) => n.classList.remove('sl-drag'))
+    clone.querySelectorAll('[contenteditable]').forEach((n) => n.setAttribute('contenteditable', 'true'))
+    clone.style.width = ''; clone.style.height = '' // ให้ปรับพอดีจอตอนโหลดใหม่
+    try {
+      localStorage.setItem('kioskShipLabelHtml', clone.outerHTML)
+      localStorage.setItem('kioskShipLabelCfg', JSON.stringify({ sizeKey, cw, ch, orient, fragile, showFrom, boxes, boxno }))
+      setSavedExists(true); setMsg('จำรูปแบบป้ายไว้แล้ว — เปิดครั้งหน้าจะขึ้นตามนี้')
+    } catch { setMsg('บันทึกไม่สำเร็จ') }
+    setTimeout(() => setMsg(''), 3000)
+  }
+  function resetLabel() {
+    try { localStorage.removeItem('kioskShipLabelHtml'); localStorage.removeItem('kioskShipLabelCfg') } catch { /* ignore */ }
+    setSizeKey('a6'); setCw(10); setCh(15); setOrient('portrait'); setFragile(true); setShowFrom(true); setBoxes('1'); setBoxno('')
+    setLayout(false); setSavedExists(false); setMsg('คืนค่าเริ่มต้นแล้ว')
+    setReload((n) => n + 1)
+    setTimeout(() => setMsg(''), 3000)
   }
 
   useEffect(() => { const el = scaler.current?.querySelector('.sl-fragile') as HTMLElement | null; if (el) el.style.display = fragile ? '' : 'none' }, [fragile])
@@ -292,6 +340,21 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
                 </div>
               </>
             )}
+          </div>
+
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 space-y-2">
+            <div className="text-[13px] font-bold text-[#233047]">💾 จำรูปแบบป้าย</div>
+            <p className="text-[11px] text-[#96A2B5] leading-relaxed">จัดข้อความ/ฟอนต์/ตำแหน่ง + ขนาด/แนว/ตัวเลือกให้พอใจ แล้วกด “จำรูปแบบ” ครั้งเดียว — เปิดครั้งหน้าจะขึ้นตามนี้ (เก็บในเครื่องของคุณ) · ข้อมูล รพ. ยังค้นหาใหม่ทับได้เสมอ</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={saveLabel}
+                className="flex-1 text-[13px] font-semibold px-3 py-2 rounded-lg bg-[#3C4A5E] text-white hover:bg-[#2C3646]">💾 จำรูปแบบป้าย</button>
+              {savedExists && (
+                <button type="button" onClick={resetLabel}
+                  className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#5A6B82] hover:border-[#C13540] hover:text-[#C13540]">↺ คืนค่าเริ่มต้น</button>
+              )}
+            </div>
+            {savedExists && <div className="text-[11.5px] text-[#157F4C] font-semibold">✓ ใช้รูปแบบที่จำไว้อยู่</div>}
+            {msg && <div className="text-[11.5px] text-[var(--brand)] font-semibold">{msg}</div>}
           </div>
 
           <button type="button" onClick={printLabel}
