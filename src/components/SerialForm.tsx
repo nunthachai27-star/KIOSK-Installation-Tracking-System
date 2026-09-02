@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { alertDialog, confirmDialog } from '@/lib/dialog'
 import type { SerialNumber, SerialType, SerialStatus } from '@prisma/client'
@@ -64,6 +65,18 @@ export function SerialForm({
   const [editUnit, setEditUnit] = useState<string | null>(null)
   const [editVal, setEditVal] = useState('')
   const [renaming, setRenaming] = useState(false)
+
+  // ดูรายการเลข S/N BMS ที่มีแล้ว
+  type BmsRow = { serialNo: string; jobCode: string | null; productType: string | null; hospitalName: string | null; isThisJob: boolean }
+  const [bmsOpen, setBmsOpen] = useState(false)
+  const [bmsData, setBmsData] = useState<{ code: string | null; productType: string; total: number; items: BmsRow[] } | null>(null)
+  const [bmsLoading, setBmsLoading] = useState(false)
+  const [bmsFilter, setBmsFilter] = useState('all')
+  async function openBmsList() {
+    setBmsOpen(true); setBmsLoading(true); setBmsData(null); setBmsFilter('all')
+    try { const r = await fetch(`/api/jobs/${jobId}/bms-serials`, { cache: 'no-store' }); if (r.ok) setBmsData(await r.json()) }
+    finally { setBmsLoading(false) }
+  }
 
   // Deduct an assigned component serial that still shows IN_STOCK (issue it to this job).
   // The same factory serial can exist in several products, so when the server reports the
@@ -251,6 +264,55 @@ export function SerialForm({
         />
       )}
 
+      {bmsOpen && createPortal(
+        <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto p-4 sm:p-10 bg-[rgba(15,22,33,0.5)] backdrop-blur-[3px]"
+          onClick={(e) => { if (e.target === e.currentTarget) setBmsOpen(false) }}>
+          <div className="w-full max-w-[640px] bg-white rounded-2xl shadow-[0_12px_44px_rgba(18,26,40,0.2)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EEF0F3] flex items-center gap-2">
+              <span className="text-[15px] font-bold text-[#1C1917]">🔎 เลข S/N BMS ที่มีแล้ว</span>
+              {bmsData?.code && <span className="text-[12px] font-semibold text-[var(--brand)] bg-[var(--brand-soft)] rounded-full px-2.5 py-0.5">รหัส {bmsData.code}</span>}
+              <button onClick={() => setBmsOpen(false)} className="ml-auto w-8 h-8 grid place-items-center rounded-lg bg-[#F4F6F9] text-[#8492A6] hover:bg-[#E7EBF0]">✕</button>
+            </div>
+            <div className="p-5 max-h-[70vh] overflow-y-auto">
+              {bmsLoading && <div className="py-10 text-center text-[#8492A6] text-sm">⏳ กำลังโหลด…</div>}
+              {!bmsLoading && bmsData && (() => {
+                const types = [...new Set(bmsData.items.map((i) => i.productType).filter(Boolean))] as string[]
+                const shown = bmsFilter === 'all' ? bmsData.items : bmsData.items.filter((i) => i.productType === bmsFilter)
+                return (
+                  <>
+                    <div className="text-[12.5px] text-[#8492A6] mb-2">ทั้งหมด {bmsData.total} เลข · เรียงล่าสุดอยู่บน{bmsData.code ? '' : ' · (ประเภทนี้ยังไม่ตั้งรหัส BMS — แสดงตามประเภทสินค้า)'}</div>
+                    {types.length > 1 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        <button onClick={() => setBmsFilter('all')} className={`text-[12px] font-semibold px-2.5 py-1 rounded-full border ${bmsFilter === 'all' ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>ทั้งหมด ({bmsData.items.length})</button>
+                        {types.map((t) => {
+                          const n = bmsData.items.filter((i) => i.productType === t).length
+                          return <button key={t} onClick={() => setBmsFilter(t)} className={`text-[12px] font-semibold px-2.5 py-1 rounded-full border ${bmsFilter === t ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE] hover:border-[var(--brand)]'}`}>{t} ({n})</button>
+                        })}
+                      </div>
+                    )}
+                    {shown.length === 0 ? (
+                      <div className="py-8 text-center text-[#96A2B5] text-[13px]">ยังไม่มีเลข S/N BMS</div>
+                    ) : (
+                      <ul className="flex flex-col divide-y divide-[#F1F4F8] border border-[#EEF2F7] rounded-xl overflow-hidden">
+                        {shown.map((r, i) => (
+                          <li key={i} className={`flex items-center gap-3 px-3 py-2 ${r.isThisJob ? 'bg-[#F1FBF5]' : ''}`}>
+                            <span className="tnum text-[13.5px] font-bold text-[#1C1917] w-[150px] shrink-0">{r.serialNo}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[12px] text-[#5A6B82] truncate">{r.productType ?? '—'}</div>
+                              <div className="text-[11.5px] text-[#96A2B5] truncate">{r.jobCode ?? '—'}{r.hospitalName ? ` · ${r.hospitalName}` : ''}</div>
+                            </div>
+                            {r.isThisJob && <span className="text-[10.5px] font-bold text-[#157F4C] bg-[#E1F3E9] rounded px-1.5 py-0.5 shrink-0">งานนี้</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        </div>, document.body)}
+
       {/* add BMS unit */}
       <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
         <div className="text-[15px] font-bold mb-1">เพิ่มเครื่อง (S/N BMS)</div>
@@ -265,11 +327,16 @@ export function SerialForm({
               {saving['newbms'] ? '…' : 'เพิ่มเครื่อง'}
             </button>
           </div>
-          {bmsCode && (
-            <button type="button" onClick={generateBms} className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--brand)] hover:underline">
-              ⚙ ออกเลขอัตโนมัติ
+          <div className="mt-1.5 flex items-center gap-4 flex-wrap">
+            {bmsCode && (
+              <button type="button" onClick={generateBms} className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--brand)] hover:underline">
+                ⚙ ออกเลขอัตโนมัติ
+              </button>
+            )}
+            <button type="button" onClick={openBmsList} className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#3C4A5E] hover:text-[var(--brand)] hover:underline">
+              🔎 ดูเลข S/N BMS ที่มีแล้ว
             </button>
-          )}
+          </div>
           {errors['newbms'] && <p className="text-xs text-[#C13540] mt-1">{errors['newbms']}</p>}
         </div>
 
