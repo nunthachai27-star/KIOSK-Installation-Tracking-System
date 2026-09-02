@@ -18,7 +18,10 @@ export default async function HospitalDetailPage({ params }: { params: Promise<{
   const [hospital, bms, issues] = await Promise.all([
     prisma.hospital.findUnique({
       where: { id },
-      include: { jobs: { include: jobInclude, orderBy: [{ isPlanned: 'asc' }, { updatedAt: 'desc' }] } },
+      include: {
+        jobs: { include: jobInclude, orderBy: [{ isPlanned: 'asc' }, { updatedAt: 'desc' }] },
+        contacts: { orderBy: { sortOrder: 'asc' } },
+      },
     }),
     prisma.serialNumber.findMany({
       where: { serialType: 'BMS', job: { hospitalId: id } },
@@ -57,6 +60,47 @@ export default async function HospitalDetailPage({ params }: { params: Promise<{
         {stat(formatQty(itemCount), 'สินค้ารวม')}
         {stat(formatQty(bms.length), 'เครื่อง (S/N BMS)')}
         {stat(formatQty(issues.filter((i) => i.status !== 'DONE').length), 'ปัญหาค้าง')}
+      </div>
+
+      {/* ข้อมูลโรงพยาบาล: รหัส / ที่อยู่ / ผู้ติดต่อ */}
+      <div className="ds-card p-5">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="text-[15px] font-bold">ข้อมูลโรงพยาบาล</div>
+          <Link href="/settings/hospitals" className="text-[12px] font-semibold text-[var(--brand)] hover:underline">แก้ไขข้อมูล ›</Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-x-4 gap-y-2 text-[13.5px]">
+          <div className="text-[#8492A6]">รหัสสถานพยาบาล (HCODE)</div>
+          <div className="text-[#1C1917] tnum">{hospital.code || <span className="text-[#B6C0CE]">— ยังไม่ได้กรอก</span>}</div>
+          <div className="text-[#8492A6]">ที่อยู่</div>
+          <div className="text-[#1C1917] whitespace-pre-wrap">{hospital.address || <span className="text-[#B6C0CE]">— ยังไม่ได้กรอก</span>}</div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-[#F1F5F9]">
+          <div className="text-[13px] font-bold text-[#3C4A5E] mb-2">ผู้ติดต่อ · {formatQty(hospital.contacts.length)}</div>
+          {hospital.contacts.length === 0 ? (
+            <div className="text-[12.5px] text-[#B6C0CE]">— ยังไม่ได้เพิ่มผู้ติดต่อ</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {hospital.contacts.map((c) => (
+                <div key={c.id} className="flex items-start gap-3 border-b border-[#F5F7FA] last:border-0 pb-2 last:pb-0">
+                  <span className="w-7 h-7 shrink-0 rounded-lg bg-[#EEF3FA] text-[#5A6B82] grid place-items-center text-[13px]">👤</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13.5px] font-semibold text-[#1C1917]">
+                      {c.name}{c.position && <span className="font-normal text-[#8492A6]"> · {c.position}</span>}
+                    </div>
+                    {(c.phone || c.note) && (
+                      <div className="text-[12.5px] text-[#5A6B82] mt-0.5">
+                        {c.phone && <span className="tnum">☎ {c.phone}</span>}
+                        {c.phone && c.note && <span className="text-[#C7D2E0]"> · </span>}
+                        {c.note && <span>{c.note}</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* jobs */}
