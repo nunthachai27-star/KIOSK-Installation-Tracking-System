@@ -15,14 +15,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'not found' }, { status: 404 })
   }
 
-  const units = await prisma.serialNumber.findMany({
-    where: { jobId: id, serialType: 'BMS' },
-    orderBy: { serialNo: 'asc' },
-    select: { serialNo: true, unitQc: { select: { keyId: true } } },
-  })
+  const [units, job] = await Promise.all([
+    prisma.serialNumber.findMany({
+      where: { jobId: id, serialType: 'BMS' },
+      orderBy: { serialNo: 'asc' },
+      select: { serialNo: true, unitQc: { select: { keyId: true } } },
+    }),
+    prisma.job.findUnique({
+      where: { id },
+      select: { province: true, hospital: { select: { name: true, address: true, province: true } } },
+    }),
+  ])
 
   return NextResponse.json(
-    { units: units.map((u) => ({ serialNo: u.serialNo, mac: u.unitQc?.keyId ?? '' })) },
+    {
+      units: units.map((u) => ({ serialNo: u.serialNo, mac: u.unitQc?.keyId ?? '' })),
+      hospital: job?.hospital
+        ? { name: job.hospital.name, address: job.hospital.address ?? '', province: job.hospital.province ?? job.province ?? '' }
+        : null,
+    },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }

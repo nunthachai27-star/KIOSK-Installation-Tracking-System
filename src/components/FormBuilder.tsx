@@ -6,7 +6,7 @@ import { EquipSetLabel } from '@/components/EquipSetLabel'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
-type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice'
+type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check'
 type Template = { id: TemplateId; title: string; desc: string; defaultCat: string; accent: string }
 const TEMPLATES: Template[] = [
   {
@@ -36,6 +36,13 @@ const TEMPLATES: Template[] = [
     desc: 'แจ้งทำหนังสือจัดส่งอุปกรณ์ (HW) ให้โรงพยาบาล — ติ๊ก/แก้ไขได้ทุกช่อง',
     defaultCat: 'ใบแจ้งจัดส่งอุปกรณ์',
     accent: '#B4740E',
+  },
+  {
+    id: 'kiosk-check',
+    title: 'ใบเช็คคุณสมบัติ Kiosk ส่งตรวจ',
+    desc: 'ใบเช็คคุณสมบัติ/ทดสอบการใช้งานตู้ Kiosk ส่งตรวจ — ดึงชื่อ รพ./ที่อยู่/เลข S/N · ออก 1 ใบต่อ 1 เครื่อง',
+    defaultCat: 'ใบเช็คคุณสมบัติ Kiosk',
+    accent: '#0E7C86',
   },
 ]
 
@@ -381,14 +388,106 @@ function buildShipmentNotice(): string {
   </div>`
 }
 
+// ── ใบเช็คคุณสมบัติ Kiosk ส่งตรวจ (QC) — 1 หน้า = 1 เครื่อง ────────────────────
+// หนึ่ง "หน้า" (.ff-sheet) ต่อ 1 เครื่อง; เมื่อเลือกงานที่มีหลายเครื่องจะสร้างหลายหน้าให้อัตโนมัติ
+function buildKioskCheckPage(opts?: { hospital?: string; address?: string; serial?: string; date?: string }): string {
+  const ed = 'contenteditable="true"'
+  const font = "'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif"
+  const box = () => `<span class="ff-check" data-checked="0" style="display:inline-block;width:14px;height:14px;border:1.2px solid #000;text-align:center;line-height:12px;font-size:11px;cursor:pointer;vertical-align:middle;"></span>`
+  const opt = (label: string) => `<span style="white-space:nowrap;margin-right:14px;">${box()}&nbsp;<span ${ed}>${label}</span></span>`
+  const pf = () => opt('ผ่าน') + opt('ไม่ผ่าน')
+  const pfn = () => opt('ผ่าน') + opt('ไม่ผ่าน') + opt('ไม่มี')
+  const yn = () => opt('ใช่') + opt('ไม่ใช่') + opt('ไม่มี')
+  const T = (t: string, ex = '') => `<span ${ed} style="${ex}">${t}</span>`
+  const row = (label: string, checks: string, indent = 0) =>
+    `<tr>
+      <td style="border:1px solid #000;padding:4px 6px 4px ${8 + indent}px;">${T(label)}</td>
+      <td style="border:1px solid #000;padding:4px 6px;white-space:nowrap;">${checks}</td>
+      <td style="border:1px solid #000;padding:4px 6px;min-width:96px;" ${ed}></td>
+    </tr>`
+  const secHead = (t: string) =>
+    `<tr><td colspan="2" style="border:1px solid #000;padding:4px 8px;background:#eef2f7;font-weight:700;text-align:center;">${T(t)}</td><td style="border:1px solid #000;padding:4px 8px;background:#eef2f7;font-weight:700;text-align:center;">${T('หมายเหตุ')}</td></tr>`
+  const hospital = esc(opts?.hospital || '') || 'โรงพยาบาล………………………'
+  const address = esc(opts?.address || '') || '………………………………………………'
+  const serial = esc(opts?.serial || '') || 'BMS-…………………'
+  const date = esc(opts?.date || '') || '………………………'
+  const sigLine = 'border-bottom:1px dotted #000;height:1px;margin:22px 26px 6px;'
+  return `
+  <div class="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:13px;line-height:1.5;padding:18px 26px 22px;">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+      <div style="flex:0 0 auto;">${bmsLogoImg(46)}</div>
+      <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;">
+      <tbody>
+        <tr>
+          <td style="border:1px solid #000;padding:5px 8px;width:63%;">ชื่อลูกค้า&nbsp;<span class="ff-hospital" ${ed} style="font-weight:600;">${hospital}</span></td>
+          <td style="border:1px solid #000;padding:5px 8px;">วันที่&nbsp;<span class="ff-date" ${ed}>${date}</span></td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000;padding:5px 8px;">ที่อยู่&nbsp;<span class="ff-address" ${ed}>${address}</span></td>
+          <td style="border:1px solid #000;padding:5px 8px;">serial&nbsp;<span class="ff-serial" ${ed} style="font-weight:600;">${serial}</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+      <tbody>
+        ${secHead('รายการทดสอบการใช้งาน ตู้ Kiosk Android ส่งตรวจ')}
+        ${row('1. สามารถอ่านบัตรประชาชน (smart card) หรือ กรอกหมายเลขบัตรประชาชนเพื่อตรวจสอบสิทธิ์จาก สปสช. ได้', pf())}
+        ${row('1.1 สามารถส่งตรวจคนไข้สิทธิ UC ได้ถูกต้อง', pf(), 20)}
+        ${row('1.2 สามารถส่งตรวจคนไข้สิทธิข้าราชการได้ถูกต้อง', pf(), 20)}
+        ${row('1.3 สามารถส่งตรวจคนไข้สิทธิ อปท. ได้ถูกต้อง', pf(), 20)}
+        ${row('2. สามารถส่งตรวจคนไข้นัดหมาย ได้', pf())}
+        ${row('3. สามารถยืนยันสั่ง Lab / X-Ray ล่วงหน้าที่ระบุไว้กับการนัดหมายได้', pf())}
+        ${row('4. ไม่สามารถส่งตรวจได้กรณีคนไข้ Admit', pf())}
+        ${row('5. สามารถส่งตรวจคนไข้ที่จำหน่ายไปแล้วได้', pf())}
+        ${row('6. ไม่สามารถส่งตรวจคนไข้เสียชีวิตได้', pf())}
+        ${row('7. สามารถส่งตรวจ และขอ Authentication Code ของ สปสช. ผ่าน API ได้', pfn())}
+        ${secHead('รายการตรวจเช็คการตั้งค่าตู้ Kiosk Android ส่งตรวจ สำหรับโรงพยาบาลที่ใช้')}
+        ${row('8. รพ.แยก Imager Server และปรับปรุงโครงสร้างให้เท่ากันกับ Master Server แล้ว', yn())}
+        ${row('9. รพ.มีใช้ระบบ HOSxP Replication และกำหนดค่าใน main setting แล้ว (HOSxP V.3)', yn())}
+      </tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;gap:24px;margin-top:22px;">
+      <div style="flex:1;text-align:center;border:1px solid #000;padding:8px 10px;">
+        <div ${ed} style="font-weight:600;">ผู้ติดตั้งและตั้งค่าการใช้งาน ( BMS )</div>
+        <div style="${sigLine}"></div>
+        <div>( <span ${ed}>นายจักรกฤษณ์ มนตรีวงษ์</span> )</div>
+        <div>ตำแหน่ง <span ${ed}>เจ้าหน้าที่ KIOSK</span></div>
+        <div>วันที่ <span ${ed}>${date}</span></div>
+      </div>
+      <div style="flex:1;text-align:center;border:1px solid #000;padding:8px 10px;">
+        <div ${ed} style="font-weight:600;">ผู้ทดสอบการใช้งาน</div>
+        <div style="${sigLine}"></div>
+        <div>( <span ${ed}>&nbsp;</span> )</div>
+        <div>ตำแหน่ง <span ${ed}>&nbsp;</span></div>
+        <div>วันที่ <span ${ed}>......../........../..........</span></div>
+      </div>
+    </div>
+  </div>`
+}
+
+function buildKioskCheck(): string {
+  return `<div id="ff-doc" style="display:flex;flex-direction:column;gap:16px;">${buildKioskCheckPage()}</div>`
+}
+
 function buildSheet(id: TemplateId): string {
   switch (id) {
     case 'kiosk-activation': return buildKioskActivation()
     case 'delivery-handover': return buildDeliveryHandover()
     case 'work-notice': return buildWorkNotice()
     case 'shipment-notice': return buildShipmentNotice()
+    case 'kiosk-check': return buildKioskCheck()
     default: return ''
   }
+}
+
+// รวมทุก "หน้า" ของเอกสาร (แบบหลายใบใช้ .ff-sheet, แบบใบเดียวใช้ #ff-sheet)
+function sheetPages(wrap: HTMLElement): HTMLElement[] {
+  const multi = Array.from(wrap.querySelectorAll('.ff-sheet')) as HTMLElement[]
+  if (multi.length) return multi
+  const one = wrap.querySelector('#ff-sheet') as HTMLElement | null
+  return one ? [one] : []
 }
 
 // จัดรูปแบบข้อความที่เลือก (ตัวหนา/บาง/ขีดเส้นใต้) เฉพาะจุด — ทำงานบนช่อง contenteditable
@@ -441,37 +540,46 @@ async function nodeToPngBlob(node: HTMLElement, scale = 2): Promise<Blob> {
   return await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('blob'))), 'image/png'))
 }
 
-// ── Canvas (JPEG) → PDF หน้าเดียวขนาด A4 (สร้าง PDF เองแบบไม่พึ่ง library) ─────
-async function canvasToPdfBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  const jpeg = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('jpeg'))), 'image/jpeg', 0.92))
-  const jb = new Uint8Array(await jpeg.arrayBuffer())
-  const iw = canvas.width, ih = canvas.height
+// ── Canvas(es) (JPEG) → PDF ขนาด A4 (สร้าง PDF เองแบบไม่พึ่ง library) ─────────
+// รองรับหลายหน้า: ส่ง canvas ได้หลายตัว จะได้ PDF หลายหน้า (1 canvas = 1 หน้า A4)
+async function canvasesToPdfBlob(canvases: HTMLCanvasElement[]): Promise<Blob> {
   const pageW = 595.28, pageH = 841.89, margin = 28 // A4 @72dpi
-  const s = Math.min((pageW - 2 * margin) / iw, (pageH - 2 * margin) / ih)
-  const w = iw * s, h = ih * s
-  const x = (pageW - w) / 2, y = pageH - margin - h // ชิดบน
   const enc = new TextEncoder()
   const chunks: Uint8Array[] = []
   let len = 0
   const off: number[] = []
   const push = (u: Uint8Array) => { chunks.push(u); len += u.length }
   const put = (str: string) => push(enc.encode(str))
-  const obj = (n: number, body: string) => { off[n] = len; put(`${n} 0 obj\n${body}\nendobj\n`) }
+  const setObj = (n: number) => { off[n] = len }
   put('%PDF-1.4\n')
-  obj(1, '<< /Type /Catalog /Pages 2 0 R >>')
-  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
-  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>`)
-  const content = `q\n${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm\n/Im0 Do\nQ\n`
-  obj(4, `<< /Length ${content.length} >>\nstream\n${content}endstream`)
-  off[5] = len
-  put(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jb.length} >>\nstream\n`)
-  push(jb)
-  put('\nendstream\nendobj\n')
+  // objects: 1=Catalog, 2=Pages, then per page: page(3+i*3), content(4+i*3), image(5+i*3)
+  const n = canvases.length
+  const kids = Array.from({ length: n }, (_, i) => `${3 + i * 3} 0 R`).join(' ')
+  setObj(1); put(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`)
+  setObj(2); put(`2 0 obj\n<< /Type /Pages /Kids [${kids}] /Count ${n} >>\nendobj\n`)
+  for (let i = 0; i < n; i++) {
+    const canvas = canvases[i]
+    const jpeg = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('jpeg'))), 'image/jpeg', 0.92))
+    const jb = new Uint8Array(await jpeg.arrayBuffer())
+    const iw = canvas.width, ih = canvas.height
+    const s = Math.min((pageW - 2 * margin) / iw, (pageH - 2 * margin) / ih)
+    const w = iw * s, h = ih * s
+    const x = (pageW - w) / 2, y = pageH - margin - h // ชิดบน
+    const pageObj = 3 + i * 3, contentObj = 4 + i * 3, imgObj = 5 + i * 3
+    setObj(pageObj); put(`${pageObj} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 ${imgObj} 0 R >> >> /Contents ${contentObj} 0 R >>\nendobj\n`)
+    const content = `q\n${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm\n/Im0 Do\nQ\n`
+    setObj(contentObj); put(`${contentObj} 0 obj\n<< /Length ${content.length} >>\nstream\n${content}endstream\nendobj\n`)
+    setObj(imgObj)
+    put(`${imgObj} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jb.length} >>\nstream\n`)
+    push(jb)
+    put('\nendstream\nendobj\n')
+  }
+  const total = 2 + n * 3
   const xrefStart = len
-  let xref = 'xref\n0 6\n0000000000 65535 f \n'
-  for (let i = 1; i <= 5; i++) xref += String(off[i]).padStart(10, '0') + ' 00000 n \n'
+  let xref = `xref\n0 ${total + 1}\n0000000000 65535 f \n`
+  for (let i = 1; i <= total; i++) xref += String(off[i] ?? 0).padStart(10, '0') + ' 00000 n \n'
   put(xref)
-  put(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
+  put(`trailer\n<< /Size ${total + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
   const out = new Uint8Array(len)
   let o = 0
   for (const c of chunks) { out.set(c, o); o += c.length }
@@ -479,8 +587,10 @@ async function canvasToPdfBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 }
 
 // ── เอกสาร → Word (.doc) : HTML ที่ Word เปิดได้ (ไม่พึ่ง library) ─────────────
-function sheetToDocBlob(node: HTMLElement, title: string): Blob {
-  const inner = cleanSheetClone(node).outerHTML
+// รองรับหลายหน้า: คั่นแต่ละหน้าด้วย page-break
+function sheetsToDocBlob(nodes: HTMLElement[], title: string): Blob {
+  const inner = nodes.map((n, i) =>
+    `<div style="${i < nodes.length - 1 ? 'page-break-after:always;' : ''}">${cleanSheetClone(n).outerHTML}</div>`).join('')
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${title}</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>@page{size:A4;margin:1.2cm}body{margin:0}</style></head><body>${inner}</body></html>`
   return new Blob(['﻿', html], { type: 'application/msword' })
 }
@@ -505,6 +615,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const [equip, setEquip] = useState(false)
   const [reload, setReload] = useState(0)
   const [savedExists, setSavedExists] = useState(false)
+  const [docBuilt, setDocBuilt] = useState(0) // เพิ่มขึ้นเมื่อสร้างหน้าใหม่ (แบบหลายใบ) เพื่อให้สไตล์/ฟอนต์รีอะพลาย
   const sheetWrap = useRef<HTMLDivElement>(null)
   const fitRef = useRef<HTMLDivElement>(null)
   const scalerRef = useRef<HTMLDivElement>(null)
@@ -584,6 +695,27 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     const wrap = sheetWrap.current
     if (!wrap || !job) return
     let alive = true
+
+    // ── ใบเช็คคุณสมบัติ Kiosk: สร้าง 1 หน้าต่อ 1 เครื่อง (ดึงชื่อ รพ./ที่อยู่/serial) ──
+    if (tpl?.id === 'kiosk-check') {
+      fetch(`/api/jobs/${job.id}/units`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : { units: [] }))
+        .then((j: { units: { serialNo: string; mac: string }[]; hospital?: { name: string; address: string; province: string } | null }) => {
+          if (!alive) return
+          const doc = wrap.querySelector('#ff-doc')
+          if (!doc) return
+          const hosp = j.hospital?.name || job.hospital?.name || ''
+          const addr = j.hospital?.address || ''
+          const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
+          const list = (j.units || [])
+          const pages = list.length ? list : [{ serialNo: '' }]
+          doc.innerHTML = pages.map((u) => buildKioskCheckPage({ hospital: hosp, address: addr, serial: u.serialNo, date: today })).join('')
+          setDocBuilt((n) => n + 1) // ให้ effect ฟอนต์รีอะพลายกับหน้าที่สร้างใหม่
+        })
+        .catch(() => {})
+      return () => { alive = false }
+    }
+
     const h = wrap.querySelector('#ff-hospital')
     const p = wrap.querySelector('#ff-province')
     if (h && job.hospital?.name) h.textContent = job.hospital.name
@@ -623,7 +755,9 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
 
   // จำ / คืนค่า "รูปแบบฟอร์มนี้" (ข้อความ/ติ๊ก/ฟอนต์/จัดวาง) — เก็บในเครื่องผู้ใช้
   function saveTemplate() {
-    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
+    const wrap = sheetWrap.current
+    // แบบหลายใบเก็บทั้งกล่อง #ff-doc, แบบใบเดียวเก็บ #ff-sheet
+    const sheet = (wrap?.querySelector('#ff-doc') || wrap?.querySelector('#ff-sheet')) as HTMLElement | null
     if (!sheet || !tpl) return
     const clone = sheet.cloneNode(true) as HTMLElement
     clone.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
@@ -639,14 +773,17 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     setReload((n) => n + 1)
   }
 
-  // ฟอนต์ / ขนาดตัวอักษร / ระยะบรรทัด — ตั้งที่ root ของเอกสาร (ติดไปตอนบันทึก/พิมพ์ด้วย)
+  // ฟอนต์ / ขนาดตัวอักษร / ระยะบรรทัด — ตั้งที่ทุกหน้าของเอกสาร (ติดไปตอนบันทึก/พิมพ์ด้วย)
   useEffect(() => {
-    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
-    if (!sheet) return
-    sheet.style.fontFamily = (FONTS.find((f) => f.key === fontKey) ?? FONTS[0]).stack
-    sheet.style.fontSize = fontPx + 'px'
-    sheet.style.lineHeight = String(lineH)
-  }, [tpl, job, fontKey, fontPx, lineH])
+    const wrap = sheetWrap.current
+    if (!wrap) return
+    const stack = (FONTS.find((f) => f.key === fontKey) ?? FONTS[0]).stack
+    for (const sheet of sheetPages(wrap)) {
+      sheet.style.fontFamily = stack
+      sheet.style.fontSize = fontPx + 'px'
+      sheet.style.lineHeight = String(lineH)
+    }
+  }, [tpl, job, fontKey, fontPx, lineH, docBuilt])
 
   // โหมดจัดวาง — คลิกเลือกบล็อก/บรรทัด แล้วเลื่อนขึ้น-ลง/เว้นระยะ/เยื้องได้
   useEffect(() => {
@@ -705,35 +842,46 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     } finally { setSearching(false) }
   }
 
-  // สร้างไฟล์ตามรูปแบบที่เลือก (pdf / png / doc)
-  async function makeFile(): Promise<{ blob: Blob; ext: string; mime: string }> {
-    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
-    if (!sheet) throw new Error('no sheet')
-    if (fmt === 'doc') return { blob: sheetToDocBlob(sheet, tpl?.title ?? 'แบบฟอร์ม'), ext: 'doc', mime: 'application/msword' }
-    const canvas = await nodeToCanvas(sheet, 3)
-    if (fmt === 'pdf') return { blob: await canvasToPdfBlob(canvas), ext: 'pdf', mime: 'application/pdf' }
-    const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'))
-    return { blob, ext: 'png', mime: 'image/png' }
+  // สร้างไฟล์ตามรูปแบบที่เลือก (pdf / png / doc) — รองรับหลายหน้า
+  //  · PDF  → ไฟล์เดียวหลายหน้า   · Word → ไฟล์เดียวหลายหน้า   · PNG → 1 ไฟล์ต่อ 1 หน้า
+  async function makeFiles(): Promise<{ blob: Blob; ext: string; mime: string; suffix: string }[]> {
+    const wrap = sheetWrap.current
+    const pages = wrap ? sheetPages(wrap) : []
+    if (!pages.length) throw new Error('no sheet')
+    if (fmt === 'doc') return [{ blob: sheetsToDocBlob(pages, tpl?.title ?? 'แบบฟอร์ม'), ext: 'doc', mime: 'application/msword', suffix: '' }]
+    const canvases: HTMLCanvasElement[] = []
+    for (const p of pages) canvases.push(await nodeToCanvas(p, 3))
+    if (fmt === 'pdf') return [{ blob: await canvasesToPdfBlob(canvases), ext: 'pdf', mime: 'application/pdf', suffix: '' }]
+    // png — 1 ไฟล์ต่อ 1 หน้า
+    const out: { blob: Blob; ext: string; mime: string; suffix: string }[] = []
+    for (let i = 0; i < canvases.length; i++) {
+      const blob = await new Promise<Blob>((res, rej) => canvases[i].toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'))
+      out.push({ blob, ext: 'png', mime: 'image/png', suffix: canvases.length > 1 ? `-${i + 1}` : '' })
+    }
+    return out
   }
   const baseName = () => `${tpl?.title ?? 'แบบฟอร์ม'}${job ? '-' + job.jobCode : ''}`.replace(/[\\/:*?"<>|]+/g, '-')
 
   async function saveToJob() {
-    const sheet = sheetWrap.current?.querySelector('#ff-sheet') as HTMLElement | null
-    if (!sheet || !tpl) return
+    const wrap = sheetWrap.current
+    if (!wrap || !tpl || !sheetPages(wrap).length) return
     if (!job) { setMsg({ kind: 'err', text: 'เลือกงานปลายทางก่อน (ค้นหาด้วยเลขสัญญา/รหัสงาน)' }); return }
     setBusy(true); setMsg(null)
     try {
       setPhase('กำลังสร้างเอกสาร…')
-      const { blob, ext, mime } = await makeFile()
-      const file = new File([blob], `${baseName()}.${ext}`, { type: mime })
+      const files = await makeFiles()
       setPhase('กำลังบันทึกเข้าเอกสารงาน…')
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('category', cat || tpl.defaultCat)
-      const r = await fetch(`/api/jobs/${job.id}/documents`, { method: 'POST', body: fd })
-      const j = await r.json().catch(() => ({}))
-      if (r.ok) setMsg({ kind: 'ok', text: `บันทึกเข้าเอกสารงาน ${job.jobCode} แล้ว (${ext.toUpperCase()})` })
-      else setMsg({ kind: 'err', text: j.message || 'บันทึกไม่สำเร็จ' })
+      let ok = 0
+      for (const { blob, ext, mime, suffix } of files) {
+        const file = new File([blob], `${baseName()}${suffix}.${ext}`, { type: mime })
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('category', cat || tpl.defaultCat)
+        const r = await fetch(`/api/jobs/${job.id}/documents`, { method: 'POST', body: fd })
+        if (r.ok) ok++
+      }
+      if (ok === files.length) setMsg({ kind: 'ok', text: `บันทึกเข้าเอกสารงาน ${job.jobCode} แล้ว (${fmt.toUpperCase()}${files.length > 1 ? ` · ${files.length} ไฟล์` : ''})` })
+      else setMsg({ kind: 'err', text: `บันทึกได้ ${ok}/${files.length} ไฟล์` })
     } catch {
       setMsg({ kind: 'err', text: 'สร้างเอกสารไม่สำเร็จ (เบราว์เซอร์ไม่รองรับการเรนเดอร์) — ลองใช้ Chrome/Edge' })
     } finally { setBusy(false); setPhase('') }
@@ -744,12 +892,14 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     setBusy(true); setMsg(null)
     try {
       setPhase('กำลังสร้างไฟล์…')
-      const { blob, ext } = await makeFile()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url; a.download = `${baseName()}.${ext}`
-      document.body.appendChild(a); a.click(); a.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 10000)
+      const files = await makeFiles()
+      for (const { blob, ext, suffix } of files) {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = `${baseName()}${suffix}.${ext}`
+        document.body.appendChild(a); a.click(); a.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 10000)
+      }
     } catch {
       setMsg({ kind: 'err', text: 'สร้างไฟล์ไม่สำเร็จ — ลองใช้ Chrome/Edge' })
     } finally { setBusy(false); setPhase('') }
@@ -759,16 +909,20 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   // พิมพ์ไม่ผ่าน) และรอให้รูปโหลดเสร็จก่อนสั่งพิมพ์ กัน "Print Failed"
   function printSheet() {
     const wrap = sheetWrap.current
-    const sheet = wrap?.querySelector('#ff-sheet') as HTMLElement | null
-    if (!sheet) return
-    const clone = sheet.cloneNode(true) as HTMLElement
-    clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
-    clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
-    // ย่อให้พอดี 1 หน้า A4 เสมอ (A4 @96dpi = 794×1123px, เว้นขอบ ~9mm)
+    if (!wrap) return
+    const pages = sheetPages(wrap)
+    if (!pages.length) return
+    // ย่อให้พอดี 1 หน้า A4 เสมอ (A4 @96dpi = 794×1123px, เว้นขอบ ~9mm) — คิดสเกลแยกแต่ละหน้า
     const PAGE_W = 794, PAGE_H = 1123, PAD = 34
-    const sheetH = sheet.scrollHeight || sheet.offsetHeight
-    const scale = Math.min((PAGE_W - 2 * PAD) / A4_W, (PAGE_H - 2 * PAD) / sheetH, 1)
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${tpl?.title ?? 'แบบฟอร์ม'}</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}.pg{width:${PAGE_W}px;height:${PAGE_H}px;box-sizing:border-box;padding:${PAD}px;display:flex;justify-content:center;align-items:flex-start;overflow:hidden}.ft{transform:scale(${scale});transform-origin:top center}</style></head><body><div class="pg"><div class="ft">${clone.outerHTML}</div></div></body></html>`
+    const pagesHtml = pages.map((sheet) => {
+      const clone = sheet.cloneNode(true) as HTMLElement
+      clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
+      clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
+      const sheetH = sheet.scrollHeight || sheet.offsetHeight
+      const scale = Math.min((PAGE_W - 2 * PAD) / A4_W, (PAGE_H - 2 * PAD) / sheetH, 1)
+      return `<div class="pg"><div class="ft" style="transform:scale(${scale})">${clone.outerHTML}</div></div>`
+    }).join('')
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${tpl?.title ?? 'แบบฟอร์ม'}</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}.pg{width:${PAGE_W}px;height:${PAGE_H}px;box-sizing:border-box;padding:${PAD}px;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;page-break-after:always}.ft{transform-origin:top center}</style></head><body>${pagesHtml}</body></html>`
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
     const ifr = document.createElement('iframe')
     ifr.setAttribute('aria-hidden', 'true')
