@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirmDialog, type ImpactItem } from '@/lib/dialog'
 
 type Item = { id: string; name: string; quantity: number; needsSerial: boolean }
 
@@ -39,9 +40,36 @@ export function ProductComponentManager({ productType, initial }: { productType:
     router.refresh()
   }
 
-  async function remove(id: string) {
-    const res = await fetch(`/api/settings/components/${id}`, { method: 'DELETE' })
-    if (res.ok) { setItems((x) => x.filter((i) => i.id !== id)); router.refresh() }
+  async function remove(it: Item) {
+    // ดึงผลกระทบก่อน: อุปกรณ์ที่ตัด/ผูกไว้ในงานประเภทนี้ที่ใช้ชื่อนี้ จะไม่แสดงในหน้างานถ้าลบ
+    let impacts: ImpactItem[] = []
+    try {
+      const r = await fetch(`/api/settings/components/${it.id}`, { cache: 'no-store' })
+      if (r.ok) {
+        const d = await r.json() as { serials: number; jobs: number }
+        if (d.serials > 0) {
+          impacts = [
+            { label: `เครื่องที่ตัด/ผูกไว้ในงาน (ชื่อ “${it.name}”)`, count: d.serials, tone: 'danger' },
+            { label: 'งานที่เกี่ยวข้อง', count: d.jobs, tone: 'warn' },
+          ]
+        }
+      }
+    } catch { /* ถ้าเช็คไม่ได้ ก็ยังถามยืนยันตามปกติ */ }
+
+    const ok = await confirmDialog({
+      title: `ลบอุปกรณ์ “${it.name}” ออกจากสเปก?`,
+      message: impacts.length
+        ? 'เครื่องที่เคยตัด/ผูกไว้จะยังอยู่ในฐานข้อมูลและยังตัดสต็อกอยู่ แต่จะ “ไม่แสดง” ในหน้างานเพราะไม่ตรงสเปก\n\n💡 แนะนำ: ถ้าแค่เปลี่ยนรุ่น ให้เปลี่ยน “ชื่อ” อุปกรณ์แทนการลบ จะไม่กระทบงานเดิม'
+        : 'อุปกรณ์นี้ยังไม่ถูกใช้ในงานใด ลบได้ปลอดภัย',
+      danger: true,
+      confirmText: 'ลบทั้งที่รู้ผลกระทบ',
+      cancelText: 'ยกเลิก',
+      impacts,
+    })
+    if (!ok) return
+
+    const res = await fetch(`/api/settings/components/${it.id}`, { method: 'DELETE' })
+    if (res.ok) { setItems((x) => x.filter((i) => i.id !== it.id)); router.refresh() }
   }
 
   const field = 'border border-[#D6DFEA] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15 transition'
@@ -72,7 +100,7 @@ export function ProductComponentManager({ productType, initial }: { productType:
           >
             {it.needsSerial ? 'เก็บ Serial' : 'ไม่เก็บ Serial'}
           </button>
-          <button onClick={() => remove(it.id)} className="text-[13px] text-[#C13540] hover:underline">ลบ</button>
+          <button onClick={() => remove(it)} className="text-[13px] text-[#C13540] hover:underline">ลบ</button>
         </div>
       ))}
     </div>

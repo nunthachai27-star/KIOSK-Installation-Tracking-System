@@ -5,6 +5,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 // by a tiny external store, exposed as promise-based helpers so call sites read
 // almost the same as the native ones (just awaited).
 type Kind = 'confirm' | 'prompt' | 'alert'
+// รายการ "ผลกระทบ" ที่จะโชว์ในป็อปอัพก่อนลบ/แก้ (เช่น จะกระทบกี่งาน/กี่เครื่อง)
+export type ImpactItem = { label: string; count?: number; tone?: 'danger' | 'warn' | 'ok' }
 export type DialogOptions = {
   title?: string
   message?: string
@@ -14,6 +16,8 @@ export type DialogOptions = {
   defaultValue?: string  // prompt initial value
   placeholder?: string
   multiline?: boolean     // prompt: textarea instead of input
+  impacts?: ImpactItem[]  // แผงสรุปผลกระทบ (ถ้ามี จะโชว์เป็นกล่องเตือน)
+  impactHeading?: string  // หัวข้อของแผงผลกระทบ
 }
 type DialogReq = DialogOptions & { id: number; kind: Kind; resolve: (v: unknown) => void }
 
@@ -71,10 +75,16 @@ export function DialogHost() {
   function ok() { settle(isPrompt ? val : isAlert ? undefined : true) }
   function cancel() { settle(isPrompt ? null : isAlert ? undefined : false) }
 
+  const impacts = d.impacts ?? []
+  const toneCls = (t?: ImpactItem['tone']) =>
+    t === 'danger' ? 'bg-[#FBE4E4] text-[#C13540]'
+    : t === 'ok' ? 'bg-[#E2F3EA] text-[#157F4C]'
+    : 'bg-[#FBEBCB] text-[#B4740E]'
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/45 flex items-start justify-center p-4 overflow-y-auto"
       onMouseDown={(e) => { if (e.target === e.currentTarget) cancel() }}>
-      <div className="mt-[15vh] w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden"
+      <div className={`mt-[15vh] w-full ${impacts.length ? 'max-w-md' : 'max-w-sm'} bg-white rounded-2xl shadow-xl overflow-hidden`}
         role="dialog" aria-modal="true">
         <div className="p-5">
           <div className="flex items-start gap-3">
@@ -86,6 +96,24 @@ export function DialogHost() {
               {d.message && <div className="text-[13.5px] text-[#5A6B82] whitespace-pre-line leading-relaxed">{d.message}</div>}
             </div>
           </div>
+
+          {impacts.length > 0 && (
+            <div className="mt-4 rounded-xl border border-[#F0D9A8] bg-[#FFFBF2] overflow-hidden">
+              <div className="px-3.5 py-2 text-[12px] font-bold text-[#B4740E] bg-[#FDF3DF] border-b border-[#F3E4C4]">
+                {d.impactHeading || '⚠ การดำเนินการนี้จะกระทบส่วนต่อไปนี้'}
+              </div>
+              <ul className="divide-y divide-[#F5EAD3]">
+                {impacts.map((im, i) => (
+                  <li key={i} className="flex items-center justify-between gap-3 px-3.5 py-2">
+                    <span className="text-[13px] text-[#5A6B82] leading-snug">{im.label}</span>
+                    {im.count != null && (
+                      <span className={`shrink-0 text-[12.5px] font-bold tabular-nums rounded-full px-2.5 py-0.5 ${toneCls(im.tone)}`}>{im.count}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {isPrompt && (
             d.multiline ? (

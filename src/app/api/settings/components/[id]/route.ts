@@ -2,6 +2,28 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// GET: ตรวจ "ผลกระทบ" ก่อนลบ/แก้ชื่ออุปกรณ์ BOM — นับเครื่องที่ตัด/ผูกไว้ในงานประเภทนี้
+// ที่ใช้ชื่ออุปกรณ์นี้ (label) ถ้าลบ/เปลี่ยนชื่อ อุปกรณ์เหล่านั้นจะไม่ตรงสเปกและไม่แสดงในหน้างาน
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+
+  const { id } = await params
+  const c = await prisma.productComponent.findUnique({ where: { id } })
+  if (!c) return NextResponse.json({ error: 'not found' }, { status: 404 })
+
+  const where = { label: c.name, job: { productType: c.productType } }
+  const [serials, jobRows] = await Promise.all([
+    prisma.serialNumber.count({ where }),
+    prisma.serialNumber.findMany({ where, select: { jobId: true }, distinct: ['jobId'] }),
+  ])
+
+  return NextResponse.json(
+    { name: c.name, productType: c.productType, serials, jobs: jobRows.length },
+    { headers: { 'Cache-Control': 'no-store' } },
+  )
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
