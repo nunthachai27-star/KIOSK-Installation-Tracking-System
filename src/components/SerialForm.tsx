@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { alertDialog, confirmDialog } from '@/lib/dialog'
+import { alertDialog, confirmDialog, type ImpactItem } from '@/lib/dialog'
 import type { SerialNumber, SerialType, SerialStatus } from '@prisma/client'
 import { SERIAL_TYPE_LABELS } from '@/lib/serial-types'
 import { addBusinessDays } from '@/lib/workdays'
@@ -170,6 +170,27 @@ export function SerialForm({
   }
 
   async function removeSerial(id: string) {
+    // เตือนผลกระทบก่อนลบ (คำนวณจากข้อมูลในหน้า) — เครื่อง BMS จะลบอุปกรณ์ลูกด้วย,
+    // อุปกรณ์ที่ตัดสต็อกไว้จะถูกคืนกลับเข้าคลังอัตโนมัติ
+    const row = rows.find(r => r.id === id)
+    const isUnit = row?.serialType === 'BMS'
+    const children = isUnit ? rows.filter(r => r.parentId === id) : []
+    const impacts: ImpactItem[] = []
+    if (isUnit) {
+      if (children.length) impacts.push({ label: 'อุปกรณ์ลูกที่จะถูกลบพร้อมเครื่องนี้', count: children.length, tone: 'warn' })
+      const deducted = children.filter(c => stockOf(c.serialNo) === 'DEDUCTED').length
+      if (deducted) impacts.push({ label: 'ในนั้นเป็นอุปกรณ์ที่ตัดสต็อกไว้แล้ว', count: deducted, tone: 'danger' })
+    } else if (row && stockOf(row.serialNo) === 'DEDUCTED') {
+      impacts.push({ label: 'จะคืนอุปกรณ์นี้กลับเข้าคลัง (จ่ายออก → ในคลัง)', count: 1, tone: 'ok' })
+    }
+    const ok = await confirmDialog({
+      title: isUnit ? `ลบเครื่อง ${row?.serialNo ?? ''}?` : 'ลบอุปกรณ์นี้ออกจากเครื่อง?',
+      message: isUnit
+        ? 'จะลบเครื่องนี้พร้อมอุปกรณ์ลูกทั้งหมด (ตรวจสอบอุปกรณ์ที่ตัดสต็อกไว้ก่อนลบ)'
+        : 'ถ้าอุปกรณ์นี้ตัดสต็อกไว้ ระบบจะคืนกลับเข้าคลังให้อัตโนมัติ',
+      danger: true, confirmText: 'ลบ', impacts,
+    })
+    if (!ok) return
     const res = await fetch(`/api/jobs/${jobId}/serials/${id}`, { method: 'DELETE' })
     if (res.ok) { setRows(r => r.filter(x => x.id !== id && x.parentId !== id)); router.refresh() }
   }

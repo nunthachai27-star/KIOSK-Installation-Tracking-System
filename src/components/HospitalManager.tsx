@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { confirmDialog } from '@/lib/dialog'
+import { confirmWithImpact } from '@/lib/impact'
 
 type Contact = { name: string; phone: string; position: string; note: string }
 type Item = { id: string; name: string; province: string; jobCount: number; code: string; address: string; contacts: Contact[] }
@@ -146,7 +146,7 @@ function HospitalRow({ item, onSaved, onDeleted, refresh }: {
 
   async function del() {
     if (item.jobCount > 0) return
-    if (!(await confirmDialog({ title: 'ลบโรงพยาบาล', message: `ลบ "${item.name}" ?`, danger: true, confirmText: 'ลบ' }))) return
+    if (!(await confirmWithImpact({ type: 'hospital', id: item.id, title: `ลบโรงพยาบาล "${item.name}"?`, confirmText: 'ลบ' }))) return
     const res = await fetch(`/api/hospitals/${item.id}`, { method: 'DELETE' })
     if (res.ok) { onDeleted(); refresh() }
     else setMsg('ลบไม่สำเร็จ')
