@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { prisma } from '@/lib/prisma'
 import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
 import { LicensePrintButton } from '@/components/LicensePrintButton'
+import { LicenseQr } from '@/components/LicenseQr'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,15 +73,7 @@ export default async function LicensePublicPage({ params }: { params: Promise<{ 
                   <Field label="License Key" value={u.licenseKey} mono />
                 </div>
                 <div className="shrink-0 text-center">
-                  {u.qr ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={u.qr} alt={`QR License ${u.serialNo}`} width={140} height={140} className="rounded-lg border border-[#E7EDF4]" />
-                      <div className="text-[11px] text-[#8492A6] mt-1">สแกน License</div>
-                    </>
-                  ) : (
-                    <div className="w-[140px] h-[140px] grid place-items-center rounded-lg border border-dashed border-[#D6DFEA] text-[11px] text-[#A8A29E]">ยังไม่มี License</div>
-                  )}
+                  <LicenseQr qr={u.qr} serialNo={u.serialNo} licenseKey={u.licenseKey} />
                 </div>
               </div>
             </div>
