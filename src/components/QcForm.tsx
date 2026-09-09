@@ -160,7 +160,8 @@ export function QcForm({
   return (
     <div className="p-6 max-w-[1160px] mx-auto flex flex-col gap-6">
       {/* หัวข้อ: โรงพยาบาล (จากข้อมูลงาน) + รหัสสถานพยาบาล */}
-      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5 flex flex-wrap items-start gap-x-8 gap-y-4">
+      <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5 flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-4 min-w-0">
         <div className="min-w-[240px]">
           <div className="text-sm font-semibold text-[#5A6B82] mb-1.5">โรงพยาบาล</div>
           <div className="h-[42px] flex items-center gap-1.5 text-[15px] font-bold text-[#1C1917]">🏥 {hospital.name}</div>
@@ -176,7 +177,8 @@ export function QcForm({
           </div>
           <div className="text-[11.5px] text-[#A8A29E] mt-1">ใช้ร่วมทุกงานของโรงพยาบาลนี้</div>
         </div>
-        <div className="ml-auto self-start flex flex-wrap items-center justify-end gap-2">
+        </div>
+        <div className="shrink-0 flex flex-wrap items-center justify-end gap-2">
           <button type="button" onClick={copyLicenseLink}
             className="flex items-center gap-1.5 border border-[#DCE4EE] text-[#3C4A5E] text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:border-[var(--brand)] hover:text-[var(--brand)]"
             title="คัดลอกลิงก์ข้อมูล License/MAC (อ่านอย่างเดียว) ไว้ส่งให้โรงพยาบาล">
