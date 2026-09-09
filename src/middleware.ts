@@ -25,7 +25,10 @@ export default auth((req) => {
     // หน้า /dev (เจ้าหน้าที่) และ /api/dev-requests ยังต้อง login OFFICE เหมือนเดิม.
     '/dev/team', '/api/dev/team',
     // โชว์เคสโปรดัก Kiosk — เปิดหน้าสาธารณะ + API (leads GET ตรวจสิทธิ์ในตัวเอง).
-    '/kiosk-products', '/api/kiosk-products']
+    '/kiosk-products', '/api/kiosk-products',
+    // หน้าข้อมูล License/MAC ต่อเครื่อง (อ่านอย่างเดียว) — ส่งลิงก์ให้โรงพยาบาลดู
+    // เข้าถึงด้วย jobId (cuid เดาไม่ได้) ไม่มีปุ่มแก้ไข
+    '/license']
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 

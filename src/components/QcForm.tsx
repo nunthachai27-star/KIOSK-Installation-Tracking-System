@@ -57,6 +57,17 @@ export function QcForm({
   const [hCode, setHCode] = useState(hospital.code ?? '')
   const [hSaving, setHSaving] = useState(false)
   const [hSaved, setHSaved] = useState(false)
+  // คัดลอกลิงก์หน้า License (อ่านอย่างเดียว) ไว้ส่งให้โรงพยาบาล
+  const [linkCopied, setLinkCopied] = useState(false)
+  async function copyLicenseLink() {
+    const url = `${window.location.origin}/license/${jobId}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2500)
+    } catch {
+      window.prompt('คัดลอกลิงก์นี้เพื่อส่งให้โรงพยาบาล', url)
+    }
+  }
   async function saveHospitalCode() {
     setHSaving(true); setHSaved(false)
     try {
@@ -165,10 +176,20 @@ export function QcForm({
           </div>
           <div className="text-[11.5px] text-[#A8A29E] mt-1">ใช้ร่วมทุกงานของโรงพยาบาลนี้</div>
         </div>
-        <button type="button" onClick={downloadReport}
-          className="ml-auto self-end flex items-center gap-1.5 bg-[var(--brand)] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)]">
-          📄 ดึงรายงานขอออก License Key
-        </button>
+        <div className="ml-auto self-end flex items-center gap-2">
+          <button type="button" onClick={copyLicenseLink}
+            className="flex items-center gap-1.5 border border-[#DCE4EE] text-[#3C4A5E] text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            title="คัดลอกลิงก์ข้อมูล License/MAC (อ่านอย่างเดียว) ไว้ส่งให้โรงพยาบาล">
+            {linkCopied ? '✓ คัดลอกแล้ว' : '🔗 คัดลอกลิงก์ License'}
+          </button>
+          <a href={`/license/${jobId}`} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 border border-[#DCE4EE] text-[#3C4A5E] text-[13px] font-semibold rounded-lg px-3 py-2.5 hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            title="เปิดหน้า License (อ่านอย่างเดียว)">👁️ ดู</a>
+          <button type="button" onClick={downloadReport}
+            className="flex items-center gap-1.5 bg-[var(--brand)] text-white text-[13px] font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)]">
+            📄 ดึงรายงานขอออก License Key
+          </button>
+        </div>
       </div>
 
       {units.length > 1 && (
