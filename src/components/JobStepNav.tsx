@@ -6,8 +6,8 @@ const DETAIL_STEPS: { label: string; href: string }[] = [
   { label: 'ลง Serial', href: '/serial' },
   { label: 'QC', href: '/qc' },
   { label: 'งานจัดส่ง', href: '/delivery' },
-  { label: 'ติดตั้ง & ส่งมอบ', href: '/handover' },
-  { label: 'งานบิล', href: '/invoice' },
+  { label: 'ติดตั้ง', href: '/handover' },
+  { label: 'ส่งมอบ & งานบิล', href: '/invoice' },
 ]
 
 export type StepNo = 1 | 2 | 3 | 4 | 5 | 6

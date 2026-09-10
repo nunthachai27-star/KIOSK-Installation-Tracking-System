@@ -4,7 +4,7 @@ import type { JobStatus, IssueStatus, IssueWarranty } from '@prisma/client'
 
 export type ExecDashboard = Awaited<ReturnType<typeof getExecDashboard>>
 
-const STEP_LABELS = ['ข้อมูลงาน', 'ลง Serial', 'QC', 'จัดส่ง', 'ติดตั้ง & ส่งมอบ', 'งานบิล']
+const STEP_LABELS = ['ข้อมูลงาน', 'ลง Serial', 'QC', 'จัดส่ง', 'ติดตั้ง', 'ส่งมอบ & งานบิล']
 
 export async function getExecDashboard(now: Date = new Date()) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)

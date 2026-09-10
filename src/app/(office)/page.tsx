@@ -9,7 +9,7 @@ import { JobSearch } from '@/components/JobSearch'
 import { formatQty } from '@/lib/format'
 
 // Workflow steps 1-6, matching the job-detail step nav.
-const STEP_LABELS = ['ข้อมูลงาน', 'ลง Serial', 'QC', 'งานจัดส่ง', 'ติดตั้ง & ส่งมอบ', 'งานบิล']
+const STEP_LABELS = ['ข้อมูลงาน', 'ลง Serial', 'QC', 'งานจัดส่ง', 'ติดตั้ง', 'ส่งมอบ & งานบิล']
 const STEP_ICONS = ['📄', '🏷️', '🛡️', '🚚', '🔧', '📋']
 // Shared with JobRow's desktop grid — keep column widths in sync.
 const JOB_GRID = 'grid-cols-[1.7fr_1.2fr_150px_180px_96px_28px]'
