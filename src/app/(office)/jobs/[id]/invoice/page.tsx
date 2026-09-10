@@ -19,6 +19,7 @@ export default async function JobInvoicePage({ params }: { params: Promise<{ id:
         job={serializeJob(job)}
         invoice={serializeInvoice(job.invoice)}
         handoverStatus={job.handover?.handoverStatus ?? 'PENDING'}
+        handoverDate={job.handover?.handoverDate ? job.handover.handoverDate.toISOString() : null}
       />
     </JobDetailShell>
   )

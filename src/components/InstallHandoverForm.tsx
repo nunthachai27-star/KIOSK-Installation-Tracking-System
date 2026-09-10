@@ -49,12 +49,6 @@ const CHECKLIST_STATUS_LABEL: Record<HandoverStatus, string> = {
   DELIVERED: 'ส่งมอบแล้ว',
 }
 
-const HANDOVER_STATUS_LABEL: Record<HandoverStatus, string> = {
-  PENDING: 'รอส่งมอบ',
-  RECEIVED: 'เตรียมส่งมอบ',
-  DELIVERED: 'ส่งมอบแล้ว',
-}
-
 type InstallationFormState = {
   installType: InstallType
   remoteDate: string
@@ -168,14 +162,17 @@ export function InstallHandoverForm({
   }
 
   async function saveHandover() {
-    setHSaving(true)
     setHError('')
+    // บังคับใส่วันที่ได้รับ Checklist เมื่อสถานะไม่ใช่ "รอตอบกลับ"
+    if (hForm.checklistStatus !== 'PENDING' && !hForm.checklistReceivedDate) {
+      setHError('กรุณาระบุ “วันที่ได้รับ Checklist” ก่อนบันทึก')
+      return
+    }
+    setHSaving(true)
 
     const body = {
       checklistStatus: hForm.checklistStatus,
       checklistReceivedDate: hForm.checklistReceivedDate || null,
-      handoverStatus: hForm.handoverStatus,
-      handoverDate: hForm.handoverDate || null,
       remark: hForm.remark || null,
     }
 
@@ -187,7 +184,8 @@ export function InstallHandoverForm({
       })
 
       if (!res.ok) {
-        setHError(res.status === 403 ? 'คุณไม่มีสิทธิ์บันทึกข้อมูลนี้' : 'บันทึกไม่สำเร็จ กรุณาลองใหม่')
+        const b = await res.json().catch(() => null) as { message?: string } | null
+        setHError(b?.message || (res.status === 403 ? 'คุณไม่มีสิทธิ์บันทึกข้อมูลนี้' : 'บันทึกไม่สำเร็จ กรุณาลองใหม่'))
         return
       }
 
@@ -297,7 +295,8 @@ export function InstallHandoverForm({
       </div>
 
       <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
-        <div className="text-[15px] font-bold mb-4">Checklist &amp; ส่งมอบงาน</div>
+        <div className="text-[15px] font-bold mb-1">Checklist ตอบกลับ</div>
+        <p className="text-[12.5px] text-[#8492A6] mb-4">เมื่อเลือก “ได้รับ Checklist แล้ว” และกดบันทึก ระบบจะย้ายงานไปขั้น <b>งานบิล</b> ให้อัตโนมัติ (ต้องระบุวันที่ได้รับ Checklist)</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">Checklist ตอบกลับ</label>
@@ -308,20 +307,10 @@ export function InstallHandoverForm({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่ได้รับ Checklist</label>
+            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">
+              วันที่ได้รับ Checklist {hForm.checklistStatus !== 'PENDING' && <span className="text-[#C13540]">*</span>}
+            </label>
             <DateField value={hForm.checklistReceivedDate} onChange={v => setH('checklistReceivedDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะส่งมอบงาน</label>
-            <select value={hForm.handoverStatus} onChange={e => setH('handoverStatus', e.target.value as HandoverStatus)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
-              {(Object.keys(HANDOVER_STATUS_LABEL) as HandoverStatus[]).map(s => (
-                <option key={s} value={s}>{HANDOVER_STATUS_LABEL[s]}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่แจ้งส่งมอบ</label>
-            <DateField value={hForm.handoverDate} onChange={v => setH('handoverDate', v)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
           </div>
           <div className="col-span-2">
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">หมายเหตุ</label>
@@ -338,9 +327,13 @@ export function InstallHandoverForm({
             onClick={saveHandover}
             className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60"
           >
-            {hSaving ? 'กำลังบันทึก…' : 'บันทึกการส่งมอบ'}
+            {hSaving ? 'กำลังบันทึก…' : 'บันทึก Checklist'}
           </button>
-          {hSaved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
+          {hSaved && (
+            <span className="text-sm font-semibold text-[#157F4C]">
+              บันทึกแล้ว ✓{hForm.checklistStatus !== 'PENDING' ? ' · ย้ายไปขั้นงานบิลแล้ว' : ''}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -26,15 +26,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   const data = { ...parsed.data, recordedById: session.user.id }
 
+  // เมื่อระบุ Checklist = "ได้รับแล้ว"/"ส่งมอบแล้ว" ต้องมีวันที่ได้รับ Checklist ด้วย
+  if ((data.checklistStatus === 'RECEIVED' || data.checklistStatus === 'DELIVERED') && !data.checklistReceivedDate) {
+    return NextResponse.json({ error: 'checklist_date_required', message: 'กรุณาระบุวันที่ได้รับ Checklist' }, { status: 400 })
+  }
+
   const handover = await prisma.handoverRecord.upsert({
     where: { jobId: id },
     create: { jobId: id, ...data },
     update: data,
   })
 
-  // Completing the handover (ส่งมอบแล้ว) advances the job to the billing step (งานบิล),
-  // moving forward only — never pull a job that's already billing/closed backward.
-  if (data.handoverStatus === 'DELIVERED' && PROGRESS_RANK[job.currentStatus] < PROGRESS_RANK.WAIT_INVOICE) {
+  // "ได้รับ Checklist แล้ว" (หรือส่งมอบแล้ว) ดันงานไปขั้นงานบิล (WAIT_INVOICE) อัตโนมัติ
+  // ไปข้างหน้าเท่านั้น — งานที่อยู่ขั้นบิล/ปิดแล้วจะไม่ถูกดึงกลับ
+  const advance =
+    data.checklistStatus === 'RECEIVED' || data.checklistStatus === 'DELIVERED' || data.handoverStatus === 'DELIVERED'
+  if (advance && PROGRESS_RANK[job.currentStatus] < PROGRESS_RANK.WAIT_INVOICE) {
     await prisma.job.update({ where: { id }, data: { currentStatus: 'WAIT_INVOICE' } })
   }
 

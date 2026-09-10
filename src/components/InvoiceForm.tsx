@@ -23,6 +23,12 @@ const INVOICE_STATUS_LABEL: Record<InvoiceStatus, string> = {
   SENT_TO_ACCOUNTING: 'ส่งเอกสารให้แผนกบัญชีแล้ว',
 }
 
+const HANDOVER_STATUS_LABEL: Record<HandoverStatus, string> = {
+  PENDING: 'รอส่งมอบ',
+  RECEIVED: 'เตรียมส่งมอบ',
+  DELIVERED: 'ส่งมอบแล้ว',
+}
+
 type InvoiceFormState = {
   status: InvoiceStatus
   invoiceDate: string
@@ -47,10 +53,12 @@ export function InvoiceForm({
   job,
   invoice,
   handoverStatus,
+  handoverDate,
 }: {
   job: SerializedJob
   invoice: SerializedInvoice | null
   handoverStatus: HandoverStatus
+  handoverDate: string | null
 }) {
   const router = useRouter()
   const [iForm, setIForm] = useState<InvoiceFormState>(() => initialInvoice(invoice, job.salesAmount))
@@ -59,14 +67,39 @@ export function InvoiceForm({
   const [iSaved, setISaved] = useState(false)
   const [iError, setIError] = useState('')
 
+  // ส่งมอบงาน (ย้ายมาจากขั้นติดตั้ง&ส่งมอบ) — บันทึกลง HandoverRecord เดิม
+  const [hStatus, setHStatus] = useState<HandoverStatus>(handoverStatus)
+  const [hDate, setHDate] = useState(toDateInput(handoverDate))
+  const [hSaving, setHSaving] = useState(false)
+  const [hSaved, setHSaved] = useState(false)
+  const [hError, setHError] = useState('')
+
   const [closing, setClosing] = useState(false)
   const [closeError, setCloseError] = useState('')
   const [closed, setClosed] = useState(job.currentStatus === 'CLOSED')
 
   const readiness = canCloseJob({
-    handover: { handoverStatus },
+    handover: { handoverStatus: hStatus },
     invoice: { status: iForm.status },
   })
+
+  async function saveHandover() {
+    setHSaving(true); setHError('')
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/handover`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handoverStatus: hStatus, handoverDate: hDate || null }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => null) as { message?: string } | null
+        setHError(b?.message || (res.status === 403 ? 'คุณไม่มีสิทธิ์บันทึกข้อมูลนี้' : 'บันทึกไม่สำเร็จ กรุณาลองใหม่'))
+        return
+      }
+      setHSaved(true); router.refresh()
+    } catch {
+      setHError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+    } finally { setHSaving(false) }
+  }
 
   function setI<K extends keyof InvoiceFormState>(key: K, value: InvoiceFormState[K]) {
     setIForm(f => ({ ...f, [key]: value }))
@@ -141,6 +174,32 @@ export function InvoiceForm({
       <div className="grid grid-cols-3 gap-6 items-start">
         <div className="col-span-2 flex flex-col gap-6">
           <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
+            <div className="text-[15px] font-bold mb-4">ส่งมอบงาน</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">สถานะส่งมอบงาน</label>
+                <select value={hStatus} onChange={e => { setHStatus(e.target.value as HandoverStatus); setHSaved(false) }} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5">
+                  {(Object.keys(HANDOVER_STATUS_LABEL) as HandoverStatus[]).map(s => (
+                    <option key={s} value={s}>{HANDOVER_STATUS_LABEL[s]}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วันที่แจ้งส่งมอบ</label>
+                <DateField value={hDate} onChange={v => { setHDate(v); setHSaved(false) }} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+              </div>
+            </div>
+            {hError && <div className="text-sm text-[#C13540] font-medium mt-4">{hError}</div>}
+            <div className="flex items-center gap-3 mt-4">
+              <button type="button" disabled={hSaving} onClick={saveHandover}
+                className="bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
+                {hSaving ? 'กำลังบันทึก…' : 'บันทึกการส่งมอบ'}
+              </button>
+              {hSaved && <span className="text-sm font-semibold text-[#157F4C]">บันทึกแล้ว ✓</span>}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#E7EDF4] rounded-2xl p-5">
             <div className="text-[15px] font-bold mb-4">ใบแจ้งหนี้/บริจาค</div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -204,7 +263,7 @@ export function InvoiceForm({
               <span
                 className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0"
                 style={
-                  handoverStatus === 'DELIVERED'
+                  hStatus === 'DELIVERED'
                     ? { background: '#157F4C', color: '#fff' }
                     : { background: '#EAEFF6', color: '#A2AEC0' }
                 }
