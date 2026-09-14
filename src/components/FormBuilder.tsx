@@ -595,7 +595,7 @@ function sheetsToDocBlob(nodes: HTMLElement[], title: string): Blob {
   return new Blob(['﻿', html], { type: 'application/msword' })
 }
 
-export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
+export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: string; userId?: string }) {
   const [tpl, setTpl] = useState<Template | null>(null)
   const [job, setJob] = useState<JobHit | null>(null)
   const [q, setQ] = useState('')
@@ -645,7 +645,7 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     const wrap = sheetWrap.current
     if (!wrap || !tpl) return
     let saved: string | null = null
-    try { saved = localStorage.getItem('kioskFormTpl:' + tpl.id) } catch { /* ignore */ }
+    try { saved = localStorage.getItem(`kioskFormTpl:${userId}:${tpl.id}`) } catch { /* ignore */ }
     wrap.innerHTML = saved || buildSheet(tpl.id)
     setSavedExists(!!saved)
     setCat((c) => c || tpl.defaultCat)
@@ -740,16 +740,16 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   // จำค่าฟอนต์/ขนาด/ระยะบรรทัด ข้ามทุกฟอร์ม (โหลดตอนเปิด, บันทึกเมื่อเปลี่ยน)
   useEffect(() => {
     try {
-      const f = localStorage.getItem('kioskFormFont'); if (f) setFontKey(f)
-      const px = localStorage.getItem('kioskFormFontPx'); if (px != null) setFontPx(+px)
-      const lh = localStorage.getItem('kioskFormLineH'); if (lh != null) setLineH(+lh)
+      const f = localStorage.getItem(`kioskFormFont:${userId}`); if (f) setFontKey(f)
+      const px = localStorage.getItem(`kioskFormFontPx:${userId}`); if (px != null) setFontPx(+px)
+      const lh = localStorage.getItem(`kioskFormLineH:${userId}`); if (lh != null) setLineH(+lh)
     } catch { /* ignore */ }
   }, [])
   useEffect(() => {
     try {
-      localStorage.setItem('kioskFormFont', fontKey)
-      localStorage.setItem('kioskFormFontPx', String(fontPx))
-      localStorage.setItem('kioskFormLineH', String(lineH))
+      localStorage.setItem(`kioskFormFont:${userId}`, fontKey)
+      localStorage.setItem(`kioskFormFontPx:${userId}`, String(fontPx))
+      localStorage.setItem(`kioskFormLineH:${userId}`, String(lineH))
     } catch { /* ignore */ }
   }, [fontKey, fontPx, lineH])
 
@@ -763,12 +763,12 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
     clone.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
     clone.classList.remove('ff-layout')
     clone.querySelectorAll('[contenteditable]').forEach((n) => n.setAttribute('contenteditable', 'true'))
-    try { localStorage.setItem('kioskFormTpl:' + tpl.id, clone.outerHTML); setSavedExists(true); setMsg({ kind: 'ok', text: 'จำรูปแบบฟอร์มนี้ไว้แล้ว — เปิดครั้งหน้าจะขึ้นตามนี้' }) }
+    try { localStorage.setItem(`kioskFormTpl:${userId}:${tpl.id}`, clone.outerHTML); setSavedExists(true); setMsg({ kind: 'ok', text: 'จำรูปแบบฟอร์มนี้ไว้แล้ว — เปิดครั้งหน้าจะขึ้นตามนี้' }) }
     catch { setMsg({ kind: 'err', text: 'บันทึกไม่สำเร็จ (พื้นที่เก็บเต็ม)' }) }
   }
   function resetTemplate() {
     if (!tpl) return
-    try { localStorage.removeItem('kioskFormTpl:' + tpl.id) } catch { /* ignore */ }
+    try { localStorage.removeItem(`kioskFormTpl:${userId}:${tpl.id}`) } catch { /* ignore */ }
     setSavedExists(false); setLayout(false); setMsg({ kind: 'ok', text: 'คืนค่าเริ่มต้นของฟอร์มนี้แล้ว' })
     setReload((n) => n + 1)
   }
@@ -950,8 +950,8 @@ export function FormBuilder({ initialJobId }: { initialJobId?: string }) {
   const catList = cats.length ? cats : [tpl?.defaultCat ?? 'สัญญา / PO']
 
   // ── เครื่องมือแยก (ค้นหา รพ./งาน) ─────────────────────────────────────────────
-  if (ship) return <ShipLabel onBack={() => setShip(false)} />
-  if (equip) return <EquipSetLabel onBack={() => setEquip(false)} />
+  if (ship) return <ShipLabel onBack={() => setShip(false)} userId={userId} />
+  if (equip) return <EquipSetLabel onBack={() => setEquip(false)} userId={userId} />
 
   // ── หน้าเลือกแม่แบบ ─────────────────────────────────────────────────────────
   if (!tpl) {

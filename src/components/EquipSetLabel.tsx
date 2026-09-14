@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react'
 
 type JobHit = { id: string; jobCode: string; productType: string; province: string | null; hospital: { name: string } | null }
-const CFG_KEY = 'kioskEquipSetCfg'
 
-export function EquipSetLabel({ onBack }: { onBack: () => void }) {
+export function EquipSetLabel({ onBack, userId = 'anon' }: { onBack: () => void; userId?: string }) {
+  // ผูกการจำรูปแบบไว้กับผู้ใช้ — ของใครของมัน
+  const CFG_KEY = `kioskEquipSetCfg:${userId}`
   const [q, setQ] = useState('')
   const [results, setResults] = useState<JobHit[]>([])
   const [searching, setSearching] = useState(false)

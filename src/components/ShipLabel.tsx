@@ -49,7 +49,10 @@ const SIZES: Record<string, [number, number]> = {
   a6: [10.5, 14.8], a5: [14.8, 21], a4: [21, 29.7], s1015: [10, 15], l46: [10.16, 15.24],
 }
 
-export function ShipLabel({ onBack }: { onBack: () => void }) {
+export function ShipLabel({ onBack, userId = 'anon' }: { onBack: () => void; userId?: string }) {
+  // ผูกการจำรูปแบบไว้กับผู้ใช้ — ของใครของมัน
+  const HTML_KEY = `kioskShipLabelHtml:${userId}`
+  const CFG_KEY = `kioskShipLabelCfg:${userId}`
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Hosp[]>([])
   const [searching, setSearching] = useState(false)
@@ -76,8 +79,8 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
     if (!scaler.current) return
     let html: string | null = null
     try {
-      html = localStorage.getItem('kioskShipLabelHtml')
-      const raw = localStorage.getItem('kioskShipLabelCfg')
+      html = localStorage.getItem(HTML_KEY)
+      const raw = localStorage.getItem(CFG_KEY)
       if (raw) {
         const c = JSON.parse(raw)
         if (c.sizeKey) setSizeKey(c.sizeKey)
@@ -179,14 +182,14 @@ export function ShipLabel({ onBack }: { onBack: () => void }) {
     clone.querySelectorAll('[contenteditable]').forEach((n) => n.setAttribute('contenteditable', 'true'))
     clone.style.width = ''; clone.style.height = '' // ให้ปรับพอดีจอตอนโหลดใหม่
     try {
-      localStorage.setItem('kioskShipLabelHtml', clone.outerHTML)
-      localStorage.setItem('kioskShipLabelCfg', JSON.stringify({ sizeKey, cw, ch, orient, fragile, showFrom, boxes, boxno }))
+      localStorage.setItem(HTML_KEY, clone.outerHTML)
+      localStorage.setItem(CFG_KEY, JSON.stringify({ sizeKey, cw, ch, orient, fragile, showFrom, boxes, boxno }))
       setSavedExists(true); setMsg('จำรูปแบบป้ายไว้แล้ว — เปิดครั้งหน้าจะขึ้นตามนี้')
     } catch { setMsg('บันทึกไม่สำเร็จ') }
     setTimeout(() => setMsg(''), 3000)
   }
   function resetLabel() {
-    try { localStorage.removeItem('kioskShipLabelHtml'); localStorage.removeItem('kioskShipLabelCfg') } catch { /* ignore */ }
+    try { localStorage.removeItem(HTML_KEY); localStorage.removeItem(CFG_KEY) } catch { /* ignore */ }
     setSizeKey('a6'); setCw(10); setCh(15); setOrient('portrait'); setFragile(true); setShowFrom(true); setBoxes('1'); setBoxno('')
     setLayout(false); setSavedExists(false); setMsg('คืนค่าเริ่มต้นแล้ว')
     setReload((n) => n + 1)
