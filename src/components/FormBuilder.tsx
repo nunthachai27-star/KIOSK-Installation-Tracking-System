@@ -6,7 +6,7 @@ import { EquipSetLabel } from '@/components/EquipSetLabel'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
-type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check'
+type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check' | 'kiosk-startsmart-plus'
 type Template = { id: TemplateId; title: string; desc: string; defaultCat: string; accent: string }
 const TEMPLATES: Template[] = [
   {
@@ -43,6 +43,13 @@ const TEMPLATES: Template[] = [
     desc: 'ใบเช็คคุณสมบัติ/ทดสอบการใช้งานตู้ Kiosk ส่งตรวจ — ดึงชื่อ รพ./ที่อยู่/เลข S/N · ออก 1 ใบต่อ 1 เครื่อง',
     defaultCat: 'ใบเช็คคุณสมบัติ Kiosk',
     accent: '#0E7C86',
+  },
+  {
+    id: 'kiosk-startsmart-plus',
+    title: 'ขอเปิดสิทธิ Kiosk Start Smart Plus',
+    desc: 'ขออนุมัติเปิดสิทธิ์ Kiosk รุ่น Start Smart Plus + HOSxP Mobile Gateway + API Payment — ดึงชื่อ รพ./Key ID ต่อเครื่อง',
+    defaultCat: 'สัญญา / PO',
+    accent: '#7A44C6',
   },
 ]
 
@@ -81,6 +88,18 @@ function unitRowHtml(i: number, serial = '', mac = ''): string {
 }
 
 const COMPANY_LINES = 'บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)<br>เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร<br>โทรศัพท์ 0-2427-9991 โทรสาร 0-2873-0292<br>เลขที่ประจำตัวผู้เสียภาษี 0105548152334'
+
+// บรรทัดรายการเครื่องแบบ "ตู้ที่ N = Key ID …" (ฟอร์มขอเปิดสิทธิ์ Start Smart Plus)
+function keyRowHtml(i: number, keyId = ''): string {
+  const k = esc(keyId)
+  const text = i > 0
+    ? `ตู้ที่ ${i} &nbsp;=&nbsp; Key ID&nbsp;&nbsp;${k || '……………………………………………………'}`
+    : '&nbsp;'
+  return `<tr>
+      <td class="ff-unit" style="border-bottom:1px solid #000;padding:5px 6px 5px 18px;" contenteditable="true">${text}</td>
+      <td class="ff-noprint" style="width:28px;text-align:center;border:0;vertical-align:middle;"><button type="button" class="ff-delrow" title="ลบบรรทัด" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:22px;height:22px;cursor:pointer;font-weight:700;">✕</button></td>
+    </tr>`
+}
 
 function buildKioskActivation(): string {
   const ed = 'contenteditable="true"'
@@ -148,6 +167,89 @@ function buildKioskActivation(): string {
           <div style="${sig}"></div>
           <div>(<span ${ed}>นางสาวภัคธินันท์ วิโรจน์ธานีกุล</span>)</div>
           <div ${ed}>หัวหน้าแผนกการขายและการตลาด</div>
+        </div>
+        <div style="text-align:center;flex:1;">
+          <div style="${sig}"></div>
+          <div>(<span ${ed}>นางสาวปราณี มีเกาะ</span>)</div>
+          <div ${ed}>ผู้ดำเนินการเปิด Activation</div>
+        </div>
+      </div>
+
+    </div>
+  </div>`
+}
+
+// ขอเปิดสิทธิ Kiosk Start Smart Plus (โครงคล้ายฟอร์มขอเปิดสิทธิ์เดิม แต่รุ่น Start Smart Plus + API Payment · แถวเป็น Key ID)
+function buildKioskStartSmartPlus(): string {
+  const ed = 'contenteditable="true"'
+  const sig = 'border-bottom:1px dotted #000;height:1px;margin-bottom:6px;'
+  const chk = '<span class="ff-check" data-checked="0" style="display:inline-block;width:17px;height:17px;border:1.3px solid #000;text-align:center;line-height:15px;font-size:13px;cursor:pointer;vertical-align:middle;"></span>'
+  const rows = [1, 2, 3].map((i) => keyRowHtml(i)).concat([keyRowHtml(0), keyRowHtml(0)]).join('')
+  return `
+  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif;font-size:13.5px;line-height:1.55;">
+    <div style="border:1px solid #000;">
+
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid #000;">
+        <div style="flex:0 0 auto;">${bmsLogoImg(48)}</div>
+        <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
+      </div>
+
+      <div style="text-align:center;padding:7px 12px;border-bottom:1px solid #000;">
+        <span ${ed} style="text-decoration:underline;font-weight:700;font-size:15px;">เอกสารการขออนุมัติเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk (ส่งตรวจ)</span>
+      </div>
+
+      <div style="text-align:center;padding:6px 12px;border-bottom:1px solid #000;">
+        ชื่อผู้ร้องขอ(BMS)&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 6px;">นายจักรกฤษณ์ มนตรีวงษ์</span>&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 6px;">เจ้าหน้าที่ปฏิบัติการ</span>
+      </div>
+
+      <div style="padding:8px 12px 0;">
+        <p ${ed} style="margin:0 0 8px;">ขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS - Smart Hospital Kiosk ส่งตรวจอัตโนมัติ รุ่น Start Smart Plus พร้อมเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package และเปิดสิทธิ์การใช้งาน API Payment จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้ ดังนี้</p>
+        <div style="border-bottom:1px solid #000;padding:2px 0 4px 6px;">1. <span id="ff-hospital" ${ed} style="padding:0 4px;font-weight:600;">โรงพยาบาล………………………</span>&nbsp;จังหวัด <span id="ff-province" ${ed} style="padding:0 4px;">………………</span></div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tbody id="ff-units">${rows}</tbody>
+        </table>
+        <div class="ff-noprint" style="margin:6px 0 2px;"><button type="button" id="ff-addrow" style="border:1px dashed #b9c2cf;background:#f7f9fc;color:#3c4a5e;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;">＋ เพิ่มบรรทัด</button></div>
+      </div>
+
+      <div ${ed} style="padding:6px 12px;border-bottom:1px solid #000;">ดังนั้นฝ่ายการตลาด จึงขออนุมัติเพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติ รุ่น Start Smart Plus และ BMS HOSxP Mobile Gateway Package และเปิดสิทธิ์การใช้งาน API Payment จำนวน 1 โรงพยาบาล ทั้งหมดจำนวน 3 ตู้</div>
+
+      <div style="padding:12px 12px 4px;">เริ่มตั้งแต่วันที่&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 40px;"></span>&nbsp;&nbsp;ถึง&nbsp;&nbsp;<span ${ed} style="border-bottom:1px dotted #000;padding:0 40px;"></span></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 16px 0;">
+        <div>
+          <div style="margin-bottom:4px;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+          <div style="padding-left:26px;">
+            <div style="margin:5px 0;">${chk}&nbsp;อนุมัติ</div>
+            <div style="margin:5px 0;">${chk}&nbsp;ไม่อนุมัติ</div>
+          </div>
+        </div>
+        <div style="text-align:center;min-width:250px;margin-top:26px;">
+          <div style="${sig}"></div>
+          <div>( <span ${ed}>นางสาวนิธยาภรณ์ สุทธินุ่น</span> )</div>
+          <div ${ed}>ผู้อนุมัติ</div>
+        </div>
+      </div>
+
+      <div ${ed} style="padding:8px 12px 0;">ฝ่ายการตลาดรับทราบและดำเนินการแจ้งทีม Call Center เพื่อเปิดสิทธิ์การใช้งาน BMS Smart Hospital Kiosk ส่งตรวจอัตโนมัติ รุ่น Start Smart Plus พร้อมเปิดสิทธิ์การใช้งาน BMS HOSxP Mobile Gateway Package และเปิดสิทธิ์การใช้งาน API Payment ต่อไป</div>
+
+      <div style="display:flex;justify-content:space-between;gap:30px;padding:24px 24px 6px;">
+        <div style="text-align:center;flex:1;">
+          <div style="${sig}"></div>
+          <div>(<span ${ed}>นายจักรกฤษณ์ มนตรีวงษ์</span>)</div>
+          <div ${ed}>ผู้จัดทำ</div>
+        </div>
+        <div style="text-align:center;flex:1;">
+          <div style="${sig}"></div>
+          <div>(<span ${ed}>นางสาวภัคธินันท์ วิโรจน์ธานีกุล</span>)</div>
+          <div ${ed}>ผู้จัดการแผนกการขายและการตลาด</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;gap:30px;padding:22px 24px 16px;">
+        <div style="text-align:center;flex:1;">
+          <div style="${sig}"></div>
+          <div>(<span ${ed}>นางสาวธนิตา สายวารี</span>)</div>
+          <div ${ed}>ผู้ดำเนินการเปิด Activation</div>
         </div>
         <div style="text-align:center;flex:1;">
           <div style="${sig}"></div>
@@ -478,6 +580,7 @@ function buildSheet(id: TemplateId): string {
     case 'work-notice': return buildWorkNotice()
     case 'shipment-notice': return buildShipmentNotice()
     case 'kiosk-check': return buildKioskCheck()
+    case 'kiosk-startsmart-plus': return buildKioskStartSmartPlus()
     default: return ''
   }
 }
@@ -654,7 +757,8 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
     const tbody = wrap.querySelector('#ff-units') as HTMLTableSectionElement | null
     function makeRow(): HTMLTableRowElement {
       const tbl = document.createElement('tbody')
-      tbl.innerHTML = unitRowHtml((tbody?.rows.length ?? 0) + 1)
+      const n = (tbody?.rows.length ?? 0) + 1
+      tbl.innerHTML = tpl?.id === 'kiosk-startsmart-plus' ? keyRowHtml(n) : unitRowHtml(n)
       return tbl.rows[0]
     }
     wrap.addEventListener('click', (e) => {
@@ -728,8 +832,9 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
         const tbody = wrap.querySelector('#ff-units') as HTMLTableSectionElement | null
         const units = j.units || []
         if (tbody && units.length) {
-          const rowsHtml = units.map((u, i) => unitRowHtml(i + 1, u.serialNo, u.mac))
-          for (let i = units.length; i < 6; i++) rowsHtml.push(unitRowHtml(0)) // บรรทัดว่างมีเส้น
+          const isKeyId = tpl?.id === 'kiosk-startsmart-plus'
+          const rowsHtml = units.map((u, i) => isKeyId ? keyRowHtml(i + 1, u.mac) : unitRowHtml(i + 1, u.serialNo, u.mac))
+          for (let i = units.length; i < 6; i++) rowsHtml.push(isKeyId ? keyRowHtml(0) : unitRowHtml(0)) // บรรทัดว่างมีเส้น
           tbody.innerHTML = rowsHtml.join('')
         }
       })
