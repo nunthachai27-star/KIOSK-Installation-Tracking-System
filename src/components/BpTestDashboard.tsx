@@ -10,7 +10,7 @@ const personLabel = (r: { name: string | null; idcard: string | null }) =>
 const timeFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const fmt = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '—' : timeFmt.format(d) }
 
-export function BpTestDashboard({ endpoint }: { endpoint: string }) {
+export function BpTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: string; reportUrl?: string; reportQr?: string }) {
   const [readings, setReadings] = useState<Reading[]>([])
   const [live, setLive] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -82,6 +82,11 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
   function copyEndpoint() {
     navigator.clipboard?.writeText(endpoint).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
   }
+  const [copiedReport, setCopiedReport] = useState(false)
+  function copyReport() {
+    if (!reportUrl) return
+    navigator.clipboard?.writeText(reportUrl).then(() => { setCopiedReport(true); setTimeout(() => setCopiedReport(false), 2000) }).catch(() => {})
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -110,6 +115,30 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
           </button>
         </div>
       </div>
+
+      {/* แชร์รายงานสาธารณะ (ลิงก์ + QR) */}
+      {reportUrl && (
+        <div className={`bg-white border border-[#E7EDF4] rounded-2xl p-4 ${view === 'live' ? '' : 'hidden'}`}>
+          <div className="text-[13px] font-bold text-[#233047] mb-2">🔗 แชร์รายงาน (สาธารณะ · อ่านอย่างเดียว)</div>
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="flex-1 min-w-[240px]">
+              <p className="text-[12px] text-[#8492A6] mb-2">เปิดดูรายงานได้โดยไม่ต้องล็อกอิน · เลขบัตรถูกปิดบังบางส่วน</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="text-[12.5px] bg-[#F6F8FB] border border-[#E7EDF4] rounded-lg px-3 py-2 text-[#1C1917] break-all select-all font-mono">{reportUrl}</code>
+                <button type="button" onClick={copyReport} className="text-[12.5px] font-semibold px-3 py-2 rounded-lg bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)]">{copiedReport ? '✓ คัดลอกแล้ว' : '📋 คัดลอก'}</button>
+                <a href={reportUrl} target="_blank" rel="noopener noreferrer" className="text-[12.5px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)]">↗ เปิด</a>
+              </div>
+            </div>
+            {reportQr && (
+              <div className="text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={reportQr} alt="QR รายงาน" width={120} height={120} className="rounded-lg border border-[#E7EDF4]" />
+                <div className="text-[11px] text-[#8492A6] mt-1">สแกนดูรายงาน</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* สถานะ + ปุ่ม */}
       <div className="flex items-center justify-between gap-2 flex-wrap">

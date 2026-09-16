@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { headers } from 'next/headers'
+import QRCode from 'qrcode'
 import { BpTestDashboard } from '@/components/BpTestDashboard'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,10 @@ export default async function BpTestPage() {
     const proto = h.get('x-forwarded-proto') || 'https'
     if (host) base = `${proto}://${host}`
   }
-  const endpoint = `${base.replace(/\/$/, '')}/api/dev/bp`
+  base = base.replace(/\/$/, '')
+  const endpoint = `${base}/api/dev/bp`
+  const reportUrl = `${base}/bp-report`
+  const reportQr = await QRCode.toDataURL(reportUrl, { margin: 1, width: 220 }).catch(() => '')
 
   return (
     <div className="p-4 sm:p-6 max-w-[1000px] mx-auto flex flex-col gap-4">
@@ -25,7 +29,7 @@ export default async function BpTestPage() {
         </div>
         <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold whitespace-nowrap">← กลับหน้าพัฒนา</Link>
       </div>
-      <BpTestDashboard endpoint={endpoint} />
+      <BpTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} />
     </div>
   )
 }
