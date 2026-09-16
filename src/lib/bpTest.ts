@@ -25,7 +25,8 @@ export function clearBpReadings() {
 
 const nnum = (v: unknown): number | null => {
   if (typeof v === 'number' && Number.isFinite(v)) return v
-  if (typeof v === 'string') { const n = Number(v.trim()); return Number.isFinite(n) ? n : null }
+  // บางรุ่นส่งเป็นสตริงแบบ "117#...#90~140" → ดึงเฉพาะตัวเลขนำหน้า
+  if (typeof v === 'string') { const m = v.match(/-?\d+(?:\.\d+)?/); return m ? Number(m[0]) : null }
   return null
 }
 
