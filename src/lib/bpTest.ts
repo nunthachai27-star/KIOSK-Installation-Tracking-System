@@ -1,5 +1,7 @@
-// ที่เก็บค่าทดสอบจากเครื่องวัดความดัน (ในหน่วยความจำ — สำหรับหน้าเดชบอร์ดทดสอบเท่านั้น)
-// รีเซ็ตเมื่อรีสตาร์ท/ดีพลอย · เก็บล่าสุดสูงสุด 50 รายการ
+// ค่าที่รับจากเครื่องวัดความดัน — เก็บถาวรในฐานข้อมูล (ตาราง BpReading)
+import { Prisma } from '@prisma/client'
+import { prisma } from './prisma'
+
 export type BpReading = {
   id: string
   at: string                 // ISO timestamp ที่รับเข้า
@@ -12,18 +14,38 @@ export type BpReading = {
   raw: unknown               // payload ดิบที่เครื่องส่งมา (ไว้ดู/แมปฟิลด์)
 }
 
-const MAX = 50
-const store: BpReading[] = []
+// บันทึกค่าที่รับเข้า (ลงฐานข้อมูล — อยู่ถาวรแม้ deploy ใหม่)
+export async function saveBpReading(fields: {
+  device: string | null; name: string | null; idcard: string | null
+  systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown
+}): Promise<void> {
+  await prisma.bpReading.create({
+    data: {
+      device: fields.device, name: fields.name, idcard: fields.idcard,
+      systolic: fields.systolic, diastolic: fields.diastolic, pulse: fields.pulse,
+      raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
+    },
+  })
+}
 
-export function addBpReading(r: BpReading) {
-  store.unshift(r)
-  if (store.length > MAX) store.length = MAX
+// อ่านค่าที่รับมา (ล่าสุดอยู่บน)
+export async function listBpReadings(limit = 300): Promise<BpReading[]> {
+  const rows = await prisma.bpReading.findMany({ orderBy: { createdAt: 'desc' }, take: limit })
+  return rows.map((r) => ({
+    id: r.id,
+    at: r.createdAt.toISOString(),
+    device: r.device,
+    name: r.name,
+    idcard: r.idcard,
+    systolic: r.systolic,
+    diastolic: r.diastolic,
+    pulse: r.pulse,
+    raw: r.raw,
+  }))
 }
-export function getBpReadings(): BpReading[] {
-  return store
-}
-export function clearBpReadings() {
-  store.length = 0
+
+export async function clearBpReadings(): Promise<void> {
+  await prisma.bpReading.deleteMany({})
 }
 
 const nnum = (v: unknown): number | null => {

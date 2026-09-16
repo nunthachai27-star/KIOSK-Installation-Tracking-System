@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { addBpReading, getBpReadings, clearBpReadings, parseBp, parseDevice, parsePerson, type BpReading } from '@/lib/bpTest'
+import { saveBpReading, listBpReadings, clearBpReadings, parseBp, parseDevice, parsePerson } from '@/lib/bpTest'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,30 +21,21 @@ export async function POST(req: Request) {
 
   const bp = parseBp(raw)
   const person = parsePerson(raw)
-  const reading: BpReading = {
-    id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
-    at: new Date().toISOString(),
-    device: parseDevice(raw),
-    name: person.name,
-    idcard: person.idcard,
-    ...bp,
-    raw,
-  }
-  addBpReading(reading)
+  await saveBpReading({ device: parseDevice(raw), name: person.name, idcard: person.idcard, ...bp, raw })
 
   // ตอบกลับแบบ "สำเร็จ" เผื่อเครื่องต้องการ ack (permissive)
   return NextResponse.json({ code: 0, success: true, message: 'received' }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
-// อ่านค่าที่รับมาแล้ว (สำหรับหน้าเดชบอร์ดทดสอบ)
+// อ่านค่าที่รับมาแล้ว (สำหรับหน้าเดชบอร์ด/รายงาน)
 export async function GET() {
-  return NextResponse.json({ readings: getBpReadings() }, { headers: { 'Cache-Control': 'no-store' } })
+  return NextResponse.json({ readings: await listBpReadings() }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 // ล้างค่าทดสอบ (เฉพาะเจ้าหน้าที่)
 export async function DELETE() {
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  clearBpReadings()
+  await clearBpReadings()
   return NextResponse.json({ ok: true })
 }

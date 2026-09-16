@@ -995,6 +995,21 @@ model StockReportMap {
   updatedAt      DateTime @updatedAt
 }
 
+// ค่าที่รับจากเครื่องวัดความดัน (หน้าเดชบอร์ดทดสอบ) — เก็บถาวรเพื่อทำรายงานย้อนหลัง
+model BpReading {
+  id        String   @id @default(cuid())
+  device    String?  // ชื่อ/รหัสเครื่อง
+  name      String?  // ชื่อผู้วัด
+  idcard    String?  // เลขบัตรผู้วัด
+  systolic  Int?     // SYS
+  diastolic Int?     // DIA
+  pulse     Int?     // ชีพจร
+  raw       Json?    // payload ดิบที่เครื่องส่งมา
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // To-Do ส่วนตัวของผู้ใช้ (แสดงในแถบลอยด้านซ้ายทุกหน้า) — ผูกกับ userId, เห็นเฉพาะเจ้าของ
 model TodoItem {
   id        String   @id @default(cuid())
