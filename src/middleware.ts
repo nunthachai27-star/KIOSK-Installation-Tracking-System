@@ -24,6 +24,8 @@ export default auth((req) => {
     // ลิงก์ทีมพัฒนา (แถบพัฒนา) — เปิดเฉพาะ /dev/team/<token> + API ของมัน (ตรวจ token เอง).
     // หน้า /dev (เจ้าหน้าที่) และ /api/dev-requests ยังต้อง login OFFICE เหมือนเดิม.
     '/dev/team', '/api/dev/team',
+    // จุดรับค่าเครื่องวัดความดัน (หน้าเดชบอร์ดทดสอบ) — เครื่องยิงเข้ามาโดยไม่มี login
+    '/api/dev/bp',
     // โชว์เคสโปรดัก Kiosk — เปิดหน้าสาธารณะ + API (leads GET ตรวจสิทธิ์ในตัวเอง).
     '/kiosk-products', '/api/kiosk-products',
     // หน้าข้อมูล License/MAC ต่อเครื่อง (อ่านอย่างเดียว) — ส่งลิงก์ให้โรงพยาบาลดู
