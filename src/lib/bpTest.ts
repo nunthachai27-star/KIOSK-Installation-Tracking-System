@@ -59,7 +59,7 @@ export function parseBp(raw: unknown): { systolic: number | null; diastolic: num
   return {
     systolic: pick([/sys/i, /high/i, /shrink/i, /sbp/i, /\bss\b/i, /收缩/, /gy|高压/i]),
     diastolic: pick([/dia/i, /\blow\b/i, /dbp/i, /\bsz\b/i, /舒张/, /dy|低压/i]),
-    pulse: pick([/pulse/i, /heart/i, /\brate\b/i, /bpm/i, /心率/, /\bxl\b/i, /mb/i]),
+    pulse: pick([/pulse/i, /heart/i, /\brate\b/i, /bpm/i, /心率/, /\bxl\b/i, /\bmb\b/i]),
   }
 }
 
