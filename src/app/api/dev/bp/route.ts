@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { addBpReading, getBpReadings, clearBpReadings, parseBp, parseDevice, type BpReading } from '@/lib/bpTest'
+import { addBpReading, getBpReadings, clearBpReadings, parseBp, parseDevice, parsePerson, type BpReading } from '@/lib/bpTest'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,10 +20,13 @@ export async function POST(req: Request) {
   }
 
   const bp = parseBp(raw)
+  const person = parsePerson(raw)
   const reading: BpReading = {
     id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
     at: new Date().toISOString(),
     device: parseDevice(raw),
+    name: person.name,
+    idcard: person.idcard,
     ...bp,
     raw,
   }

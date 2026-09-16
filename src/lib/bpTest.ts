@@ -4,6 +4,8 @@ export type BpReading = {
   id: string
   at: string                 // ISO timestamp ที่รับเข้า
   device: string | null      // ชื่อ/รหัสเครื่องที่ส่งค่ามา
+  name: string | null        // ชื่อผู้วัด (ถ้าเสียบบัตร)
+  idcard: string | null      // เลขบัตรประชาชนผู้วัด
   systolic: number | null    // ความดันตัวบน (SYS)
   diastolic: number | null   // ความดันตัวล่าง (DIA)
   pulse: number | null       // ชีพจร (Pulse)
@@ -72,7 +74,23 @@ export function parseDevice(raw: unknown): string | null {
   }
   // ชื่อ/รุ่นก่อน → แล้วค่อยรหัสเครื่อง
   return (
-    pickStr([/devicename/i, /device_name/i, /\bmodel\b/i, /machine/i, /\bname\b/i]) ||
+    pickStr([/devicename/i, /device_name/i, /\bmodel\b/i, /machine/i]) ||
     pickStr([/device[_-]?id/i, /\bdevice\b/i, /\bsn\b/i, /serial/i, /\bimei\b/i, /\bmac\b/i])
   )
+}
+
+// ดึง "ชื่อ + เลขบัตร" ของผู้วัด (จาก payload เช่น sfz.idnumber / name) — best-effort
+export function parsePerson(raw: unknown): { name: string | null; idcard: string | null } {
+  const pairs = flatten(raw)
+  const pick = (pats: RegExp[], exclude?: RegExp): string | null => {
+    for (const [k, v] of pairs) {
+      if (exclude && exclude.test(k)) continue
+      if (pats.some((p) => p.test(k)) && typeof v === 'string' && v.trim()) return v.trim()
+    }
+    return null
+  }
+  const idcard = pick([/idnumber/i, /id[_-]?card/i, /card[_-]?no/i, /\bcid\b/i, /\bpid\b/i, /idno/i, /身份/])
+  // ชื่อ: จับ key ที่มี name แต่ไม่ใช่ของเครื่อง/ไฟล์
+  const name = pick([/name/i, /realname/i, /\bxm\b/i, /姓名/, /patient/i], /device|file|table|db|host|app/i)
+  return { name, idcard }
 }

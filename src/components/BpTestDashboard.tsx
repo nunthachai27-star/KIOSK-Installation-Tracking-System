@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { confirmDialog } from '@/lib/dialog'
 
-type Reading = { id: string; at: string; device: string | null; systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown }
+type Reading = { id: string; at: string; device: string | null; name: string | null; idcard: string | null; systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown }
+
+const personLabel = (r: { name: string | null; idcard: string | null }) =>
+  [r.name, r.idcard].filter(Boolean).join(' · ') || 'ไม่ระบุผู้วัด'
 
 const timeFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const fmt = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '—' : timeFmt.format(d) }
@@ -55,6 +58,21 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
     return { same: distinct.size <= 1, spread: vals.length ? Math.max(...vals) - Math.min(...vals) : 0, count: vals.length }
   }
 
+  // รายงานสรุป: จัดกลุ่มตาม "เครื่อง + ผู้วัด" → วัดกี่ครั้ง + ค่าแต่ละครั้ง + ค่าเฉลี่ย
+  const gmap = new Map<string, { device: string; person: string; items: Reading[] }>()
+  for (const r of readings) {
+    const device = r.device || 'ไม่ระบุเครื่อง'
+    const person = personLabel(r)
+    const key = device + '||' + person
+    const g = gmap.get(key) ?? { device, person, items: [] }
+    g.items.push(r); gmap.set(key, g)
+  }
+  const groups = Array.from(gmap.values())
+  const avg = (items: Reading[], key: 'systolic' | 'diastolic' | 'pulse') => {
+    const vs = items.map((r) => r[key]).filter((v): v is number => v != null)
+    return vs.length ? Math.round(vs.reduce((a, b) => a + b, 0) / vs.length) : null
+  }
+
   async function clearAll() {
     if (!(await confirmDialog({ title: 'ล้างค่าทดสอบ', message: 'ล้างค่าที่รับมาทั้งหมด?', danger: true, confirmText: 'ล้าง' }))) return
     await fetch('/api/dev/bp', { method: 'DELETE' }).catch(() => {})
@@ -100,6 +118,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
           <div className="flex items-center gap-2 flex-wrap mb-4">
             <span className="text-[12.5px] text-[#8492A6]">ค่าล่าสุด · รับเมื่อ {fmt(latest.at)}</span>
             <span className="text-[11.5px] font-semibold text-[#1B5FD9] bg-[#E4EEFF] rounded-full px-2.5 py-0.5">🖥️ {latest.device || 'ไม่ระบุเครื่อง'}</span>
+            {(latest.name || latest.idcard) && <span className="text-[11.5px] font-semibold text-[#7A44C6] bg-[#F1EAFB] rounded-full px-2.5 py-0.5">👤 {personLabel(latest)}</span>}
           </div>
           <div className="grid grid-cols-3 gap-4">
             <Stat label="ความดันตัวบน (SYS)" value={latest.systolic} unit="mmHg" color="#C13540" />
@@ -164,7 +183,48 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
         </div>
       )}
 
-      {/* ประวัติ */}
+      {/* รายงานสรุป — แยกตามเครื่อง + ผู้วัด */}
+      {groups.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="text-[13px] font-bold text-[#233047]">📋 รายงานสรุป (แยกตามเครื่อง + ผู้วัด)</div>
+          {groups.map((g) => (
+            <div key={g.device + g.person} className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-[#EEF2F8] flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[12px] font-semibold text-[#1B5FD9] bg-[#E4EEFF] rounded-full px-2.5 py-0.5">🖥️ {g.device}</span>
+                  <span className="text-[12px] font-semibold text-[#7A44C6] bg-[#F1EAFB] rounded-full px-2.5 py-0.5">👤 {g.person}</span>
+                  <span className="text-[13px] font-bold text-[#233047]">วัด {g.items.length} ครั้ง</span>
+                </div>
+                <div className="text-[12px] text-[#5A6B82]">เฉลี่ย <b className="tnum">{avg(g.items, 'systolic') ?? '—'}</b>/<b className="tnum">{avg(g.items, 'diastolic') ?? '—'}</b> · ชีพจร <b className="tnum">{avg(g.items, 'pulse') ?? '—'}</b></div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead><tr className="text-[11.5px] uppercase text-[#8492A6] bg-[#FAFBFD]">
+                    <th className="text-left px-4 py-1.5 font-semibold w-10">#</th>
+                    <th className="text-left px-3 py-1.5 font-semibold normal-case">เวลา</th>
+                    <th className="text-right px-3 py-1.5 font-semibold">SYS</th>
+                    <th className="text-right px-3 py-1.5 font-semibold">DIA</th>
+                    <th className="text-right px-3 py-1.5 font-semibold">Pulse</th>
+                  </tr></thead>
+                  <tbody>
+                    {g.items.map((r, i) => (
+                      <tr key={r.id} className="border-t border-[#F1F4F8]">
+                        <td className="px-4 py-1.5 text-[#A8A29E] tnum">{g.items.length - i}</td>
+                        <td className="px-3 py-1.5 text-[#5A6B82] tnum">{fmt(r.at)}</td>
+                        <td className="px-3 py-1.5 text-right tnum font-semibold">{r.systolic ?? '—'}</td>
+                        <td className="px-3 py-1.5 text-right tnum font-semibold">{r.diastolic ?? '—'}</td>
+                        <td className="px-3 py-1.5 text-right tnum font-semibold">{r.pulse ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ประวัติทั้งหมด (เรียงตามเวลา) */}
       {readings.length > 1 && (
         <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
           <div className="px-4 py-2.5 text-[13px] font-bold text-[#233047] border-b border-[#EEF2F8]">ประวัติที่รับมา ({readings.length})</div>
@@ -173,6 +233,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
               <thead><tr className="text-[11.5px] uppercase text-[#8492A6] bg-[#FAFBFD]">
                 <th className="text-left px-4 py-2 font-semibold">เวลา</th>
                 <th className="text-left px-3 py-2 font-semibold normal-case">เครื่อง</th>
+                <th className="text-left px-3 py-2 font-semibold normal-case">ผู้วัด</th>
                 <th className="text-right px-3 py-2 font-semibold">SYS</th>
                 <th className="text-right px-3 py-2 font-semibold">DIA</th>
                 <th className="text-right px-3 py-2 font-semibold">Pulse</th>
@@ -182,6 +243,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
                   <tr key={r.id} className="border-t border-[#F1F4F8]">
                     <td className="px-4 py-2 text-[#5A6B82] tnum">{fmt(r.at)}</td>
                     <td className="px-3 py-2 text-[#3C4A5E]">{r.device || 'ไม่ระบุ'}</td>
+                    <td className="px-3 py-2 text-[#3C4A5E]">{(r.name || r.idcard) ? personLabel(r) : '—'}</td>
                     <td className="px-3 py-2 text-right tnum font-semibold">{r.systolic ?? '—'}</td>
                     <td className="px-3 py-2 text-right tnum font-semibold">{r.diastolic ?? '—'}</td>
                     <td className="px-3 py-2 text-right tnum font-semibold">{r.pulse ?? '—'}</td>
