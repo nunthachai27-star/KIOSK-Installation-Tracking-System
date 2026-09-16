@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { confirmDialog } from '@/lib/dialog'
 
-type Reading = { id: string; at: string; systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown }
+type Reading = { id: string; at: string; device: string | null; systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown }
 
 const timeFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const fmt = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '—' : timeFmt.format(d) }
@@ -36,6 +36,24 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
   }, [live])
 
   const latest = readings[0]
+
+  // ค่าล่าสุดของแต่ละเครื่อง (ไว้เปรียบเทียบ)
+  const byDevice: { device: string; r: Reading }[] = []
+  const seen = new Set<string>()
+  for (const r of readings) {
+    const dev = r.device || 'ไม่ระบุเครื่อง'
+    if (!seen.has(dev)) { seen.add(dev); byDevice.push({ device: dev, r }) }
+  }
+  const metrics: { key: 'systolic' | 'diastolic' | 'pulse'; label: string; unit: string }[] = [
+    { key: 'systolic', label: 'SYS', unit: 'mmHg' },
+    { key: 'diastolic', label: 'DIA', unit: 'mmHg' },
+    { key: 'pulse', label: 'Pulse', unit: 'bpm' },
+  ]
+  const cmp = (key: 'systolic' | 'diastolic' | 'pulse') => {
+    const vals = byDevice.map((d) => d.r[key]).filter((v): v is number => v != null)
+    const distinct = new Set(vals)
+    return { same: distinct.size <= 1, spread: vals.length ? Math.max(...vals) - Math.min(...vals) : 0, count: vals.length }
+  }
 
   async function clearAll() {
     if (!(await confirmDialog({ title: 'ล้างค่าทดสอบ', message: 'ล้างค่าที่รับมาทั้งหมด?', danger: true, confirmText: 'ล้าง' }))) return
@@ -79,7 +97,10 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
       {/* การ์ดค่าล่าสุด */}
       {latest ? (
         <div className={`rounded-2xl border p-6 transition ${flash ? 'border-[#16A34A] bg-[#EAFBF1]' : 'border-[#E7EDF4] bg-white'}`}>
-          <div className="text-[12.5px] text-[#8492A6] mb-4">ค่าล่าสุด · รับเมื่อ {fmt(latest.at)}</div>
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            <span className="text-[12.5px] text-[#8492A6]">ค่าล่าสุด · รับเมื่อ {fmt(latest.at)}</span>
+            <span className="text-[11.5px] font-semibold text-[#1B5FD9] bg-[#E4EEFF] rounded-full px-2.5 py-0.5">🖥️ {latest.device || 'ไม่ระบุเครื่อง'}</span>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <Stat label="ความดันตัวบน (SYS)" value={latest.systolic} unit="mmHg" color="#C13540" />
             <Stat label="ความดันตัวล่าง (DIA)" value={latest.diastolic} unit="mmHg" color="#1B5FD9" />
@@ -98,6 +119,51 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
         </div>
       )}
 
+      {/* เปรียบเทียบหลายเครื่อง — วัดพร้อมกันแล้วดูว่าค่าตรงกันไหม */}
+      {byDevice.length > 1 && (
+        <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
+          <div className="px-4 py-2.5 text-[13px] font-bold text-[#233047] border-b border-[#EEF2F8] flex items-center justify-between">
+            <span>เปรียบเทียบเครื่อง ({byDevice.length} เครื่อง)</span>
+            <span className="text-[11.5px] font-normal text-[#8492A6]">ใช้ค่าล่าสุดของแต่ละเครื่อง</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead><tr className="text-[11.5px] uppercase text-[#8492A6] bg-[#FAFBFD]">
+                <th className="text-left px-4 py-2 font-semibold">ค่า</th>
+                {byDevice.map((d) => (
+                  <th key={d.device} className="text-right px-3 py-2 font-semibold">
+                    <div className="text-[#3C4A5E] normal-case">{d.device}</div>
+                    <div className="text-[10.5px] font-normal text-[#A8A29E] normal-case">{fmt(d.r.at)}</div>
+                  </th>
+                ))}
+                <th className="text-center px-3 py-2 font-semibold">ผล</th>
+              </tr></thead>
+              <tbody>
+                {metrics.map((m) => {
+                  const c = cmp(m.key)
+                  return (
+                    <tr key={m.key} className="border-t border-[#F1F4F8]">
+                      <td className="px-4 py-2.5 font-semibold text-[#1C1917]">{m.label} <span className="text-[11px] font-normal text-[#A8A29E]">{m.unit}</span></td>
+                      {byDevice.map((d) => (
+                        <td key={d.device} className="px-3 py-2.5 text-right tnum font-bold text-[15px]">{d.r[m.key] ?? '—'}</td>
+                      ))}
+                      <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                        {c.count < 2
+                          ? <span className="text-[12px] text-[#A8A29E]">—</span>
+                          : c.same
+                            ? <span className="text-[12px] font-semibold text-[#157F4C] bg-[#E7F4EE] rounded-full px-2.5 py-0.5">✓ เท่ากัน</span>
+                            : <span className="text-[12px] font-semibold text-[#C13540] bg-[#FBE4E4] rounded-full px-2.5 py-0.5">⚠ ต่าง {c.spread}</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-2 text-[11.5px] text-[#8492A6] border-t border-[#F1F4F8]">💡 วัดทั้งสองเครื่องในเวลาใกล้กัน แล้วดูแถว “ผล” — เขียว = ค่าตรงกัน, แดง = ต่างกัน (ตัวเลขคือส่วนต่างสูงสุด)</div>
+        </div>
+      )}
+
       {/* ประวัติ */}
       {readings.length > 1 && (
         <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
@@ -106,6 +172,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
             <table className="w-full text-[13px]">
               <thead><tr className="text-[11.5px] uppercase text-[#8492A6] bg-[#FAFBFD]">
                 <th className="text-left px-4 py-2 font-semibold">เวลา</th>
+                <th className="text-left px-3 py-2 font-semibold normal-case">เครื่อง</th>
                 <th className="text-right px-3 py-2 font-semibold">SYS</th>
                 <th className="text-right px-3 py-2 font-semibold">DIA</th>
                 <th className="text-right px-3 py-2 font-semibold">Pulse</th>
@@ -114,6 +181,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
                 {readings.map((r) => (
                   <tr key={r.id} className="border-t border-[#F1F4F8]">
                     <td className="px-4 py-2 text-[#5A6B82] tnum">{fmt(r.at)}</td>
+                    <td className="px-3 py-2 text-[#3C4A5E]">{r.device || 'ไม่ระบุ'}</td>
                     <td className="px-3 py-2 text-right tnum font-semibold">{r.systolic ?? '—'}</td>
                     <td className="px-3 py-2 text-right tnum font-semibold">{r.diastolic ?? '—'}</td>
                     <td className="px-3 py-2 text-right tnum font-semibold">{r.pulse ?? '—'}</td>

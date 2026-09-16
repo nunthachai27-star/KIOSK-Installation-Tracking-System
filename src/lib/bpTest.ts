@@ -3,6 +3,7 @@
 export type BpReading = {
   id: string
   at: string                 // ISO timestamp ที่รับเข้า
+  device: string | null      // ชื่อ/รหัสเครื่องที่ส่งค่ามา
   systolic: number | null    // ความดันตัวบน (SYS)
   diastolic: number | null   // ความดันตัวล่าง (DIA)
   pulse: number | null       // ชีพจร (Pulse)
@@ -58,4 +59,20 @@ export function parseBp(raw: unknown): { systolic: number | null; diastolic: num
     diastolic: pick([/dia/i, /\blow\b/i, /dbp/i, /\bsz\b/i, /舒张/, /dy|低压/i]),
     pulse: pick([/pulse/i, /heart/i, /\brate\b/i, /bpm/i, /心率/, /\bxl\b/i, /mb/i]),
   }
+}
+
+// ดึง "ชื่อ/รหัสเครื่อง" จาก payload (best-effort) — เผื่อวัดจากหลายเครื่องจะได้แยกออก
+export function parseDevice(raw: unknown): string | null {
+  const pairs = flatten(raw)
+  const pickStr = (pats: RegExp[]): string | null => {
+    for (const [k, v] of pairs) {
+      if (pats.some((p) => p.test(k)) && typeof v === 'string' && v.trim()) return v.trim()
+    }
+    return null
+  }
+  // ชื่อ/รุ่นก่อน → แล้วค่อยรหัสเครื่อง
+  return (
+    pickStr([/devicename/i, /device_name/i, /\bmodel\b/i, /machine/i, /\bname\b/i]) ||
+    pickStr([/device[_-]?id/i, /\bdevice\b/i, /\bsn\b/i, /serial/i, /\bimei\b/i, /\bmac\b/i])
+  )
 }
