@@ -15,6 +15,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
   const [live, setLive] = useState(true)
   const [copied, setCopied] = useState(false)
   const [flash, setFlash] = useState(false)
+  const [view, setView] = useState<'live' | 'report'>('live')
   const lastId = useRef<string | null>(null)
 
   useEffect(() => {
@@ -84,8 +85,20 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* สลับมุมมอง */}
+      <div className="inline-flex rounded-xl border border-[#DCE4EE] bg-white p-1 self-start">
+        <button type="button" onClick={() => setView('live')}
+          className={`text-[13px] font-semibold px-4 py-1.5 rounded-lg ${view === 'live' ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:text-[var(--brand)]'}`}>
+          🩺 เรียลไทม์
+        </button>
+        <button type="button" onClick={() => setView('report')}
+          className={`text-[13px] font-semibold px-4 py-1.5 rounded-lg ${view === 'report' ? 'bg-[var(--brand)] text-white' : 'text-[#5A6B82] hover:text-[var(--brand)]'}`}>
+          📋 รายงาน{groups.length ? ` (${groups.length})` : ''}
+        </button>
+      </div>
+
       {/* วิธีตั้งค่า */}
-      <div className="bg-[#EAF3FF] border border-[#C7DDF7] rounded-2xl p-4">
+      <div className={`bg-[#EAF3FF] border border-[#C7DDF7] rounded-2xl p-4 ${view === 'live' ? '' : 'hidden'}`}>
         <div className="text-[13px] font-bold text-[#1B5FD9] mb-1.5">🩺 วิธีทดสอบ</div>
         <p className="text-[12.5px] text-[#3C4A5E] leading-relaxed mb-2">
           ที่เครื่องวัดความดัน → เมนู <b>“การตั้งค่าอื่น ๆ”</b> → ช่อง <b>“แก้ไขที่อยู่สำหรับอัปโหลดข้อมูล”</b> ใส่ URL ด้านล่างนี้ แล้วกดยืนยัน · จากนั้นวัดความดัน 1 ครั้ง — ค่าจะเด้งขึ้นหน้านี้อัตโนมัติ
@@ -113,7 +126,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
       </div>
 
       {/* การ์ดค่าล่าสุด */}
-      {latest ? (
+      {view === 'live' && (latest ? (
         <div className={`rounded-2xl border p-6 transition ${flash ? 'border-[#16A34A] bg-[#EAFBF1]' : 'border-[#E7EDF4] bg-white'}`}>
           <div className="flex items-center gap-2 flex-wrap mb-4">
             <span className="text-[12.5px] text-[#8492A6]">ค่าล่าสุด · รับเมื่อ {fmt(latest.at)}</span>
@@ -136,10 +149,10 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
           <div className="text-[15px] font-bold text-[#3C4A5E]">รอรับค่าจากเครื่องวัดความดัน…</div>
           <div className="text-[12.5px] text-[#8492A6] mt-1">ตั้งค่า URL ในเครื่องแล้ววัด 1 ครั้ง ค่าจะขึ้นที่นี่ทันที</div>
         </div>
-      )}
+      ))}
 
       {/* เปรียบเทียบหลายเครื่อง — วัดพร้อมกันแล้วดูว่าค่าตรงกันไหม */}
-      {byDevice.length > 1 && (
+      {view === 'live' && byDevice.length > 1 && (
         <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
           <div className="px-4 py-2.5 text-[13px] font-bold text-[#233047] border-b border-[#EEF2F8] flex items-center justify-between">
             <span>เปรียบเทียบเครื่อง ({byDevice.length} เครื่อง)</span>
@@ -184,7 +197,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
       )}
 
       {/* รายงานสรุป — แยกตามเครื่อง + ผู้วัด */}
-      {groups.length > 0 && (
+      {view === 'report' && groups.length > 0 && (
         <div className="flex flex-col gap-3">
           <div className="text-[13px] font-bold text-[#233047]">📋 รายงานสรุป (แยกตามเครื่อง + ผู้วัด)</div>
           {groups.map((g) => (
@@ -225,7 +238,7 @@ export function BpTestDashboard({ endpoint }: { endpoint: string }) {
       )}
 
       {/* ประวัติทั้งหมด (เรียงตามเวลา) */}
-      {readings.length > 1 && (
+      {view === 'report' && readings.length > 1 && (
         <div className="bg-white border border-[#E7EDF4] rounded-2xl overflow-hidden">
           <div className="px-4 py-2.5 text-[13px] font-bold text-[#233047] border-b border-[#EEF2F8]">ประวัติที่รับมา ({readings.length})</div>
           <div className="overflow-x-auto">
