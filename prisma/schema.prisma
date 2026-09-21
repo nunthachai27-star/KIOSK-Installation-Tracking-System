@@ -1025,6 +1025,20 @@ model BpReading {
   @@index([createdAt])
 }
 
+// ค่าที่รับจากเครื่องวัดไขมัน/องค์ประกอบร่างกาย (หน้าเดชบอร์ดทดสอบ) — เก็บถาวรเพื่อทำรายงานย้อนหลัง
+// รูปแบบ payload ยังไม่แน่นอน (รอ API gateway) — เก็บ raw ครบ + metrics ที่ parse ได้เป็น key/value
+model FatReading {
+  id        String   @id @default(cuid())
+  device    String?  // ชื่อ/รหัสเครื่อง
+  name      String?  // ชื่อผู้วัด
+  idcard    String?  // เลขบัตรผู้วัด
+  metrics   Json?    // ค่าที่ parse ได้ { weight, bmi, bodyFat, muscle, water, ... }
+  raw       Json?    // payload ดิบที่เครื่อง/gateway ส่งมา
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // To-Do ส่วนตัวของผู้ใช้ (แสดงในแถบลอยด้านซ้ายทุกหน้า) — ผูกกับ userId, เห็นเฉพาะเจ้าของ
 model TodoItem {
   id        String   @id @default(cuid())

@@ -24,9 +24,14 @@ export default async function DevPage() {
           <h1 className="text-xl font-bold text-[#1C1917]">คำขอพัฒนา</h1>
           <p className="text-[13px] text-[#8492A6] mt-0.5">แจ้งบั๊ก / ขอฟีเจอร์ใหม่ให้ทีมพัฒนา แล้วติดตามสถานะการดำเนินงานร่วมกันได้ในที่เดียว · ส่งลิงก์ให้ทีมพัฒนาอัปเดตงานได้</p>
         </div>
-        <a href="/dev/bp-test" className="self-start flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)] whitespace-nowrap">
-          🩺 ทดสอบเครื่องวัดความดัน
-        </a>
+        <div className="self-start flex items-center gap-2 flex-wrap justify-end">
+          <a href="/dev/bp-test" className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)] whitespace-nowrap">
+            🩺 ทดสอบเครื่องวัดความดัน
+          </a>
+          <a href="/dev/fat-test" className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)] whitespace-nowrap">
+            ⚖️ ทดสอบเครื่องวัดไขมัน
+          </a>
+        </div>
       </div>
       <DevBoard initial={initial} mode="staff" token={settings.token} teamNote={settings.teamNote} publicBase={publicBase} />
     </div>
