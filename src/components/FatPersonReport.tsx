@@ -111,13 +111,15 @@ export function FatPersonReport() {
   const outOfRange = latest ? latestKeys.filter((k) => latest.refs?.[k]?.s != null && latest.refs![k].s !== 1) : []
 
   return (
-    <div className="p-4 sm:p-6 max-w-[900px] mx-auto flex flex-col gap-4">
+    <div id="fatreport-wrap" className="p-4 sm:p-6 max-w-[900px] mx-auto flex flex-col gap-4">
       <style>{`@media print {
         body * { visibility: hidden !important; }
-        #fatreport, #fatreport * { visibility: visible !important; }
-        #fatreport { position: absolute; left: 0; top: 0; width: 100%; padding: 0 8mm; }
-        .no-print { display: none !important; }
+        #fatreport-wrap, #fatreport-wrap * { visibility: visible !important; }
+        #fatreport-wrap { position: static !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        #fatreport { box-shadow: none !important; border: none !important; border-radius: 0 !important; padding: 0 !important; }
+        .no-print, .no-print * { visibility: hidden !important; display: none !important; }
         .print-avoid-break { break-inside: avoid; }
+        header, footer { display: none !important; }
         @page { size: A4; margin: 10mm; }
       }`}</style>
 
@@ -257,7 +259,7 @@ function MiniTrend({ label, unit, points, band }: { label: string; unit: string;
           </div>
         )}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto' }} preserveAspectRatio="xMidYMid meet">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ width: '100%', height: 128, display: 'block' }}>
         {band && (
           <rect x={padL} y={y(band[1])} width={W - padL - padR} height={Math.max(0, y(band[0]) - y(band[1]))} fill="#E7F4EE" />
         )}
