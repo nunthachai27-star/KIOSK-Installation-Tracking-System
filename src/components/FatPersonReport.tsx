@@ -38,6 +38,24 @@ const ADVICE: Record<string, { high?: string; low?: string }> = {
   whr: { high: 'สัดส่วนเอว/สะโพกสูง (ลงพุง) — เสี่ยงเมตาบอลิก ควบคุมอาหาร+ออกกำลังกาย' },
 }
 
+type Session = { at: string; last: string; device: string | null; metrics: Record<string, number>; refs: Record<string, Ref>; count: number }
+// รวมเรคคอร์ดที่เวลาใกล้กัน (≤ 2 นาที) เป็น 1 การวัด — เครื่องแยกพื้นฐาน/องค์ประกอบเป็นคนละเรคคอร์ด
+function toSessions(rows: Reading[]): Session[] {
+  const GAP = 120_000
+  const out: Session[] = []
+  for (const r of rows) {
+    const prev = out[out.length - 1]
+    if (prev && new Date(r.at).getTime() - new Date(prev.last).getTime() <= GAP) {
+      for (const [k, v] of Object.entries(r.metrics || {})) prev.metrics[k] = v
+      for (const [k, v] of Object.entries(r.refs || {})) prev.refs[k] = v
+      prev.at = r.at; prev.last = r.at; prev.device = prev.device || r.device; prev.count++
+    } else {
+      out.push({ at: r.at, last: r.at, device: r.device, metrics: { ...(r.metrics || {}) }, refs: { ...(r.refs || {}) }, count: 1 })
+    }
+  }
+  return out
+}
+
 const parseBand = (n?: string): [number, number] | null => {
   if (!n) return null
   const m = n.match(/(-?\d+(?:\.\d+)?)\s*[-~]\s*(-?\d+(?:\.\d+)?)/)
@@ -78,13 +96,17 @@ export function FatPersonReport() {
       .slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime()),
     [readings, person])
 
-  const latest = rows[rows.length - 1]
+  // เครื่อง Shanghe แยก 1 การวัดเป็น 2 เรคคอร์ด (พื้นฐาน + องค์ประกอบเต็ม) เวลาใกล้กัน
+  // → รวมเป็น "1 ครั้งการวัด" (session) ถ้าห่างกัน ≤ 2 นาที เพื่อให้ผลครบและกราฟถูกต้อง
+  const sessions = useMemo(() => toSessions(rows), [rows])
+
+  const latest = sessions[sessions.length - 1]
   const latestKeys = latest ? orderKeys(Object.keys(latest.metrics || {})) : []
   const trendKeys = useMemo(() => {
     const all = new Set<string>()
-    for (const r of rows) for (const k of Object.keys(r.metrics || {})) all.add(k)
-    return orderKeys(Array.from(all)).filter((k) => rows.filter((r) => r.metrics?.[k] != null).length >= 2)
-  }, [rows])
+    for (const s of sessions) for (const k of Object.keys(s.metrics || {})) all.add(k)
+    return orderKeys(Array.from(all)).filter((k) => sessions.filter((s) => s.metrics?.[k] != null).length >= 2)
+  }, [sessions])
 
   const outOfRange = latest ? latestKeys.filter((k) => latest.refs?.[k]?.s != null && latest.refs![k].s !== 1) : []
 
@@ -119,7 +141,7 @@ export function FatPersonReport() {
           <div className="flex items-start justify-between gap-4 border-b border-[#EEF2F8] pb-4 flex-wrap">
             <div>
               <div className="text-[18px] font-bold text-[#1C2A3E]">รายงานผลวัดองค์ประกอบร่างกาย</div>
-              <div className="text-[13px] text-[#5A6B82] mt-1">ผู้วัด: <b className="text-[#233047]">{person}</b> · วัดทั้งหมด {rows.length} ครั้ง</div>
+              <div className="text-[13px] text-[#5A6B82] mt-1">ผู้วัด: <b className="text-[#233047]">{person}</b> · วัดทั้งหมด {sessions.length} ครั้ง</div>
               <div className="text-[12px] text-[#8492A6] mt-0.5">ผลล่าสุด: {fmt(latest.at)} · เครื่อง {latest.device || '—'}</div>
             </div>
             <div className="text-right text-[11.5px] text-[#8492A6]">BMS Smart Hospital<br/>พิมพ์เมื่อ {fmt(new Date().toISOString())}</div>
@@ -170,20 +192,22 @@ export function FatPersonReport() {
               <div className="text-[13px] font-bold text-[#233047] mb-2">แนวโน้ม (เทียบรอบก่อนๆ)</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {trendKeys.map((k) => {
-                  const pts = rows.filter((r) => r.metrics?.[k] != null).map((r) => ({ t: r.at, v: r.metrics[k] }))
+                  const pts = sessions.filter((s) => s.metrics?.[k] != null).map((s) => ({ t: s.at, v: s.metrics[k] }))
                   const band = parseBand(latest.refs?.[k]?.n)
                   return <MiniTrend key={k} label={metricLabel(k)} unit={metricUnit(k)} points={pts} band={band} />
                 })}
               </div>
             </div>
           )}
-          {trendKeys.length === 0 && rows.length < 2 && (
-            <div className="text-[12px] text-[#8492A6] bg-[#F6F8FB] rounded-lg px-3 py-2">วัดครั้งเดียว — ยังไม่มีแนวโน้ม (วัดเพิ่มอีกรอบเพื่อดูกราฟเปรียบเทียบ)</div>
+          {trendKeys.length === 0 && (
+            <div className="text-[12px] text-[#8492A6] bg-[#F6F8FB] rounded-lg px-3 py-2">
+              {sessions.length < 2 ? 'วัดครั้งเดียว — ยังไม่มีแนวโน้ม (วัดเพิ่มอีกรอบเพื่อดูกราฟเปรียบเทียบ)' : 'ยังไม่มีค่าที่วัดซ้ำ ≥ 2 ครั้งพอจะทำกราฟ'}
+            </div>
           )}
 
           {/* ตารางประวัติ */}
           <div className="print-avoid-break">
-            <div className="text-[13px] font-bold text-[#233047] mb-2">ประวัติการวัด ({rows.length})</div>
+            <div className="text-[13px] font-bold text-[#233047] mb-2">ประวัติการวัด ({sessions.length})</div>
             <div className="overflow-x-auto">
               <table className="w-full text-[11.5px]">
                 <thead><tr className="text-[10.5px] text-[#8492A6] bg-[#FAFBFD]">
@@ -191,10 +215,10 @@ export function FatPersonReport() {
                   {orderKeys(latestKeys).map((k) => <th key={k} className="text-right px-2 py-1.5 font-semibold whitespace-nowrap">{metricLabel(k)}</th>)}
                 </tr></thead>
                 <tbody>
-                  {rows.slice().reverse().map((r) => (
-                    <tr key={r.id} className="border-t border-[#F1F4F8]">
-                      <td className="px-2 py-1.5 text-[#5A6B82] whitespace-nowrap tnum">{fmt(r.at)}</td>
-                      {orderKeys(latestKeys).map((k) => <td key={k} className="px-2 py-1.5 text-right tnum">{r.metrics?.[k] != null ? fmtNum(r.metrics[k]) : '—'}</td>)}
+                  {sessions.slice().reverse().map((s, i) => (
+                    <tr key={s.at + i} className="border-t border-[#F1F4F8]">
+                      <td className="px-2 py-1.5 text-[#5A6B82] whitespace-nowrap tnum">{fmt(s.at)}</td>
+                      {orderKeys(latestKeys).map((k) => <td key={k} className="px-2 py-1.5 text-right tnum">{s.metrics?.[k] != null ? fmtNum(s.metrics[k]) : '—'}</td>)}
                     </tr>
                   ))}
                 </tbody>
