@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { FatTestDashboard } from '@/components/FatTestDashboard'
+import { reportToken } from '@/lib/reportToken'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export default async function FatTestPage() {
   }
   base = base.replace(/\/$/, '')
   const endpoint = `${base}/api/dev/fat`
-  const reportUrl = `${base}/fat-report`
+  const reportUrl = `${base}/fat-report/${reportToken('fat')}`
   const reportQr = await QRCode.toDataURL(reportUrl, { margin: 1, width: 220 }).catch(() => '')
 
   return (

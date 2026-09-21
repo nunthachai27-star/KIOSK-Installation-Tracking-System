@@ -21,6 +21,7 @@ export function BpTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: s
   useEffect(() => {
     let alive = true
     const poll = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return // แท็บถูกซ่อน — ไม่ต้องดึง
       try {
         const r = await fetch('/api/dev/bp', { cache: 'no-store' })
         if (!r.ok) return

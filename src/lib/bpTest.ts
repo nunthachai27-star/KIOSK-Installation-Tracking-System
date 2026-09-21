@@ -14,6 +14,16 @@ export type BpReading = {
   raw: unknown               // payload ดิบที่เครื่องส่งมา (ไว้ดู/แมปฟิลด์)
 }
 
+// ปิดบังเลขบัตรบางส่วน (สำหรับ response สาธารณะ) — เก็บ 4 ตัวหน้า + 3 ตัวท้าย
+export const maskId = (id: string | null): string | null => {
+  if (!id) return id
+  const s = id.trim()
+  return s.length <= 7 ? s : s.slice(0, 4) + '*'.repeat(s.length - 7) + s.slice(-3)
+}
+
+// เก็บข้อมูลย้อนหลังกี่วัน (กันตารางโตไม่จำกัด) — ลบของเก่ากว่านี้ตอนบันทึกใหม่
+const RETENTION_DAYS = 90
+
 // บันทึกค่าที่รับเข้า (ลงฐานข้อมูล — อยู่ถาวรแม้ deploy ใหม่)
 export async function saveBpReading(fields: {
   device: string | null; name: string | null; idcard: string | null
@@ -26,6 +36,8 @@ export async function saveBpReading(fields: {
       raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
     },
   })
+  // ลบข้อมูลเก่าเกินระยะเก็บ (ใช้ index createdAt — ถูก)
+  await prisma.bpReading.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - RETENTION_DAYS * 86_400_000) } } }).catch(() => {})
 }
 
 // อ่านค่าที่รับมา (ล่าสุดอยู่บน)

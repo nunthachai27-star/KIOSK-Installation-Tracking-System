@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { BpTestDashboard } from '@/components/BpTestDashboard'
+import { reportToken } from '@/lib/reportToken'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export default async function BpTestPage() {
   }
   base = base.replace(/\/$/, '')
   const endpoint = `${base}/api/dev/bp`
-  const reportUrl = `${base}/bp-report`
+  const reportUrl = `${base}/bp-report/${reportToken('bp')}`
   const reportQr = await QRCode.toDataURL(reportUrl, { margin: 1, width: 220 }).catch(() => '')
 
   return (

@@ -73,6 +73,16 @@ const BLOCK = new Set([
 // คีย์ลงท้าย _n / _s (+เลข) = ค่าอ้างอิง/สถานะ, และ *Adjus = ค่าปรับ — ไม่ใช่ผลวัด
 const EXCLUDE_SUFFIX = /(_(n|s)\d*|adjus)$/i
 
+// ปิดบังเลขบัตรบางส่วน (สำหรับ response สาธารณะ) — เก็บ 4 ตัวหน้า + 3 ตัวท้าย
+export const maskId = (id: string | null): string | null => {
+  if (!id) return id
+  const s = id.trim()
+  return s.length <= 7 ? s : s.slice(0, 4) + '*'.repeat(s.length - 7) + s.slice(-3)
+}
+
+// เก็บข้อมูลย้อนหลังกี่วัน (กันตารางโตไม่จำกัด) — ลบของเก่ากว่านี้ตอนบันทึกใหม่
+const RETENTION_DAYS = 90
+
 export async function saveFatReading(fields: {
   device: string | null; name: string | null; idcard: string | null
   metrics: FatMetrics; raw: unknown
@@ -84,6 +94,8 @@ export async function saveFatReading(fields: {
       raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
     },
   })
+  // ลบข้อมูลเก่าเกินระยะเก็บ (ใช้ index createdAt — ถูก)
+  await prisma.fatReading.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - RETENTION_DAYS * 86_400_000) } } }).catch(() => {})
 }
 
 export async function listFatReadings(limit = 300): Promise<FatReading[]> {

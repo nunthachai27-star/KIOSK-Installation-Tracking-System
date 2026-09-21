@@ -28,6 +28,7 @@ export function FatReportPublic() {
   useEffect(() => {
     let alive = true
     const poll = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return // แท็บถูกซ่อน — ไม่ต้องดึง
       try {
         const r = await fetch('/api/dev/fat', { cache: 'no-store' })
         if (!r.ok) return
