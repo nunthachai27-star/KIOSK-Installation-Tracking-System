@@ -18,6 +18,8 @@ export function ManualManager({ initial }: { initial: Manual[] }) {
   const [adding, setAdding] = useState(false)
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
+  const addFileRef = useRef<HTMLInputElement>(null)
+  const [addFileCount, setAddFileCount] = useState(0)
 
   async function add() {
     const t = title.trim()
@@ -25,7 +27,19 @@ export function ManualManager({ initial }: { initial: Manual[] }) {
     setAdding(true)
     try {
       const r = await fetch('/api/manuals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: t, description: desc || null, category: cat || null, linkUrl: link || null }) })
-      if (r.ok) { setTitle(''); setDesc(''); setCat(''); setLink(''); router.refresh() }
+      if (!r.ok) return
+      const created = await r.json().catch(() => null)
+      // อัปโหลดไฟล์ที่แนบมาตอนสร้าง (ถ้ามี)
+      const files = addFileRef.current?.files
+      if (created?.id && files?.length) {
+        const fd = new FormData()
+        for (const f of Array.from(files)) fd.append('file', f)
+        await fetch(`/api/manuals/${created.id}/files`, { method: 'POST', body: fd }).catch(() => {})
+      }
+      setTitle(''); setDesc(''); setCat(''); setLink('')
+      if (addFileRef.current) addFileRef.current.value = ''
+      setAddFileCount(0)
+      router.refresh()
     } finally { setAdding(false) }
   }
 
@@ -66,11 +80,16 @@ export function ManualManager({ initial }: { initial: Manual[] }) {
           <input value={cat} onChange={(e) => setCat(e.target.value)} placeholder="หมวดหมู่ (ถ้ามี)" className={field} />
           <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="คำอธิบาย (ถ้ามี)" rows={2} className={`${field} sm:col-span-2`} />
           <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="ลิงก์ภายนอก (ถ้าไม่อัปโหลดไฟล์ เช่น https://...)" className={`${field} sm:col-span-2`} />
+          <label className="sm:col-span-2 flex items-center gap-2 flex-wrap text-[13px] border border-dashed border-[#C3D0E0] rounded-lg px-3 py-2.5 text-[#3C4A5E]">
+            <span className="font-semibold">📎 แนบไฟล์ (PDF/รูป):</span>
+            <input ref={addFileRef} type="file" multiple accept=".pdf,image/*" onChange={(e) => setAddFileCount(e.target.files?.length || 0)} className="text-[12.5px]" />
+            {addFileCount > 0 && <span className="text-[#157F4C] font-semibold">เลือกแล้ว {addFileCount} ไฟล์</span>}
+          </label>
         </div>
         <button onClick={add} disabled={adding || !title.trim()} className="mt-3 bg-[var(--brand)] text-white text-[13px] font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
-          {adding ? 'กำลังเพิ่ม…' : 'เพิ่มคู่มือ'}
+          {adding ? 'กำลังเพิ่ม/อัปโหลด…' : 'เพิ่มคู่มือ'}
         </button>
-        <p className="text-[11.5px] text-[#96A2B5] mt-2">เพิ่มคู่มือแล้วค่อยอัปโหลดไฟล์ (PDF/รูป) เข้าไปในคู่มือนั้น · ลิงก์/QR สำหรับสาธารณะจะสร้างให้อัตโนมัติ</p>
+        <p className="text-[11.5px] text-[#96A2B5] mt-2">แนบไฟล์ตอนสร้างได้เลย (หรือเพิ่มทีหลังในการ์ดคู่มือก็ได้) · ลิงก์/QR สำหรับสาธารณะจะสร้างให้อัตโนมัติ</p>
       </div>
 
       {initial.length === 0 && <div className="text-center text-[#8492A6] py-8">ยังไม่มีคู่มือ — เพิ่มด้านบนได้เลย</div>}
