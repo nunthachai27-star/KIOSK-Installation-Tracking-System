@@ -26,9 +26,9 @@ export async function POST(req: Request) {
     } catch { /* เก็บเป็น text ดิบ */ }
   }
 
-  const metrics = parseFat(raw)
+  const { metrics, refs } = parseFat(raw)
   const person = parsePerson(raw)
-  await saveFatReading({ device: parseDevice(raw), name: person.name, idcard: person.idcard, metrics, raw })
+  await saveFatReading({ device: parseDevice(raw), name: person.name, idcard: person.idcard, metrics, refs, raw })
 
   // ตอบกลับแบบ "สำเร็จ" เผื่อ gateway ต้องการ ack (permissive)
   return NextResponse.json({ code: 0, success: true, message: 'received' }, { headers: { 'Cache-Control': 'no-store' } })

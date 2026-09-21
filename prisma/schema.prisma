@@ -1033,6 +1033,7 @@ model FatReading {
   name      String?  // ชื่อผู้วัด
   idcard    String?  // เลขบัตรผู้วัด
   metrics   Json?    // ค่าที่ parse ได้ { weight, bmi, bodyFat, muscle, water, ... }
+  refs      Json?    // ช่วงปกติ+สถานะต่อค่า { bodyFat: { n: "10 - 20", s: 2 }, ... } (s: 0 ต่ำ/1 ปกติ/2 สูง)
   raw       Json?    // payload ดิบที่เครื่อง/gateway ส่งมา
   createdAt DateTime @default(now())
 

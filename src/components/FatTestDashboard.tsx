@@ -3,7 +3,32 @@ import { useEffect, useRef, useState } from 'react'
 import { confirmDialog } from '@/lib/dialog'
 import { FAT_METRICS } from '@/lib/fatTest'
 
-type Reading = { id: string; at: string; device: string | null; name: string | null; idcard: string | null; metrics: Record<string, number>; raw: unknown }
+type Ref = { n?: string; s?: number }
+type Reading = { id: string; at: string; device: string | null; name: string | null; idcard: string | null; metrics: Record<string, number>; refs?: Record<string, Ref>; raw: unknown }
+
+// สถานะจากเครื่อง: 0 ต่ำกว่าเกณฑ์ / 1 ปกติ / 2 สูงกว่าเกณฑ์
+const statusInfo = (s?: number) =>
+  s === 1 ? { t: 'ปกติ', cls: 'text-[#157F4C] bg-[#E7F4EE]', dir: '' as const }
+  : s === 0 ? { t: 'ต่ำกว่าเกณฑ์', cls: 'text-[#B45309] bg-[#FDECD3]', dir: 'low' as const }
+  : s === 2 ? { t: 'สูงกว่าเกณฑ์', cls: 'text-[#C13540] bg-[#FBE4E4]', dir: 'high' as const }
+  : null
+
+// คำแนะนำเมื่อค่านอกเกณฑ์ (ทั่วไปเชิงสุขภาพ — ไม่ใช่การวินิจฉัยทางการแพทย์)
+const ADVICE: Record<string, { high?: string; low?: string }> = {
+  bmi: { high: 'น้ำหนักเกินเกณฑ์ — คุมอาหารและออกกำลังกายสม่ำเสมอ', low: 'ผอมเกินเกณฑ์ — เพิ่มพลังงาน/โปรตีนให้เพียงพอ' },
+  bodyFat: { high: 'ไขมันในร่างกายสูง — ลดของทอด/น้ำตาล + คาร์ดิโอ 150 นาที/สัปดาห์', low: 'ไขมันต่ำ — กินไขมันดี/โปรตีนให้พอ' },
+  visceralFat: { high: 'ไขมันช่องท้องสูง — เสี่ยงเบาหวาน/หัวใจ ลดน้ำตาล-แป้งขัดสี + ออกกำลังกาย' },
+  subcutFat: { high: 'ไขมันใต้ผิวหนังสูง — คุมแคลอรีรวม + ออกกำลังกายแบบแอโรบิก' },
+  muscleRate: { low: 'สัดส่วนกล้ามเนื้อน้อย — เพิ่มโปรตีน + เวทเทรนนิ่ง 2-3 ครั้ง/สัปดาห์' },
+  muscle: { low: 'มวลกล้ามเนื้อน้อย — เพิ่มโปรตีน + ออกกำลังกายแบบมีแรงต้าน' },
+  water: { low: 'น้ำในร่างกายต่ำ — ดื่มน้ำให้เพียงพอ (~30 มล./กก./วัน)' },
+  protein: { low: 'โปรตีนต่ำ — เพิ่มอาหารโปรตีน (ไข่/เนื้อไม่ติดมัน/ถั่ว)' },
+  boneMass: { low: 'มวลกระดูกน้อย — แคลเซียม/วิตามินD + ออกกำลังกายแบบลงน้ำหนัก' },
+  metabolicAge: { high: 'อายุร่างกายมากกว่าอายุจริง — เพิ่มกล้ามเนื้อและออกกำลังกายเพื่อปรับให้ดีขึ้น' },
+  obesity: { high: 'น้ำหนักเกินมาตรฐาน — ตั้งเป้าลดน้ำหนักอย่างค่อยเป็นค่อยไป' },
+  whr: { high: 'สัดส่วนเอว/สะโพกสูง (ลงพุง) — เสี่ยงเมตาบอลิก ควบคุมอาหาร + ออกกำลังกาย' },
+  bmr: {}, mineral: {}, fatMass: {}, fatFreeMass: {}, weight: {},
+}
 
 const personLabel = (r: { name: string | null; idcard: string | null }) =>
   [r.name, r.idcard].filter(Boolean).join(' · ') || 'ไม่ระบุผู้วัด'
@@ -176,11 +201,14 @@ export function FatTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: 
             {(latest.name || latest.idcard) && <span className="text-[11.5px] font-semibold text-[#7A44C6] bg-[#F1EAFB] rounded-full px-2.5 py-0.5">👤 {personLabel(latest)}</span>}
           </div>
           {latestKeys.length ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {latestKeys.map((k, i) => (
-                <Stat key={k} label={metricLabel(k)} value={latest.metrics[k]} unit={metricUnit(k)} color={cardColors[i % cardColors.length]} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {latestKeys.map((k, i) => (
+                  <Stat key={k} label={metricLabel(k)} value={latest.metrics[k]} unit={metricUnit(k)} color={cardColors[i % cardColors.length]} refItem={latest.refs?.[k]} />
+                ))}
+              </div>
+              <AdvicePanel latest={latest} keys={latestKeys} />
+            </>
           ) : (
             <div className="text-[13px] text-[#8492A6]">ได้รับค่าแล้วแต่ยังแมปฟิลด์ไม่ได้ — ดู “ข้อมูลดิบ (raw)” ด้านล่างเพื่อปรับการอ่านค่า</div>
           )}
@@ -314,12 +342,46 @@ export function FatTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: 
   )
 }
 
-function Stat({ label, value, unit, color }: { label: string; value: number | null; unit: string; color: string }) {
+function Stat({ label, value, unit, color, refItem }: { label: string; value: number | null; unit: string; color: string; refItem?: Ref }) {
+  const st = statusInfo(refItem?.s)
   return (
-    <div className="text-center rounded-xl bg-[#FAFBFD] border border-[#EEF2F8] py-4 px-2">
+    <div className="text-center rounded-xl bg-[#FAFBFD] border border-[#EEF2F8] py-4 px-2 flex flex-col">
       <div className="text-[12px] text-[#8492A6] mb-1">{label}</div>
       <div className="text-[32px] font-bold leading-none tnum" style={{ color: value == null ? '#B4BCC8' : color }}>{value == null ? '—' : fmtNum(value)}</div>
       <div className="text-[11.5px] text-[#A8A29E] mt-1">{unit || ' '}</div>
+      {refItem?.n && <div className="text-[10.5px] text-[#96A2B5] mt-1.5">เกณฑ์ {refItem.n}</div>}
+      {st && <div className={`text-[11px] font-semibold rounded-full px-2 py-0.5 mt-1.5 self-center ${st.cls}`}>{st.dir === 'high' ? '↑ ' : st.dir === 'low' ? '↓ ' : '✓ '}{st.t}</div>}
+    </div>
+  )
+}
+
+// แผงสรุป: ค่าที่อยู่นอกเกณฑ์ + คำแนะนำ (ใช้สถานะ _s ที่เครื่องส่งมา)
+function AdvicePanel({ latest, keys }: { latest: Reading; keys: string[] }) {
+  const refs = latest.refs || {}
+  const rated = keys.filter((k) => refs[k]?.s != null)
+  if (rated.length === 0) return null
+  const out = rated.filter((k) => refs[k].s !== 1)
+  const tips = out.map((k) => {
+    const dir = refs[k].s === 2 ? 'high' : 'low'
+    const tip = ADVICE[k]?.[dir]
+    return { k, dir, label: metricLabel(k), tip }
+  })
+  return (
+    <div className="mt-5 border-t border-[#EEF2F8] pt-4">
+      <div className="text-[13px] font-bold text-[#233047] mb-2">📊 วิเคราะห์ผล ({rated.length - out.length}/{rated.length} ค่าอยู่ในเกณฑ์)</div>
+      {out.length === 0 ? (
+        <div className="text-[13px] font-semibold text-[#157F4C] bg-[#E7F4EE] rounded-lg px-3 py-2.5">👍 ทุกค่าที่ประเมินได้อยู่ในเกณฑ์ปกติ — รักษาพฤติกรรมสุขภาพนี้ไว้</div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {tips.map((t) => (
+            <div key={t.k} className="flex items-start gap-2 text-[12.5px] bg-[#FFF9F0] border border-[#F3E4CC] rounded-lg px-3 py-2">
+              <span className={`shrink-0 font-semibold rounded-full px-2 py-0.5 text-[11px] ${t.dir === 'high' ? 'text-[#C13540] bg-[#FBE4E4]' : 'text-[#B45309] bg-[#FDECD3]'}`}>{t.dir === 'high' ? '↑ สูง' : '↓ ต่ำ'}</span>
+              <span className="text-[#3C4A5E]"><b className="text-[#233047]">{t.label}:</b> {t.tip || (t.dir === 'high' ? 'สูงกว่าเกณฑ์ ควรปรับพฤติกรรม' : 'ต่ำกว่าเกณฑ์ ควรดูแลเพิ่ม')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="text-[11px] text-[#A8A29E] mt-2.5">* เกณฑ์อ้างอิงจากเครื่องวัด (คำนวณตามเพศ/อายุ/ส่วนสูงของผู้วัด) · คำแนะนำเป็นข้อมูลสุขภาพทั่วไป ไม่ใช่การวินิจฉัยทางการแพทย์</p>
     </div>
   )
 }

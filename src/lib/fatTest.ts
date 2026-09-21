@@ -5,6 +5,9 @@ import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 
 export type FatMetrics = Record<string, number>
+// ช่วงปกติ + สถานะต่อค่า (เครื่องส่งมาใน _n/_s) — s: 0 ต่ำกว่าเกณฑ์ / 1 ปกติ / 2 สูงกว่าเกณฑ์
+export type FatRef = { n?: string; s?: number }
+export type FatRefs = Record<string, FatRef>
 
 export type FatReading = {
   id: string
@@ -13,6 +16,7 @@ export type FatReading = {
   name: string | null        // ชื่อผู้วัด
   idcard: string | null      // เลขบัตรประชาชนผู้วัด (ถ้ามี)
   metrics: FatMetrics        // ค่าที่ parse ได้ (weight/bmi/bodyFat/...)
+  refs: FatRefs              // ช่วงปกติ+สถานะต่อค่า
   raw: unknown               // payload ดิบที่เครื่อง/gateway ส่งมา
 }
 
@@ -85,12 +89,13 @@ const RETENTION_DAYS = 90
 
 export async function saveFatReading(fields: {
   device: string | null; name: string | null; idcard: string | null
-  metrics: FatMetrics; raw: unknown
+  metrics: FatMetrics; refs: FatRefs; raw: unknown
 }): Promise<void> {
   await prisma.fatReading.create({
     data: {
       device: fields.device, name: fields.name, idcard: fields.idcard,
       metrics: (fields.metrics ?? {}) as Prisma.InputJsonValue,
+      refs: (fields.refs ?? {}) as Prisma.InputJsonValue,
       raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
     },
   })
@@ -107,6 +112,7 @@ export async function listFatReadings(limit = 300): Promise<FatReading[]> {
     name: r.name,
     idcard: r.idcard,
     metrics: (r.metrics && typeof r.metrics === 'object' && !Array.isArray(r.metrics) ? r.metrics : {}) as FatMetrics,
+    refs: (r.refs && typeof r.refs === 'object' && !Array.isArray(r.refs) ? r.refs : {}) as FatRefs,
     raw: r.raw,
   }))
 }
@@ -140,14 +146,27 @@ function flatten(input: unknown): [string, unknown][] {
 //  pass 1: จับคู่คีย์แบบตรงตัว (KEY_MAP) — แม่น ไม่ขึ้นกับลำดับ/คีย์อ้างอิงที่พ่วงมา
 //  pass 2: เดาจากชื่อคีย์ (pats) เฉพาะค่าที่ยังไม่ได้ — เผื่อเครื่องรุ่นอื่น
 //  ทุกค่าใส่ตัวกรองช่วง (min/max) กันค่าขยะช่วงเริ่มวัด เช่น height 2.0 / bmi 169250
-export function parseFat(raw: unknown): FatMetrics {
+//  และดึงช่วงปกติ (<key>_n) + สถานะ (<key>_s: 0 ต่ำ/1 ปกติ/2 สูง) ที่เครื่องส่งมาคู่กัน
+export function parseFat(raw: unknown): { metrics: FatMetrics; refs: FatRefs } {
   const pairs = flatten(raw)
+  // ทำ map คีย์ตัวพิมพ์เล็ก → ค่า ไว้หาพี่น้อง _n/_s
+  const lc = new Map<string, unknown>()
+  for (const [k, v] of pairs) { const kl = k.toLowerCase(); if (!lc.has(kl)) lc.set(kl, v) }
   const defByKey = new Map(FAT_METRICS.map((m) => [m.key, m]))
   const metrics: FatMetrics = {}
-  const setVal = (mk: string, n: number) => {
+  const refs: FatRefs = {}
+  const setVal = (mk: string, n: number, srcKey: string) => {
     const d = defByKey.get(mk)
     if (d) { if (d.min != null && n < d.min) return; if (d.max != null && n > d.max) return }
-    if (metrics[mk] == null) metrics[mk] = n
+    if (metrics[mk] != null) return
+    metrics[mk] = n
+    // ช่วงปกติ + สถานะจากคีย์พี่น้อง
+    const nRange = lc.get(srcKey + '_n')
+    const sVal = nnum(lc.get(srcKey + '_s'))
+    const ref: FatRef = {}
+    if (typeof nRange === 'string' && nRange.trim()) ref.n = nRange.trim()
+    if (sVal != null) ref.s = sVal
+    if (ref.n != null || ref.s != null) refs[mk] = ref
   }
   // pass 1 — exact
   for (const [k, v] of pairs) {
@@ -155,7 +174,7 @@ export function parseFat(raw: unknown): FatMetrics {
     if (EXCLUDE_SUFFIX.test(kl)) continue
     const mk = KEY_MAP[kl]
     if (!mk) continue
-    const n = nnum(v); if (n != null) setVal(mk, n)
+    const n = nnum(v); if (n != null) setVal(mk, n, kl)
   }
   // pass 2 — fuzzy fallback
   for (const [k, v] of pairs) {
@@ -163,9 +182,9 @@ export function parseFat(raw: unknown): FatMetrics {
     if (EXCLUDE_SUFFIX.test(kl) || BLOCK.has(kl) || KEY_MAP[kl]) continue
     const n = nnum(v); if (n == null) continue
     const m = FAT_METRICS.find((def) => def.pats?.some((p) => p.test(k)) && metrics[def.key] == null)
-    if (m) setVal(m.key, n)
+    if (m) setVal(m.key, n, kl)
   }
-  return metrics
+  return { metrics, refs }
 }
 
 // ดึง "ชื่อ/รหัสเครื่อง" — รวมรุ่น + ท้ายรหัสเครื่อง เพื่อแยกเครื่องที่รุ่นเดียวกัน
