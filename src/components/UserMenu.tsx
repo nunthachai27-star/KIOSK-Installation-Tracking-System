@@ -55,6 +55,10 @@ export function UserMenu({ userId, name, role, avatar, theme, bg, leadsUnread = 
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             📊 แดชบอร์ด
           </Link>
+          <Link href="/manuals" onClick={() => setOpen(false)}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            📚 คู่มือ
+          </Link>
           <Link href="/report" onClick={() => setOpen(false)}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             📋 สรุปงาน

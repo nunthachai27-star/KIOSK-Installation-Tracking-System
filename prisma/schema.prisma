@@ -995,6 +995,21 @@ model StockReportMap {
   updatedAt      DateTime @updatedAt
 }
 
+// คู่มือ — เก็บคู่มือ (ไฟล์แนบใน Attachment refTable='Manual' หรือลิงก์ภายนอก)
+// เปิดดูสาธารณะผ่าน token (ลิงก์/QR) โดยไม่ต้อง login
+model Manual {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  category    String?
+  linkUrl     String?  // ลิงก์ภายนอก (ถ้าไม่ได้อัปโหลดไฟล์)
+  token       String   @unique // สำหรับเปิดดูสาธารณะ /manual/<token>
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // ค่าที่รับจากเครื่องวัดความดัน (หน้าเดชบอร์ดทดสอบ) — เก็บถาวรเพื่อทำรายงานย้อนหลัง
 model BpReading {
   id        String   @id @default(cuid())
