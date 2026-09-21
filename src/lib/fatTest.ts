@@ -84,9 +84,7 @@ export const maskId = (id: string | null): string | null => {
   return s.length <= 7 ? s : s.slice(0, 4) + '*'.repeat(s.length - 7) + s.slice(-3)
 }
 
-// เก็บข้อมูลย้อนหลังกี่วัน (กันตารางโตไม่จำกัด) — ลบของเก่ากว่านี้ตอนบันทึกใหม่
-const RETENTION_DAYS = 90
-
+// เก็บข้อมูลถาวร (ไม่ลบอัตโนมัติ) — ลบได้เฉพาะ super admin ผ่านหน้าเว็บเท่านั้น
 export async function saveFatReading(fields: {
   device: string | null; name: string | null; idcard: string | null
   metrics: FatMetrics; refs: FatRefs; raw: unknown
@@ -99,8 +97,6 @@ export async function saveFatReading(fields: {
       raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
     },
   })
-  // ลบข้อมูลเก่าเกินระยะเก็บ (ใช้ index createdAt — ถูก)
-  await prisma.fatReading.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - RETENTION_DAYS * 86_400_000) } } }).catch(() => {})
 }
 
 export async function listFatReadings(limit = 300): Promise<FatReading[]> {
@@ -117,8 +113,11 @@ export async function listFatReadings(limit = 300): Promise<FatReading[]> {
   }))
 }
 
-export async function clearFatReadings(): Promise<void> {
-  await prisma.fatReading.deleteMany({})
+// ลบข้อมูล — ระบุชื่อ = ลบเฉพาะคนนั้น (ไม่สนตัวพิมพ์), ไม่ระบุ = ลบทั้งหมด. คืนจำนวนที่ลบ
+export async function clearFatReadings(name?: string): Promise<number> {
+  const where = name && name.trim() ? { name: { equals: name.trim(), mode: 'insensitive' as const } } : {}
+  const res = await prisma.fatReading.deleteMany({ where })
+  return res.count
 }
 
 const nnum = (v: unknown): number | null => {

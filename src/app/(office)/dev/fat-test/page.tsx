@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { FatTestDashboard } from '@/components/FatTestDashboard'
 import { reportToken } from '@/lib/reportToken'
+import { isSuperAdmin } from '@/lib/superAdmin'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export default async function FatTestPage() {
   const endpoint = `${base}/api/dev/fat`
   const reportUrl = `${base}/fat-report/${reportToken('fat')}`
   const reportQr = await QRCode.toDataURL(reportUrl, { margin: 1, width: 220 }).catch(() => '')
+  const canDelete = await isSuperAdmin()
 
   return (
     <div className="p-4 sm:p-6 max-w-[1100px] mx-auto flex flex-col gap-4">
@@ -33,7 +35,7 @@ export default async function FatTestPage() {
           <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold">← กลับหน้าพัฒนา</Link>
         </div>
       </div>
-      <FatTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} />
+      <FatTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} canDelete={canDelete} />
     </div>
   )
 }

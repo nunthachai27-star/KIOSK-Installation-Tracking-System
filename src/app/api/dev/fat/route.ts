@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { saveFatReading, listFatReadings, clearFatReadings, parseFat, parseDevice, parsePerson, maskId } from '@/lib/fatTest'
 import { ingestGuard, MAX_INGEST_BYTES } from '@/lib/devIngest'
+import { isSuperAdmin } from '@/lib/superAdmin'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,10 +51,10 @@ export async function GET(req: Request) {
   return NextResponse.json({ readings: publicReadings }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
-// ล้างค่าทดสอบ (เฉพาะเจ้าหน้าที่)
-export async function DELETE() {
-  const session = await auth()
-  if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  await clearFatReadings()
-  return NextResponse.json({ ok: true })
+// ลบข้อมูล — เฉพาะ super admin เท่านั้น · ?name= ลบเฉพาะคนนั้น, ไม่ใส่ = ลบทั้งหมด
+export async function DELETE(req: Request) {
+  if (!(await isSuperAdmin())) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  const name = new URL(req.url).searchParams.get('name') || undefined
+  const deleted = await clearFatReadings(name)
+  return NextResponse.json({ ok: true, deleted })
 }

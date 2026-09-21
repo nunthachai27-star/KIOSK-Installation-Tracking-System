@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { BpTestDashboard } from '@/components/BpTestDashboard'
 import { reportToken } from '@/lib/reportToken'
+import { isSuperAdmin } from '@/lib/superAdmin'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export default async function BpTestPage() {
   const endpoint = `${base}/api/dev/bp`
   const reportUrl = `${base}/bp-report/${reportToken('bp')}`
   const reportQr = await QRCode.toDataURL(reportUrl, { margin: 1, width: 220 }).catch(() => '')
+  const canDelete = await isSuperAdmin()
 
   return (
     <div className="p-4 sm:p-6 max-w-[1000px] mx-auto flex flex-col gap-4">
@@ -30,7 +32,7 @@ export default async function BpTestPage() {
         </div>
         <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold whitespace-nowrap">← กลับหน้าพัฒนา</Link>
       </div>
-      <BpTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} />
+      <BpTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} canDelete={canDelete} />
     </div>
   )
 }

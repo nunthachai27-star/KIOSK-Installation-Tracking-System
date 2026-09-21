@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { FatReportBody, FAT_PRINT_CSS, type Reading } from '@/components/fatReport'
+import { confirmDialog } from '@/lib/dialog'
 
-export function FatPersonReport() {
+export function FatPersonReport({ canDelete }: { canDelete?: boolean }) {
   const [readings, setReadings] = useState<Reading[]>([])
   const [loaded, setLoaded] = useState(false)
   const [person, setPerson] = useState<string>('')
@@ -28,6 +29,14 @@ export function FatPersonReport() {
 
   const rows = useMemo(() => readings.filter((r) => (r.name?.trim() || 'ไม่ระบุผู้วัด') === person), [readings, person])
 
+  async function deletePerson() {
+    if (!person) return
+    if (!(await confirmDialog({ title: 'ลบข้อมูลผู้วัด', message: `ลบผลวัดทั้งหมดของ "${person}"? การลบนี้ย้อนกลับไม่ได้`, danger: true, confirmText: 'ลบข้อมูล' }))) return
+    const r = await fetch(`/api/dev/fat?name=${encodeURIComponent(person)}`, { method: 'DELETE' })
+    if (r.ok) { setPerson(''); await load() }
+    else alert('ลบไม่สำเร็จ (เฉพาะ super admin เท่านั้น)')
+  }
+
   return (
     <div id="fatreport-wrap" className="p-4 sm:p-6 max-w-[900px] mx-auto flex flex-col gap-4">
       <style>{FAT_PRINT_CSS}</style>
@@ -41,6 +50,7 @@ export function FatPersonReport() {
         </select>
         <button onClick={load} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)]">↻ รีเฟรช</button>
         <button onClick={() => window.print()} className="text-[13px] font-semibold px-4 py-2 rounded-lg bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)]">🖨️ ปริ้นรายงาน</button>
+        {canDelete && person && <button onClick={deletePerson} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ลบข้อมูลคนนี้</button>}
       </div>
 
       {!loaded ? <div className="text-center text-[#8492A6] py-10">กำลังโหลด…</div>

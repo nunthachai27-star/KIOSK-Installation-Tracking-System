@@ -21,10 +21,7 @@ export const maskId = (id: string | null): string | null => {
   return s.length <= 7 ? s : s.slice(0, 4) + '*'.repeat(s.length - 7) + s.slice(-3)
 }
 
-// เก็บข้อมูลย้อนหลังกี่วัน (กันตารางโตไม่จำกัด) — ลบของเก่ากว่านี้ตอนบันทึกใหม่
-const RETENTION_DAYS = 90
-
-// บันทึกค่าที่รับเข้า (ลงฐานข้อมูล — อยู่ถาวรแม้ deploy ใหม่)
+// บันทึกค่าที่รับเข้า (ลงฐานข้อมูล — อยู่ถาวร ไม่ลบอัตโนมัติ)
 export async function saveBpReading(fields: {
   device: string | null; name: string | null; idcard: string | null
   systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown
@@ -36,8 +33,6 @@ export async function saveBpReading(fields: {
       raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
     },
   })
-  // ลบข้อมูลเก่าเกินระยะเก็บ (ใช้ index createdAt — ถูก)
-  await prisma.bpReading.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - RETENTION_DAYS * 86_400_000) } } }).catch(() => {})
 }
 
 // อ่านค่าที่รับมา (ล่าสุดอยู่บน)
@@ -56,8 +51,11 @@ export async function listBpReadings(limit = 300): Promise<BpReading[]> {
   }))
 }
 
-export async function clearBpReadings(): Promise<void> {
-  await prisma.bpReading.deleteMany({})
+// ลบข้อมูล — ระบุชื่อ = ลบเฉพาะคนนั้น (ไม่สนตัวพิมพ์), ไม่ระบุ = ลบทั้งหมด. คืนจำนวนที่ลบ
+export async function clearBpReadings(name?: string): Promise<number> {
+  const where = name && name.trim() ? { name: { equals: name.trim(), mode: 'insensitive' as const } } : {}
+  const res = await prisma.bpReading.deleteMany({ where })
+  return res.count
 }
 
 const nnum = (v: unknown): number | null => {

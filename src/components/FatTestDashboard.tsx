@@ -49,7 +49,7 @@ const orderKeys = (keys: string[]) => {
 }
 const cardColors = ['#C13540', '#1B5FD9', '#157F4C', '#7A44C6', '#B45309', '#0E7490', '#BE185D', '#4338CA']
 
-export function FatTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: string; reportUrl?: string; reportQr?: string }) {
+export function FatTestDashboard({ endpoint, reportUrl, reportQr, canDelete }: { endpoint: string; reportUrl?: string; reportQr?: string; canDelete?: boolean }) {
   const [readings, setReadings] = useState<Reading[]>([])
   const [live, setLive] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -188,7 +188,7 @@ export function FatTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: 
           <button type="button" onClick={() => setLive(v => !v)} className="text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)]">
             {live ? '⏸ หยุด' : '▶ เริ่มรับ'}
           </button>
-          <button type="button" onClick={clearAll} className="text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ล้างค่า</button>
+          {canDelete && <button type="button" onClick={clearAll} className="text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ล้างทั้งหมด</button>}
         </div>
       </div>
 

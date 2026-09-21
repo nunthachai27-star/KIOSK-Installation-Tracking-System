@@ -10,7 +10,7 @@ const personLabel = (r: { name: string | null; idcard: string | null }) =>
 const timeFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const fmt = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '—' : timeFmt.format(d) }
 
-export function BpTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: string; reportUrl?: string; reportQr?: string }) {
+export function BpTestDashboard({ endpoint, reportUrl, reportQr, canDelete }: { endpoint: string; reportUrl?: string; reportQr?: string; canDelete?: boolean }) {
   const [readings, setReadings] = useState<Reading[]>([])
   const [live, setLive] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -151,7 +151,7 @@ export function BpTestDashboard({ endpoint, reportUrl, reportQr }: { endpoint: s
           <button type="button" onClick={() => setLive(v => !v)} className="text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)]">
             {live ? '⏸ หยุด' : '▶ เริ่มรับ'}
           </button>
-          <button type="button" onClick={clearAll} className="text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ล้างค่า</button>
+          {canDelete && <button type="button" onClick={clearAll} className="text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ล้างทั้งหมด</button>}
         </div>
       </div>
 
