@@ -37,9 +37,12 @@ export async function POST(req: Request) {
 // อ่านค่าที่รับมาแล้ว (สำหรับหน้าเดชบอร์ด/รายงาน)
 // - เจ้าหน้าที่ (OFFICE): เห็นข้อมูลเต็ม + raw (ใช้ในเดชบอร์ด)
 // - สาธารณะ (หน้ารายงาน): ปิดบังเลขบัตร + ตัด raw ออก (กันข้อมูลส่วนบุคคลรั่ว)
-export async function GET() {
+export async function GET(req: Request) {
+  const nameQ = (new URL(req.url).searchParams.get('name') || '').trim().toLowerCase()
   const session = await auth()
-  const readings = await listFatReadings()
+  let readings = await listFatReadings()
+  // กรองตามชื่อ (หน้าสาธารณะกรอกชื่อ → ดึงเฉพาะคนนั้น ไม่ส่งข้อมูลคนอื่นมา)
+  if (nameQ) readings = readings.filter((r) => (r.name || '').trim().toLowerCase() === nameQ)
   if (session?.user?.role === 'OFFICE') {
     return NextResponse.json({ readings }, { headers: { 'Cache-Control': 'no-store' } })
   }
