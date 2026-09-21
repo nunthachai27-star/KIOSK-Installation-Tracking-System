@@ -28,7 +28,10 @@ export default async function FatTestPage() {
           <h1 className="text-xl font-bold text-[#1C1917]">ทดสอบรับค่าเครื่องวัดไขมัน</h1>
           <p className="text-[13px] text-[#8492A6] mt-0.5">เดชบอร์ดทดสอบ — รอรับค่าจากเครื่องวัดไขมัน/องค์ประกอบร่างกายผ่าน API gateway แบบเรียลไทม์</p>
         </div>
-        <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold whitespace-nowrap">← กลับหน้าพัฒนา</Link>
+        <div className="flex items-center gap-3 whitespace-nowrap">
+          <Link href="/dev/fat-report" className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)]">📄 รายงานรายคน</Link>
+          <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold">← กลับหน้าพัฒนา</Link>
+        </div>
       </div>
       <FatTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} />
     </div>
