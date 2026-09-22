@@ -68,6 +68,16 @@ export async function GET() {
     }
   }
 
+  // รายละเอียดรายคน — ค่าล่าสุดของแต่ละเครื่องต่อคน (ไว้เรียง/เทียบรายบุคคล)
+  const pickV = (r: typeof asc[number] | undefined) => r ? { sys: r.systolic, dia: r.diastolic, pulse: r.pulse, at: r.at } : null
+  const people = [] as { name: string; d1: ReturnType<typeof pickV>; d2: ReturnType<typeof pickV> }[]
+  for (const [name, rs] of byPerson) {
+    const la = d1 ? [...rs].reverse().find((r) => (r.device || 'ไม่ระบุเครื่อง') === d1) : undefined
+    const lb = d2 ? [...rs].reverse().find((r) => (r.device || 'ไม่ระบุเครื่อง') === d2) : undefined
+    if (!la && !lb) continue
+    people.push({ name, d1: pickV(la), d2: pickV(lb) })
+  }
+
   return NextResponse.json({
     devices: { d1, d2 },
     perDevice: { d1: d1 ? devCount.get(d1) || 0 : 0, d2: d2 ? devCount.get(d2) || 0 : 0 },
@@ -75,6 +85,7 @@ export async function GET() {
     peopleCompared: peopleCompared.size,
     pairRounds,
     metrics: { systolic: agg(diffs.systolic), diastolic: agg(diffs.diastolic), pulse: agg(diffs.pulse) },
+    people,
     updatedAt: new Date().toISOString(),
   }, { headers: { 'Cache-Control': 'no-store' } })
 }

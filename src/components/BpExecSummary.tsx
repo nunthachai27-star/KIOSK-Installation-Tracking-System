@@ -1,7 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Agg = { n: number; bias: number | null; mad: number | null; within5: number; within10: number; over10: number; maxAbs: number | null }
+type V = { sys: number | null; dia: number | null; pulse: number | null; at: string } | null
+type Person = { name: string; d1: V; d2: V }
 type Summary = {
   devices: { d1: string | null; d2: string | null }
   perDevice: { d1: number; d2: number }
@@ -9,7 +11,18 @@ type Summary = {
   peopleCompared: number
   pairRounds: number
   metrics: { systolic: Agg; diastolic: Agg; pulse: Agg }
+  people: Person[]
   updatedAt: string
+}
+
+// แปลผลความดัน (เกณฑ์ทั่วไปผู้ใหญ่ AHA)
+function bpCat(sys: number | null | undefined, dia: number | null | undefined): { t: string; cls: string } | null {
+  if (sys == null || dia == null) return null
+  if (sys >= 180 || dia >= 120) return { t: 'สูงวิกฤต', cls: 'text-white bg-[#991B1B]' }
+  if (sys >= 140 || dia >= 90) return { t: 'สูงระดับ 2', cls: 'text-[#C13540] bg-[#FBE4E4]' }
+  if (sys >= 130 || dia >= 80) return { t: 'สูงระดับ 1', cls: 'text-[#B45309] bg-[#FDECD3]' }
+  if (sys >= 120) return { t: 'เริ่มสูง', cls: 'text-[#B45309] bg-[#FDECD3]' }
+  return { t: 'ปกติ', cls: 'text-[#157F4C] bg-[#E7F4EE]' }
 }
 const METRICS: { key: 'systolic' | 'diastolic' | 'pulse'; label: string; unit: string }[] = [
   { key: 'systolic', label: 'SYS (ความดันตัวบน)', unit: 'mmHg' },
@@ -21,6 +34,7 @@ const timeFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short
 export function BpExecSummary() {
   const [s, setS] = useState<Summary | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [sort, setSort] = useState<'sys' | 'diff' | 'name'>('sys')
 
   useEffect(() => {
     let alive = true
@@ -39,6 +53,15 @@ export function BpExecSummary() {
   }, [])
 
   const d1 = s?.devices.d1, d2 = s?.devices.d2
+  const sortedPeople = useMemo(() => {
+    const arr = [...(s?.people || [])]
+    const sysOf = (p: Person) => p.d1?.sys ?? p.d2?.sys ?? -1
+    const diffOf = (p: Person) => (p.d1?.sys != null && p.d2?.sys != null) ? Math.abs(p.d1.sys - p.d2.sys) : -1
+    if (sort === 'sys') arr.sort((a, b) => sysOf(b) - sysOf(a))
+    else if (sort === 'diff') arr.sort((a, b) => diffOf(b) - diffOf(a))
+    else arr.sort((a, b) => a.name.localeCompare(b.name, 'th'))
+    return arr
+  }, [s?.people, sort])
 
   return (
     <div className="min-h-screen bg-[#EEF2F7] py-8 px-4">
@@ -76,6 +99,58 @@ export function BpExecSummary() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {METRICS.map((m) => <MetricCard key={m.key} m={m} a={s.metrics[m.key]} d1={d1!} d2={d2!} />)}
             </div>
+
+            {/* รายละเอียดรายคน */}
+            {sortedPeople.length > 0 && (
+              <div className="bg-white rounded-2xl border border-[#E3EAF2] shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#EEF2F8] flex items-center justify-between gap-2 flex-wrap">
+                  <div className="text-[13px] font-bold text-[#233047]">รายละเอียดรายคน ({sortedPeople.length})</div>
+                  <div className="flex items-center gap-1.5 text-[12px]">
+                    <span className="text-[#8492A6]">เรียงตาม:</span>
+                    {([['sys', 'SYS สูงสุด'], ['diff', 'ต่างมากสุด'], ['name', 'ชื่อ']] as const).map(([k, t]) => (
+                      <button key={k} onClick={() => setSort(k)} className={`px-2.5 py-1 rounded-lg font-semibold ${sort === k ? 'bg-[var(--brand)] text-white' : 'border border-[#DCE4EE] text-[#5A6B82] hover:border-[var(--brand)]'}`}>{t}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[12.5px]">
+                    <thead>
+                      <tr className="text-[10.5px] text-[#8492A6] bg-[#FAFBFD]">
+                        <th rowSpan={2} className="text-left px-3 py-1.5 font-semibold align-bottom">ผู้วัด</th>
+                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]"><span className="inline-block w-2 h-2 rounded-full bg-[#1B5FD9] mr-1" />{d1}</th>
+                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]"><span className="inline-block w-2 h-2 rounded-full bg-[#C13540] mr-1" />{d2}</th>
+                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold border-l border-[#EEF2F8] align-bottom">ต่าง SYS</th>
+                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold align-bottom">แปลผล</th>
+                      </tr>
+                      <tr className="text-[10px] text-[#A8A29E] bg-[#FAFBFD]">
+                        {['SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร'].map((h, i) => <th key={i} className={`text-right px-2 py-1 font-semibold ${i % 3 === 0 ? 'border-l border-[#EEF2F8]' : ''}`}>{h}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedPeople.map((p, idx) => {
+                        const diffSys = (p.d1?.sys != null && p.d2?.sys != null) ? Math.abs(p.d1.sys - p.d2.sys) : null
+                        const base = p.d1 ?? p.d2
+                        const cat = bpCat(base?.sys, base?.dia)
+                        return (
+                          <tr key={p.name + idx} className="border-t border-[#F1F4F8]">
+                            <td className="px-3 py-1.5 text-[#233047] font-semibold break-all">{p.name}</td>
+                            <td className="px-2 py-1.5 text-right tnum border-l border-[#F1F4F8]">{p.d1?.sys ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum">{p.d1?.dia ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum">{p.d1?.pulse ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum border-l border-[#F1F4F8]">{p.d2?.sys ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum">{p.d2?.dia ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum">{p.d2?.pulse ?? '—'}</td>
+                            <td className={`px-2 py-1.5 text-center tnum font-semibold border-l border-[#F1F4F8] ${diffSys == null ? 'text-[#A8A29E]' : diffSys <= 5 ? 'text-[#157F4C]' : diffSys <= 10 ? 'text-[#B45309]' : 'text-[#C13540]'}`}>{diffSys ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-center">{cat && <span className={`text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cat.cls}`}>{cat.t}</span>}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="px-4 py-2 text-[11px] text-[#B45309] bg-[#FDF6EC] border-t border-[#F3E4CC]">⚠️ หน้านี้แสดงชื่อผู้วัด — เป็นลิงก์ลับ โปรดแชร์เฉพาะผู้บริหารที่เกี่ยวข้อง</p>
+              </div>
+            )}
 
             <div className="bg-white rounded-2xl border border-[#E3EAF2] shadow-sm p-4">
               <div className="text-[13px] font-bold text-[#233047] mb-1">อ่านผลอย่างไร</div>
