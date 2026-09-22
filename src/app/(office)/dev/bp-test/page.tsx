@@ -20,6 +20,8 @@ export default async function BpTestPage() {
   const endpoint = `${base}/api/dev/bp`
   const reportUrl = `${base}/bp-report/${reportToken('bp')}`
   const reportQr = await QRCode.toDataURL(reportUrl, { margin: 1, width: 220 }).catch(() => '')
+  const summaryUrl = `${base}/bp-summary/${reportToken('bpsum')}`
+  const summaryQr = await QRCode.toDataURL(summaryUrl, { margin: 1, width: 220 }).catch(() => '')
   const canDelete = await isSuperAdmin()
 
   return (
@@ -35,7 +37,7 @@ export default async function BpTestPage() {
           <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold">← กลับหน้าพัฒนา</Link>
         </div>
       </div>
-      <BpTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} canDelete={canDelete} />
+      <BpTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} summaryUrl={summaryUrl} summaryQr={summaryQr} canDelete={canDelete} />
     </div>
   )
 }

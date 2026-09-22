@@ -10,7 +10,7 @@ const personLabel = (r: { name: string | null; idcard: string | null }) =>
 const timeFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const fmt = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '—' : timeFmt.format(d) }
 
-export function BpTestDashboard({ endpoint, reportUrl, reportQr, canDelete }: { endpoint: string; reportUrl?: string; reportQr?: string; canDelete?: boolean }) {
+export function BpTestDashboard({ endpoint, reportUrl, reportQr, summaryUrl, summaryQr, canDelete }: { endpoint: string; reportUrl?: string; reportQr?: string; summaryUrl?: string; summaryQr?: string; canDelete?: boolean }) {
   const [readings, setReadings] = useState<Reading[]>([])
   const [live, setLive] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -88,6 +88,11 @@ export function BpTestDashboard({ endpoint, reportUrl, reportQr, canDelete }: { 
     if (!reportUrl) return
     navigator.clipboard?.writeText(reportUrl).then(() => { setCopiedReport(true); setTimeout(() => setCopiedReport(false), 2000) }).catch(() => {})
   }
+  const [copiedSum, setCopiedSum] = useState(false)
+  function copySummary() {
+    if (!summaryUrl) return
+    navigator.clipboard?.writeText(summaryUrl).then(() => { setCopiedSum(true); setTimeout(() => setCopiedSum(false), 2000) }).catch(() => {})
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -135,6 +140,30 @@ export function BpTestDashboard({ endpoint, reportUrl, reportQr, canDelete }: { 
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={reportQr} alt="QR รายงาน" width={120} height={120} className="rounded-lg border border-[#E7EDF4]" />
                 <div className="text-[11px] text-[#8492A6] mt-1">สแกนดูรายงาน</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* แชร์หน้าสรุปผู้บริหาร (เทียบ 2 เครื่องรวม · สาธารณะ) */}
+      {summaryUrl && (
+        <div className={`bg-[#F5F1FB] border border-[#E4D8F5] rounded-2xl p-4 ${view === 'live' ? '' : 'hidden'}`}>
+          <div className="text-[13px] font-bold text-[#7A44C6] mb-2">📊 หน้าสรุปผู้บริหาร (เทียบ 2 เครื่องรวมทั้งหมด · สาธารณะ)</div>
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="flex-1 min-w-[240px]">
+              <p className="text-[12px] text-[#8492A6] mb-2">ภาพรวมผลต่างของ 2 เครื่อง (ไม่มีข้อมูลส่วนบุคคล) · ส่งลิงก์นี้ให้ผู้บริหาร</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="text-[12.5px] bg-white border border-[#E4D8F5] rounded-lg px-3 py-2 text-[#1C1917] break-all select-all font-mono">{summaryUrl}</code>
+                <button type="button" onClick={copySummary} className="text-[12.5px] font-semibold px-3 py-2 rounded-lg bg-[#7A44C6] text-white hover:bg-[#6A38B0]">{copiedSum ? '✓ คัดลอกแล้ว' : '📋 คัดลอก'}</button>
+                <a href={summaryUrl} target="_blank" rel="noopener noreferrer" className="text-[12.5px] font-semibold px-3 py-2 rounded-lg border border-[#D8C7EE] text-[#5A3D8A] hover:border-[#7A44C6]">↗ เปิด</a>
+              </div>
+            </div>
+            {summaryQr && (
+              <div className="text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={summaryQr} alt="QR สรุปผู้บริหาร" width={120} height={120} className="rounded-lg border border-[#E4D8F5]" />
+                <div className="text-[11px] text-[#8492A6] mt-1">สแกนดูสรุป</div>
               </div>
             )}
           </div>
