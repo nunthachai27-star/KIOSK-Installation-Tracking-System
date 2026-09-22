@@ -41,11 +41,14 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
   }
   useEffect(() => { load() }, [])
 
-  const persons = useMemo(() => Array.from(new Set(readings.map((r) => r.name?.trim() || 'ไม่ระบุผู้วัด'))), [readings])
-  useEffect(() => { if (!person && readings.length) setPerson(readings[0].name?.trim() || 'ไม่ระบุผู้วัด') }, [readings, person])
+  // '__ALL__' = เทียบทุกเครื่องตามลำดับเวลา (ไม่แยกชื่อ) — เหมาะกับเครื่องที่ไม่ส่งชื่อผู้วัด
+  const ALL = '__ALL__'
+  const personLabel = (p: string) => p === ALL ? 'ทุกคน (เทียบตามเวลา ไม่แยกชื่อ)' : p
+  const persons = useMemo(() => [ALL, ...Array.from(new Set(readings.map((r) => r.name?.trim() || 'ไม่ระบุผู้วัด')))], [readings])
+  useEffect(() => { if (!person && readings.length) setPerson(ALL) }, [readings, person])
 
   const rows = useMemo(() =>
-    readings.filter((r) => (r.name?.trim() || 'ไม่ระบุผู้วัด') === person)
+    readings.filter((r) => person === ALL || (r.name?.trim() || 'ไม่ระบุผู้วัด') === person)
       .slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime()),
     [readings, person])
 
@@ -97,13 +100,13 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
         <div className="flex-1" />
         <label className="text-[13px] text-[#5A6B82] font-semibold">ผู้วัด:</label>
         <select value={person} onChange={(e) => setPerson(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[var(--brand)] bg-white">
-          {persons.map((p) => <option key={p} value={p}>{p}</option>)}
+          {persons.map((p) => <option key={p} value={p}>{personLabel(p)}</option>)}
         </select>
         <button onClick={load} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)]">↻ รีเฟรช</button>
         <button onClick={() => dl('png')} disabled={!!busy} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] disabled:opacity-60">{busy === 'png' ? 'กำลังบันทึก…' : '🖼️ PNG'}</button>
         <button onClick={() => dl('pdf')} disabled={!!busy} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] disabled:opacity-60">{busy === 'pdf' ? 'กำลังสร้าง…' : '📄 PDF'}</button>
         <button onClick={() => window.print()} className="text-[13px] font-semibold px-4 py-2 rounded-lg bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)]">🖨️ ปริ้น</button>
-        {canDelete && person && <button onClick={deletePerson} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ลบคนนี้</button>}
+        {canDelete && person && person !== ALL && <button onClick={deletePerson} className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#C13540] hover:border-[#C13540]">🗑️ ลบคนนี้</button>}
       </div>
 
       {!loaded ? <div className="text-center text-[#8492A6] py-10">กำลังโหลด…</div>
@@ -114,7 +117,7 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
           <div className="flex items-start justify-between gap-4 border-b border-[#EEF2F8] pb-4 flex-wrap">
             <div>
               <div className="text-[18px] font-bold text-[#1C2A3E]">รายงานผลวัดความดัน (เทียบเครื่อง)</div>
-              <div className="text-[13px] text-[#5A6B82] mt-1">ผู้วัด: <b className="text-[#233047]">{person}</b> · วัด {rows.length} ครั้ง · {devices.length} เครื่อง</div>
+              <div className="text-[13px] text-[#5A6B82] mt-1">ผู้วัด: <b className="text-[#233047]">{personLabel(person)}</b> · วัด {rows.length} ครั้ง · {devices.length} เครื่อง</div>
               <div className="text-[12px] text-[#8492A6] mt-0.5">ล่าสุด: {fmt(rows[rows.length - 1].at)}</div>
             </div>
             <div className="text-right text-[11.5px] text-[#8492A6]">BMS Smart Hospital<br />พิมพ์เมื่อ {fmt(new Date().toISOString())}</div>
