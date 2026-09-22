@@ -38,9 +38,26 @@ export async function POST(req: Request) {
 // อ่านค่าที่รับมาแล้ว (สำหรับหน้าเดชบอร์ด/รายงาน)
 // - เจ้าหน้าที่ (OFFICE): เห็นข้อมูลเต็ม + raw (ใช้ในเดชบอร์ด)
 // - สาธารณะ (หน้ารายงาน): ปิดบังเลขบัตร + ตัด raw ออก (กันข้อมูลส่วนบุคคลรั่ว)
-export async function GET() {
+export async function GET(req: Request) {
+  const nameQ = (new URL(req.url).searchParams.get('name') || '').trim().toLowerCase()
   const session = await auth()
-  const readings = await listBpReadings()
+  let readings = await listBpReadings()
+  // กรองตามชื่อ + "ยืมชื่อ": เรคคอร์ดที่ไม่มีชื่อ(เช่น Yuwell) ที่วัดต่อจากเรคคอร์ดที่มีชื่อภายใน 15 นาที
+  // ถือเป็นของคนนั้น → หน้าสาธารณะกรอกชื่อแล้วเห็นครบ 2 เครื่อง โดยไม่ส่งข้อมูลคนอื่นมา
+  if (nameQ) {
+    const WINDOW = 15 * 60 * 1000
+    const asc = readings.slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+    let last: { name: string; t: number } | null = null
+    const effOf = new Map<string, string>()
+    for (const r of asc) {
+      const raw = (r.name || '').trim(); const t = new Date(r.at).getTime()
+      let eff = raw
+      if (raw) last = { name: raw, t }
+      else if (last && t - last.t <= WINDOW) eff = last.name
+      effOf.set(r.id, (eff || 'ไม่ระบุผู้วัด').toLowerCase())
+    }
+    readings = readings.filter((r) => effOf.get(r.id) === nameQ)
+  }
   if (session?.user?.role === 'OFFICE') {
     return NextResponse.json({ readings }, { headers: { 'Cache-Control': 'no-store' } })
   }
