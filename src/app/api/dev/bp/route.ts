@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { saveBpReading, listBpReadings, clearBpReadings, parseBp, parseDevice, parsePerson, parseExamNo, maskId } from '@/lib/bpTest'
+import { saveBpReading, listBpReadings, clearBpReadings, deleteBpByIds, parseBp, parseDevice, parsePerson, parseExamNo, maskId } from '@/lib/bpTest'
 import { ingestGuard, MAX_INGEST_BYTES } from '@/lib/devIngest'
 import { isSuperAdmin } from '@/lib/superAdmin'
 import { logIngest, reqIp } from '@/lib/ingestLog'
@@ -77,10 +77,15 @@ export async function GET(req: Request) {
   return NextResponse.json({ readings: publicReadings }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
-// ลบข้อมูล — เฉพาะ super admin เท่านั้น · ?name= ลบเฉพาะคนนั้น, ไม่ใส่ = ลบทั้งหมด
+// ลบข้อมูล — เฉพาะ super admin · ?ids=a,b ลบตาม id (แม่นยำ), ?name= ลบตามชื่อ, ไม่ใส่ = ลบทั้งหมด
 export async function DELETE(req: Request) {
   if (!(await isSuperAdmin())) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  const name = new URL(req.url).searchParams.get('name') || undefined
-  const deleted = await clearBpReadings(name)
+  const sp = new URL(req.url).searchParams
+  const ids = sp.get('ids')
+  if (ids != null) {
+    const list = ids.split(',').map((s) => s.trim()).filter(Boolean)
+    return NextResponse.json({ ok: true, deleted: await deleteBpByIds(list) })
+  }
+  const deleted = await clearBpReadings(sp.get('name') || undefined)
   return NextResponse.json({ ok: true, deleted })
 }

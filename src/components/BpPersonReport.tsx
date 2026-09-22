@@ -45,8 +45,10 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
 
   async function deletePerson() {
     if (!person || person === ALL) return
-    if (!(await confirmDialog({ title: 'ลบข้อมูลผู้วัด', message: `ลบผลวัดความดันทั้งหมดของ "${person}"? ย้อนกลับไม่ได้`, danger: true, confirmText: 'ลบข้อมูล' }))) return
-    const r = await fetch(`/api/dev/bp?name=${encodeURIComponent(person)}`, { method: 'DELETE' })
+    const ids = rows.map((r) => r.id)
+    if (!ids.length) return
+    if (!(await confirmDialog({ title: 'ลบข้อมูลผู้วัด', message: `ลบผลวัดความดันของ "${personLabel(person)}" จำนวน ${ids.length} รายการ? ย้อนกลับไม่ได้`, danger: true, confirmText: 'ลบข้อมูล' }))) return
+    const r = await fetch(`/api/dev/bp?ids=${encodeURIComponent(ids.join(','))}`, { method: 'DELETE' })
     if (r.ok) { setPerson(''); await load() } else alert('ลบไม่สำเร็จ (เฉพาะ super admin)')
   }
   const safeName = (person === ALL ? 'ทุกเครื่อง' : person || 'bp-report').replace(/[\\/:*?"<>|]+/g, '_')

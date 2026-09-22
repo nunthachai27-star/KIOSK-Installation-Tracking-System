@@ -31,8 +31,10 @@ export function FatPersonReport({ canDelete }: { canDelete?: boolean }) {
 
   async function deletePerson() {
     if (!person) return
-    if (!(await confirmDialog({ title: 'ลบข้อมูลผู้วัด', message: `ลบผลวัดทั้งหมดของ "${person}"? การลบนี้ย้อนกลับไม่ได้`, danger: true, confirmText: 'ลบข้อมูล' }))) return
-    const r = await fetch(`/api/dev/fat?name=${encodeURIComponent(person)}`, { method: 'DELETE' })
+    const ids = rows.map((r) => r.id)
+    if (!ids.length) return
+    if (!(await confirmDialog({ title: 'ลบข้อมูลผู้วัด', message: `ลบผลวัดของ "${person}" จำนวน ${ids.length} รายการ? การลบนี้ย้อนกลับไม่ได้`, danger: true, confirmText: 'ลบข้อมูล' }))) return
+    const r = await fetch(`/api/dev/fat?ids=${encodeURIComponent(ids.join(','))}`, { method: 'DELETE' })
     if (r.ok) { setPerson(''); await load() }
     else alert('ลบไม่สำเร็จ (เฉพาะ super admin เท่านั้น)')
   }

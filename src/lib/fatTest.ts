@@ -120,6 +120,13 @@ export async function clearFatReadings(name?: string): Promise<number> {
   return res.count
 }
 
+// ลบตาม id ที่ระบุ (แม่นยำ — ใช้ลบกลุ่ม "ไม่ระบุผู้วัด" ได้)
+export async function deleteFatByIds(ids: string[]): Promise<number> {
+  if (!ids.length) return 0
+  const res = await prisma.fatReading.deleteMany({ where: { id: { in: ids } } })
+  return res.count
+}
+
 const nnum = (v: unknown): number | null => {
   if (typeof v === 'number' && Number.isFinite(v)) return v
   // บางค่าเป็นสตริง เช่น "36.4" / "18.5%" → ดึงตัวเลขนำหน้า (ข้ามช่วง/ข้อความ)

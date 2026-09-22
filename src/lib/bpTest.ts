@@ -79,6 +79,13 @@ export async function clearBpReadings(name?: string): Promise<number> {
   return res.count
 }
 
+// ลบตาม id ที่ระบุ (แม่นยำ — ใช้ลบกลุ่ม "ไม่ระบุผู้วัด" หรือแถวที่ยืมชื่อได้ครบ)
+export async function deleteBpByIds(ids: string[]): Promise<number> {
+  if (!ids.length) return 0
+  const res = await prisma.bpReading.deleteMany({ where: { id: { in: ids } } })
+  return res.count
+}
+
 const nnum = (v: unknown): number | null => {
   if (typeof v === 'number' && Number.isFinite(v)) return v
   // บางรุ่นส่งเป็นสตริงแบบ "117#...#90~140" → ดึงเฉพาะตัวเลขนำหน้า
