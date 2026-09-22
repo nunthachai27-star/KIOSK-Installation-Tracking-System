@@ -31,6 +31,9 @@ export default async function DevPage() {
           <a href="/dev/fat-test" className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)] whitespace-nowrap">
             ⚖️ ทดสอบเครื่องวัดไขมัน
           </a>
+          <a href="/dev/ingest-monitor" className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)] whitespace-nowrap">
+            🖥️ มอนิเตอร์รับข้อมูล
+          </a>
         </div>
       </div>
       <DevBoard initial={initial} mode="staff" token={settings.token} teamNote={settings.teamNote} publicBase={publicBase} />

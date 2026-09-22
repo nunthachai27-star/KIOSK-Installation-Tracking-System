@@ -3,17 +3,21 @@ import { auth } from '@/lib/auth'
 import { saveFatReading, listFatReadings, clearFatReadings, parseFat, parseDevice, parsePerson, maskId } from '@/lib/fatTest'
 import { ingestGuard, MAX_INGEST_BYTES } from '@/lib/devIngest'
 import { isSuperAdmin } from '@/lib/superAdmin'
+import { logIngest, reqIp } from '@/lib/ingestLog'
 
 export const dynamic = 'force-dynamic'
 
 // รับข้อมูลจากเครื่องวัดไขมัน/องค์ประกอบร่างกาย ผ่าน API gateway (สาธารณะ — ยิงเข้ามาโดยไม่มี login)
 // ตั้งค่าปลายทาง upload = https://<host>/api/dev/fat
 export async function POST(req: Request) {
+  const ip = reqIp(req)
   const blocked = ingestGuard(req)
-  if (blocked) return blocked
+  if (blocked) { await logIngest({ kind: 'fat', ip, status: blocked.status === 413 ? 'too_large' : 'rate_limit' }); return blocked }
 
   const text = await req.text().catch(() => '')
-  if (text.length > MAX_INGEST_BYTES) {
+  const bytes = text.length
+  if (bytes > MAX_INGEST_BYTES) {
+    await logIngest({ kind: 'fat', ip, bytes, status: 'too_large' })
     return NextResponse.json({ code: 1, success: false, message: 'payload too large' }, { status: 413, headers: { 'Cache-Control': 'no-store' } })
   }
   let raw: unknown = text
@@ -29,7 +33,14 @@ export async function POST(req: Request) {
 
   const { metrics, refs } = parseFat(raw)
   const person = parsePerson(raw)
-  await saveFatReading({ device: parseDevice(raw), name: person.name, idcard: person.idcard, metrics, refs, raw })
+  const device = parseDevice(raw)
+  const nKeys = Object.keys(metrics).length
+  await saveFatReading({ device, name: person.name, idcard: person.idcard, metrics, refs, raw })
+  await logIngest({
+    kind: 'fat', device, name: person.name, ip, bytes,
+    status: nKeys > 0 ? 'ok' : 'no_value',
+    summary: nKeys > 0 ? `${nKeys} ค่า${metrics.bodyFat != null ? ` · ไขมัน ${metrics.bodyFat}%` : ''}` : 'ไม่มีค่า',
+  })
 
   // ตอบกลับแบบ "สำเร็จ" เผื่อ gateway ต้องการ ack (permissive)
   return NextResponse.json({ code: 0, success: true, message: 'received' }, { headers: { 'Cache-Control': 'no-store' } })

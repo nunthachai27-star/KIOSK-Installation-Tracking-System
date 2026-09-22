@@ -1,19 +1,23 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { saveBpReading, listBpReadings, clearBpReadings, parseBp, parseDevice, parsePerson, maskId } from '@/lib/bpTest'
+import { saveBpReading, listBpReadings, clearBpReadings, parseBp, parseDevice, parsePerson, parseExamNo, maskId } from '@/lib/bpTest'
 import { ingestGuard, MAX_INGEST_BYTES } from '@/lib/devIngest'
 import { isSuperAdmin } from '@/lib/superAdmin'
+import { logIngest, reqIp } from '@/lib/ingestLog'
 
 export const dynamic = 'force-dynamic'
 
 // รับข้อมูลจากเครื่องวัดความดัน (สาธารณะ — เครื่องยิงเข้ามาโดยไม่มี login)
 // ตั้งค่าในเครื่อง: "แก้ไขที่อยู่สำหรับอัปโหลดข้อมูล" = https://<host>/api/dev/bp
 export async function POST(req: Request) {
+  const ip = reqIp(req)
   const blocked = ingestGuard(req)
-  if (blocked) return blocked
+  if (blocked) { await logIngest({ kind: 'bp', ip, status: blocked.status === 413 ? 'too_large' : 'rate_limit' }); return blocked }
 
   const text = await req.text().catch(() => '')
-  if (text.length > MAX_INGEST_BYTES) {
+  const bytes = text.length
+  if (bytes > MAX_INGEST_BYTES) {
+    await logIngest({ kind: 'bp', ip, bytes, status: 'too_large' })
     return NextResponse.json({ code: 1, success: false, message: 'payload too large' }, { status: 413, headers: { 'Cache-Control': 'no-store' } })
   }
   let raw: unknown = text
@@ -29,7 +33,15 @@ export async function POST(req: Request) {
 
   const bp = parseBp(raw)
   const person = parsePerson(raw)
-  await saveBpReading({ device: parseDevice(raw), name: person.name, idcard: person.idcard, ...bp, raw })
+  const device = parseDevice(raw)
+  const examNo = parseExamNo(raw)
+  const hasVal = bp.systolic != null || bp.diastolic != null || bp.pulse != null
+  const res = await saveBpReading({ device, name: person.name, idcard: person.idcard, ...bp, examNo, raw })
+  await logIngest({
+    kind: 'bp', device, name: person.name, ip, bytes,
+    status: res === 'duplicate' ? 'duplicate' : hasVal ? 'ok' : 'no_value',
+    summary: hasVal ? `${bp.systolic ?? '-'}/${bp.diastolic ?? '-'} p${bp.pulse ?? '-'}${examNo ? ` · #${examNo}` : ''}` : 'ไม่มีค่า',
+  })
 
   // ตอบกลับแบบ "สำเร็จ" เผื่อเครื่องต้องการ ack (permissive)
   return NextResponse.json({ code: 0, success: true, message: 'received' }, { headers: { 'Cache-Control': 'no-store' } })

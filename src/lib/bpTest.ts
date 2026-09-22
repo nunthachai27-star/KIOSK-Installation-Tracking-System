@@ -22,17 +22,38 @@ export const maskId = (id: string | null): string | null => {
 }
 
 // บันทึกค่าที่รับเข้า (ลงฐานข้อมูล — อยู่ถาวร ไม่ลบอัตโนมัติ)
+// กันเครื่องส่งค่าเก่าซ้ำ: ถ้า (device + examNo) เคยมีแล้ว → ไม่บันทึกซ้ำ (คืน 'duplicate')
 export async function saveBpReading(fields: {
   device: string | null; name: string | null; idcard: string | null
-  systolic: number | null; diastolic: number | null; pulse: number | null; raw: unknown
-}): Promise<void> {
+  systolic: number | null; diastolic: number | null; pulse: number | null
+  examNo: string | null; raw: unknown
+}): Promise<'ok' | 'duplicate'> {
+  if (fields.examNo) {
+    const existing = await prisma.bpReading.findFirst({ where: { device: fields.device, examNo: fields.examNo }, select: { id: true } })
+    if (existing) return 'duplicate'
+  }
   await prisma.bpReading.create({
     data: {
       device: fields.device, name: fields.name, idcard: fields.idcard,
       systolic: fields.systolic, diastolic: fields.diastolic, pulse: fields.pulse,
+      examNo: fields.examNo,
       raw: (fields.raw ?? undefined) as Prisma.InputJsonValue,
     },
   })
+  return 'ok'
+}
+
+// เลขที่วัดจากเครื่อง (ใช้กันส่งซ้ำ) — BP ส่งมาเป็น examNo / recordNo
+export function parseExamNo(raw: unknown): string | null {
+  const pick = (o: unknown): string | null => {
+    if (!o || typeof o !== 'object') return null
+    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+      if (/^exam_?no$/i.test(k) || /^record_?no$/i.test(k)) { const s = v == null ? '' : String(v).trim(); if (s) return s }
+      if (v && typeof v === 'object') { const d = pick(v); if (d) return d }
+    }
+    return null
+  }
+  return pick(raw)
 }
 
 // อ่านค่าที่รับมา (ล่าสุดอยู่บน)

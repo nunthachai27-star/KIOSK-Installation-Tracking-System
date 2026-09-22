@@ -1019,7 +1019,24 @@ model BpReading {
   systolic  Int?     // SYS
   diastolic Int?     // DIA
   pulse     Int?     // ชีพจร
+  examNo    String?  // เลขที่วัดจากเครื่อง (กันส่งซ้ำ: device+examNo ไม่รับซ้ำ)
   raw       Json?    // payload ดิบที่เครื่องส่งมา
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([device, examNo])
+}
+
+// บันทึกทุกครั้งที่มีเครื่อง "ยิงข้อมูลเข้าเว็บ" (ทั้งรับ/ซ้ำ/บล็อก) — สำหรับหน้ามอนิเตอร์ admin
+model IngestLog {
+  id        String   @id @default(cuid())
+  kind      String   // 'bp' | 'fat'
+  device    String?
+  name      String?
+  ip        String?
+  status    String   // ok | duplicate | rate_limit | too_large | unparsed | no_value
+  bytes     Int?
+  summary   String?  // ย่อค่าที่ได้ เช่น "120/80 p70" หรือ metrics
   createdAt DateTime @default(now())
 
   @@index([createdAt])
