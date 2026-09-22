@@ -35,13 +35,19 @@ export function BpExecSummary() {
   const [s, setS] = useState<Summary | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [sort, setSort] = useState<'sys' | 'diff' | 'name'>('sys')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
 
   useEffect(() => {
     let alive = true
     const poll = async () => {
       if (typeof document !== 'undefined' && document.hidden) return
       try {
-        const r = await fetch('/api/dev/bp/summary', { cache: 'no-store' })
+        const p = new URLSearchParams()
+        if (from) p.set('from', from)
+        if (to) p.set('to', to)
+        const q = p.toString()
+        const r = await fetch(`/api/dev/bp/summary${q ? `?${q}` : ''}`, { cache: 'no-store' })
         if (!r.ok) return
         const d = await r.json() as Summary
         if (alive) { setS(d); setLoaded(true) }
@@ -50,13 +56,24 @@ export function BpExecSummary() {
     poll()
     const iv = setInterval(poll, 30000)
     return () => { alive = false; clearInterval(iv) }
-  }, [])
+  }, [from, to])
+
+  const todayStr = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' })
+  const daysAgoStr = (n: number) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' })
+  const setPreset = (kind: 'all' | 'today' | '7d' | '30d') => {
+    if (kind === 'all') { setFrom(''); setTo('') }
+    else if (kind === 'today') { setFrom(todayStr()); setTo(todayStr()) }
+    else if (kind === '7d') { setFrom(daysAgoStr(6)); setTo(todayStr()) }
+    else { setFrom(daysAgoStr(29)); setTo(todayStr()) }
+  }
+  const activePreset = (!from && !to) ? 'all' : (from === todayStr() && to === todayStr()) ? 'today' : (from === daysAgoStr(6) && to === todayStr()) ? '7d' : (from === daysAgoStr(29) && to === todayStr()) ? '30d' : ''
 
   const d1 = s?.devices.d1, d2 = s?.devices.d2
   const sortedPeople = useMemo(() => {
     const arr = [...(s?.people || [])]
     const sysOf = (p: Person) => p.d1?.sys ?? p.d2?.sys ?? -1
-    const diffOf = (p: Person) => (p.d1?.sys != null && p.d2?.sys != null) ? Math.abs(p.d1.sys - p.d2.sys) : -1
+    const dAbs = (a: number | null | undefined, b: number | null | undefined) => (a != null && b != null) ? Math.abs(a - b) : -1
+    const diffOf = (p: Person) => Math.max(dAbs(p.d1?.sys, p.d2?.sys), dAbs(p.d1?.dia, p.d2?.dia), dAbs(p.d1?.pulse, p.d2?.pulse))
     if (sort === 'sys') arr.sort((a, b) => sysOf(b) - sysOf(a))
     else if (sort === 'diff') arr.sort((a, b) => diffOf(b) - diffOf(a))
     else arr.sort((a, b) => a.name.localeCompare(b.name, 'th'))
@@ -72,6 +89,18 @@ export function BpExecSummary() {
             <h1 className="text-[22px] font-bold text-[#1C2A3E]">สรุปเปรียบเทียบเครื่องวัดความดัน</h1>
             <p className="text-[13px] text-[#5A6B82]">ภาพรวมความสอดคล้องของ 2 เครื่อง · อัปเดตอัตโนมัติ{s ? ` · ${timeFmt.format(new Date(s.updatedAt))}` : ''}</p>
           </div>
+        </div>
+
+        {/* ตัวกรองวันที่ */}
+        <div className="bg-white rounded-2xl border border-[#E3EAF2] shadow-sm p-3 flex items-center gap-2 flex-wrap">
+          <span className="text-[12.5px] font-semibold text-[#5A6B82]">ช่วงวันที่:</span>
+          {([['all', 'ทั้งหมด'], ['today', 'วันนี้'], ['7d', '7 วัน'], ['30d', '30 วัน']] as const).map(([k, t]) => (
+            <button key={k} onClick={() => setPreset(k)} className={`text-[12.5px] font-semibold px-3 py-1.5 rounded-lg ${activePreset === k ? 'bg-[var(--brand)] text-white' : 'border border-[#DCE4EE] text-[#5A6B82] hover:border-[var(--brand)]'}`}>{t}</button>
+          ))}
+          <span className="w-px h-5 bg-[#E7EDF4] mx-1" />
+          <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--brand)]" />
+          <span className="text-[#8492A6] text-[12px]">ถึง</span>
+          <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className="border border-[#D6DFEA] rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--brand)]" />
         </div>
 
         {!loaded ? <div className="text-center text-[#8492A6] py-16">กำลังโหลด…</div>
@@ -119,18 +148,20 @@ export function BpExecSummary() {
                         <th rowSpan={2} className="text-left px-3 py-1.5 font-semibold align-bottom">ผู้วัด</th>
                         <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]"><span className="inline-block w-2 h-2 rounded-full bg-[#1B5FD9] mr-1" />{d1}</th>
                         <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]"><span className="inline-block w-2 h-2 rounded-full bg-[#C13540] mr-1" />{d2}</th>
-                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold border-l border-[#EEF2F8] align-bottom">ต่าง SYS</th>
-                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold align-bottom">แปลผล</th>
+                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]">ส่วนต่าง</th>
+                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold border-l border-[#EEF2F8] align-bottom">แปลผล</th>
                       </tr>
                       <tr className="text-[10px] text-[#A8A29E] bg-[#FAFBFD]">
-                        {['SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร'].map((h, i) => <th key={i} className={`text-right px-2 py-1 font-semibold ${i % 3 === 0 ? 'border-l border-[#EEF2F8]' : ''}`}>{h}</th>)}
+                        {['SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร'].map((h, i) => <th key={i} className={`text-right px-2 py-1 font-semibold ${i % 3 === 0 ? 'border-l border-[#EEF2F8]' : ''}`}>{h}</th>)}
                       </tr>
                     </thead>
                     <tbody>
                       {sortedPeople.map((p, idx) => {
-                        const diffSys = (p.d1?.sys != null && p.d2?.sys != null) ? Math.abs(p.d1.sys - p.d2.sys) : null
                         const base = p.d1 ?? p.d2
                         const cat = bpCat(base?.sys, base?.dia)
+                        const diffOf = (a: number | null | undefined, b: number | null | undefined) => (a != null && b != null) ? Math.abs(a - b) : null
+                        const diffCls = (x: number | null) => x == null ? 'text-[#A8A29E]' : x <= 5 ? 'text-[#157F4C]' : x <= 10 ? 'text-[#B45309]' : 'text-[#C13540]'
+                        const diffs = [diffOf(p.d1?.sys, p.d2?.sys), diffOf(p.d1?.dia, p.d2?.dia), diffOf(p.d1?.pulse, p.d2?.pulse)]
                         return (
                           <tr key={p.name + idx} className="border-t border-[#F1F4F8]">
                             <td className="px-3 py-1.5 text-[#233047] font-semibold break-all">{p.name}</td>
@@ -140,8 +171,8 @@ export function BpExecSummary() {
                             <td className="px-2 py-1.5 text-right tnum border-l border-[#F1F4F8]">{p.d2?.sys ?? '—'}</td>
                             <td className="px-2 py-1.5 text-right tnum">{p.d2?.dia ?? '—'}</td>
                             <td className="px-2 py-1.5 text-right tnum">{p.d2?.pulse ?? '—'}</td>
-                            <td className={`px-2 py-1.5 text-center tnum font-semibold border-l border-[#F1F4F8] ${diffSys == null ? 'text-[#A8A29E]' : diffSys <= 5 ? 'text-[#157F4C]' : diffSys <= 10 ? 'text-[#B45309]' : 'text-[#C13540]'}`}>{diffSys ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-center">{cat && <span className={`text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cat.cls}`}>{cat.t}</span>}</td>
+                            {diffs.map((x, i) => <td key={i} className={`px-2 py-1.5 text-right tnum font-semibold ${i === 0 ? 'border-l border-[#F1F4F8]' : ''} ${diffCls(x)}`}>{x ?? '—'}</td>)}
+                            <td className="px-2 py-1.5 text-center border-l border-[#F1F4F8]">{cat && <span className={`text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cat.cls}`}>{cat.t}</span>}</td>
                           </tr>
                         )
                       })}

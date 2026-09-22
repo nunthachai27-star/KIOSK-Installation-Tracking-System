@@ -9,9 +9,16 @@ const NAME_WINDOW = 15 * 60 * 1000
 const METRICS = ['systolic', 'diastolic', 'pulse'] as const
 type MK = typeof METRICS[number]
 
-export async function GET() {
+export async function GET(req: Request) {
+  const sp = new URL(req.url).searchParams
+  // กรองตามวันที่ (อ้างอิงเวลาไทย +07:00) — from/to = YYYY-MM-DD
+  const fromStr = sp.get('from'), toStr = sp.get('to')
+  const from = fromStr ? new Date(`${fromStr}T00:00:00+07:00`) : null
+  const to = toStr ? new Date(`${toStr}T23:59:59.999+07:00`) : null
   const readings = await listBpReadings()
-  const asc = readings.slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+  let asc = readings.slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+  if (from && !isNaN(from.getTime())) asc = asc.filter((r) => new Date(r.at) >= from)
+  if (to && !isNaN(to.getTime())) asc = asc.filter((r) => new Date(r.at) <= to)
 
   // ยืมชื่อให้เรคคอร์ดที่ไม่มีชื่อ (เช่น Yuwell) จากเรคคอร์ดก่อนหน้าที่มีชื่อ ภายใน 15 นาที
   let last: { name: string; t: number } | null = null
