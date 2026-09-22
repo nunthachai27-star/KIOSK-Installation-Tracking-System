@@ -40,16 +40,31 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
   }
   useEffect(() => { load() }, [])
 
-  // '__ALL__' = เทียบทุกเครื่องตามลำดับเวลา (ไม่แยกชื่อ) — เหมาะกับเครื่องที่ไม่ส่งชื่อผู้วัด
+  // '__ALL__' = เทียบทุกเครื่องตามลำดับเวลา (ไม่แยกชื่อ)
   const ALL = '__ALL__'
   const personLabel = (p: string) => p === ALL ? 'ทุกคน (เทียบตามเวลา ไม่แยกชื่อ)' : p
-  const persons = useMemo(() => [ALL, ...Array.from(new Set(readings.map((r) => r.name?.trim() || 'ไม่ระบุผู้วัด')))], [readings])
-  useEffect(() => { if (!person && readings.length) setPerson(ALL) }, [readings, person])
 
-  const rows = useMemo(() =>
-    readings.filter((r) => person === ALL || (r.name?.trim() || 'ไม่ระบุผู้วัด') === person)
-      .slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime()),
-    [readings, person])
+  // เติมชื่อผู้วัดให้เรคคอร์ดที่ไม่มีชื่อ (เช่น Yuwell) จากเรคคอร์ดก่อนหน้าที่มีชื่อ (เช่น 1F64)
+  // ภายใน 15 นาที — เพื่อจับเป็น "คนเดียวกัน" แล้วเทียบข้ามเครื่องได้ (คำนวณตอนแสดง ไม่แก้ข้อมูลจริง)
+  const NAME_WINDOW = 15 * 60 * 1000
+  const effRows = useMemo(() => {
+    const sorted = readings.slice().sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+    let last: { name: string; t: number } | null = null
+    return sorted.map((r) => {
+      const raw = (r.name || '').trim()
+      const t = new Date(r.at).getTime()
+      let eff = raw
+      if (raw) last = { name: raw, t }
+      else if (last && t - last.t <= NAME_WINDOW) eff = last.name
+      return { ...r, effName: eff || 'ไม่ระบุผู้วัด', inherited: !raw && !!eff }
+    })
+  }, [readings])
+
+  const persons = useMemo(() => [ALL, ...Array.from(new Set(effRows.map((r) => r.effName)))], [effRows])
+  useEffect(() => { if (!person && effRows.length) setPerson(effRows[effRows.length - 1].effName) }, [effRows, person])
+
+  const rows = useMemo(() => effRows.filter((r) => person === ALL || r.effName === person), [effRows, person])
+  const hasInherited = rows.some((r) => r.inherited)
 
   // เครื่องที่คนนี้เคยวัด (เรียงตามจำนวนครั้งมาก→น้อย)
   const devices = useMemo(() => {
@@ -119,6 +134,7 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
               <div className="text-[18px] font-bold text-[#1C2A3E]">รายงานผลวัดความดัน (เทียบเครื่อง)</div>
               <div className="text-[13px] text-[#5A6B82] mt-1">ผู้วัด: <b className="text-[#233047]">{personLabel(person)}</b> · วัด {rows.length} ครั้ง · {devices.length} เครื่อง</div>
               <div className="text-[12px] text-[#8492A6] mt-0.5">ล่าสุด: {fmt(rows[rows.length - 1].at)}</div>
+              {hasInherited && person !== ALL && <div className="text-[11.5px] text-[#7A44C6] mt-1">* ผลของเครื่องที่ไม่ส่งชื่อ (เช่น Yuwell) ถูกจับเป็นผู้วัดคนนี้ โดยยืมชื่อจากการวัดก่อนหน้าภายใน 15 นาที</div>}
             </div>
             <div className="text-right text-[11.5px] text-[#8492A6]">BMS Smart Hospital<br />พิมพ์เมื่อ {fmt(new Date().toISOString())}</div>
           </div>
