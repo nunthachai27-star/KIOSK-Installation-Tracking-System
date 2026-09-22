@@ -146,13 +146,17 @@ export function BpExecSummary() {
                     <thead>
                       <tr className="text-[10.5px] text-[#8492A6] bg-[#FAFBFD]">
                         <th rowSpan={2} className="text-left px-3 py-1.5 font-semibold align-bottom">ผู้วัด</th>
-                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]"><span className="inline-block w-2 h-2 rounded-full bg-[#1B5FD9] mr-1" />{d1}</th>
-                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]"><span className="inline-block w-2 h-2 rounded-full bg-[#C13540] mr-1" />{d2}</th>
-                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l border-[#EEF2F8]">ส่วนต่าง</th>
-                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold border-l border-[#EEF2F8] align-bottom">แปลผล</th>
+                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l-2 border-[#B9D3F5] bg-[#EEF5FF]"><span className="inline-block w-2 h-2 rounded-full bg-[#1B5FD9] mr-1" />{d1}</th>
+                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l-2 border-[#EFC2C2] bg-[#FDF0F0]"><span className="inline-block w-2 h-2 rounded-full bg-[#C13540] mr-1" />{d2}</th>
+                        <th colSpan={3} className="text-center px-2 py-1 font-semibold border-l-2 border-[#CFD8E4] bg-[#F3F5F8]">ส่วนต่าง</th>
+                        <th rowSpan={2} className="text-center px-2 py-1.5 font-semibold border-l-2 border-[#CFD8E4] align-bottom">แปลผล</th>
                       </tr>
-                      <tr className="text-[10px] text-[#A8A29E] bg-[#FAFBFD]">
-                        {['SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร'].map((h, i) => <th key={i} className={`text-right px-2 py-1 font-semibold ${i % 3 === 0 ? 'border-l border-[#EEF2F8]' : ''}`}>{h}</th>)}
+                      <tr className="text-[10px] text-[#A8A29E]">
+                        {['SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร', 'SYS', 'DIA', 'ชีพจร'].map((h, i) => {
+                          const bg = i < 3 ? 'bg-[#EEF5FF]' : i < 6 ? 'bg-[#FDF0F0]' : 'bg-[#F3F5F8]'
+                          const bl = i === 0 ? 'border-l-2 border-[#B9D3F5]' : i === 3 ? 'border-l-2 border-[#EFC2C2]' : i === 6 ? 'border-l-2 border-[#CFD8E4]' : ''
+                          return <th key={i} className={`text-right px-2 py-1 font-semibold ${bg} ${bl}`}>{h}</th>
+                        })}
                       </tr>
                     </thead>
                     <tbody>
@@ -165,14 +169,14 @@ export function BpExecSummary() {
                         return (
                           <tr key={p.name + idx} className="border-t border-[#F1F4F8]">
                             <td className="px-3 py-1.5 text-[#233047] font-semibold break-all">{p.name}</td>
-                            <td className="px-2 py-1.5 text-right tnum border-l border-[#F1F4F8]">{p.d1?.sys ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-right tnum">{p.d1?.dia ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-right tnum">{p.d1?.pulse ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-right tnum border-l border-[#F1F4F8]">{p.d2?.sys ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-right tnum">{p.d2?.dia ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-right tnum">{p.d2?.pulse ?? '—'}</td>
-                            {diffs.map((x, i) => <td key={i} className={`px-2 py-1.5 text-right tnum font-semibold ${i === 0 ? 'border-l border-[#F1F4F8]' : ''} ${diffCls(x)}`}>{x ?? '—'}</td>)}
-                            <td className="px-2 py-1.5 text-center border-l border-[#F1F4F8]">{cat && <span className={`text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cat.cls}`}>{cat.t}</span>}</td>
+                            <td className="px-2 py-1.5 text-right tnum bg-[#F5F9FF] border-l-2 border-[#B9D3F5]">{p.d1?.sys ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum bg-[#F5F9FF]">{p.d1?.dia ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum bg-[#F5F9FF]">{p.d1?.pulse ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum bg-[#FEF6F6] border-l-2 border-[#EFC2C2]">{p.d2?.sys ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum bg-[#FEF6F6]">{p.d2?.dia ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tnum bg-[#FEF6F6]">{p.d2?.pulse ?? '—'}</td>
+                            {diffs.map((x, i) => <td key={i} className={`px-2 py-1.5 text-right tnum font-semibold bg-[#F7F9FB] ${i === 0 ? 'border-l-2 border-[#CFD8E4]' : ''} ${diffCls(x)}`}>{x ?? '—'}</td>)}
+                            <td className="px-2 py-1.5 text-center border-l-2 border-[#CFD8E4]">{cat && <span className={`text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cat.cls}`}>{cat.t}</span>}</td>
                           </tr>
                         )
                       })}
