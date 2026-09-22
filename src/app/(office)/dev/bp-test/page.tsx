@@ -30,7 +30,10 @@ export default async function BpTestPage() {
           <h1 className="text-xl font-bold text-[#1C1917]">ทดสอบรับค่าเครื่องวัดความดัน</h1>
           <p className="text-[13px] text-[#8492A6] mt-0.5">เดชบอร์ดทดสอบ — รอรับค่าจากเครื่องวัดความดันแบบเรียลไทม์ แล้วแสดงผล SYS / DIA / ชีพจร</p>
         </div>
-        <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold whitespace-nowrap">← กลับหน้าพัฒนา</Link>
+        <div className="flex items-center gap-3 whitespace-nowrap">
+          <Link href="/dev/bp-report" className="text-[13px] font-semibold px-3 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)]">📄 รายงาน/เทียบเครื่อง</Link>
+          <Link href="/dev" className="text-[13px] text-[#5A6B82] hover:text-[var(--brand)] font-semibold">← กลับหน้าพัฒนา</Link>
+        </div>
       </div>
       <BpTestDashboard endpoint={endpoint} reportUrl={reportUrl} reportQr={reportQr} canDelete={canDelete} />
     </div>
