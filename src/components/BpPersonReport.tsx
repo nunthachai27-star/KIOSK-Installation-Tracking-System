@@ -13,7 +13,6 @@ const METRICS: Metric[] = [
 const DEV_COLORS = ['#1B5FD9', '#C13540', '#157F4C', '#7A44C6']
 const dateFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 const fmt = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '—' : dateFmt.format(d) }
-const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null)
 
 // แปลผลความดัน (เกณฑ์ทั่วไปผู้ใหญ่ AHA) — ไม่ใช่การวินิจฉัยทางการแพทย์
 function bpCategory(sys: number | null, dia: number | null): { t: string; cls: string } | null {
@@ -59,6 +58,7 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
     return Array.from(c.entries()).sort((a, b) => b[1] - a[1]).map(([d]) => d)
   }, [rows])
   const byDevice = (dev: string) => rows.filter((r) => (r.device || 'ไม่ระบุเครื่อง') === dev)
+  const latestOf = (dev: string) => { const a = byDevice(dev); return a[a.length - 1] } // rows เรียงเก่า→ใหม่ → ตัวท้าย = ล่าสุด
 
   async function deletePerson() {
     if (!person) return
@@ -123,31 +123,34 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
             <div className="text-right text-[11.5px] text-[#8492A6]">BMS Smart Hospital<br />พิมพ์เมื่อ {fmt(new Date().toISOString())}</div>
           </div>
 
-          {/* เปรียบเทียบค่าเฉลี่ยของแต่ละเครื่อง */}
+          {/* เปรียบเทียบค่าล่าสุดของแต่ละเครื่อง */}
           <div className="print-avoid-break">
-            <div className="text-[13px] font-bold text-[#233047] mb-2">เปรียบเทียบเครื่อง (ค่าเฉลี่ยของผู้วัดคนนี้)</div>
+            <div className="text-[13px] font-bold text-[#233047] mb-2">เปรียบเทียบเครื่อง (ค่าล่าสุดของแต่ละเครื่อง)</div>
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead><tr className="text-[11px] text-[#8492A6] bg-[#FAFBFD]">
                   <th className="text-left px-3 py-2 font-semibold">ค่า</th>
-                  {devices.map((d, i) => (
-                    <th key={d} className="text-right px-3 py-2 font-semibold">
-                      <span className="inline-block w-2.5 h-2.5 rounded-full mr-1 align-middle" style={{ background: DEV_COLORS[i % DEV_COLORS.length] }} />
-                      <span className="align-middle break-all">{d}</span>
-                      <div className="text-[10px] font-normal text-[#A8A29E]">{byDevice(d).length} ครั้ง</div>
-                    </th>
-                  ))}
+                  {devices.map((d, i) => {
+                    const l = latestOf(d)
+                    return (
+                      <th key={d} className="text-right px-3 py-2 font-semibold">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full mr-1 align-middle" style={{ background: DEV_COLORS[i % DEV_COLORS.length] }} />
+                        <span className="align-middle break-all">{d}</span>
+                        <div className="text-[10px] font-normal text-[#A8A29E] normal-case">{l ? `วัดล่าสุด ${fmt(l.at)}` : '—'}</div>
+                      </th>
+                    )
+                  })}
                   {devices.length >= 2 && <th className="text-center px-3 py-2 font-semibold">ส่วนต่าง</th>}
                 </tr></thead>
                 <tbody>
                   {METRICS.map((m) => {
-                    const avgs = devices.map((d) => avg(byDevice(d).map((r) => r[m.key]).filter((v): v is number => v != null)))
-                    const nums = avgs.filter((v): v is number => v != null)
+                    const vals = devices.map((d) => latestOf(d)?.[m.key] ?? null)
+                    const nums = vals.filter((v): v is number => v != null)
                     const spread = nums.length >= 2 ? Math.max(...nums) - Math.min(...nums) : null
                     return (
                       <tr key={m.key} className="border-t border-[#F1F4F8]">
                         <td className="px-3 py-2.5 font-semibold text-[#1C1917]">{m.label} <span className="text-[11px] font-normal text-[#A8A29E]">{m.unit}</span></td>
-                        {avgs.map((a, i) => <td key={i} className="px-3 py-2.5 text-right tnum font-bold text-[15px]">{a ?? '—'}</td>)}
+                        {vals.map((v, i) => <td key={i} className="px-3 py-2.5 text-right tnum font-bold text-[15px]">{v ?? '—'}</td>)}
                         {devices.length >= 2 && <td className="px-3 py-2.5 text-center">{spread == null ? '—' : spread === 0 ? <span className="text-[12px] font-semibold text-[#157F4C] bg-[#E7F4EE] rounded-full px-2.5 py-0.5">ตรงกัน</span> : <span className={`text-[12px] font-semibold rounded-full px-2.5 py-0.5 ${spread <= 5 ? 'text-[#B45309] bg-[#FDECD3]' : 'text-[#C13540] bg-[#FBE4E4]'}`}>ต่าง {spread}</span>}</td>}
                       </tr>
                     )
@@ -155,7 +158,7 @@ export function BpPersonReport({ canDelete }: { canDelete?: boolean }) {
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] text-[#8492A6] mt-1.5">ส่วนต่าง = ผลต่างค่าเฉลี่ยระหว่างเครื่อง · เขียว/เหลือง = ใกล้กัน (≤5), แดง = ต่างมาก</p>
+            <p className="text-[11px] text-[#8492A6] mt-1.5">ใช้ผลวัด “ล่าสุด” ของแต่ละเครื่อง · ส่วนต่าง: เขียว = ตรงกัน, เหลือง = ใกล้กัน (≤5), แดง = ต่างมาก · วัด 2 เครื่องในเวลาใกล้กันจะเทียบได้ตรงที่สุด</p>
           </div>
 
           {/* เทียบรายรอบ (วัดตามลำดับ) */}
