@@ -9,6 +9,10 @@ const MODELS: Record<string, { delegate: string; label: string }> = {
   Hospital: { delegate: 'hospital', label: 'โรงพยาบาล' },
   MasterOption: { delegate: 'masterOption', label: 'ตั้งค่า' },
   KioskProduct: { delegate: 'kioskProduct', label: 'โปรดัก Kiosk' },
+  // เฟส 2
+  Issue: { delegate: 'issue', label: 'แจ้งปัญหา/เคลม' },
+  Loan: { delegate: 'loan', label: 'ยืม-คืน' },
+  StockItem: { delegate: 'stockItem', label: 'คลังสินค้า' },
 }
 
 export const RESTORABLE_TABLES = Object.keys(MODELS)
@@ -33,31 +37,63 @@ export async function restoreAudit(logId: string, actor: { id?: string | null; n
   const after = (log.afterJson ?? null) as Row | null
   const id = log.refId
 
-  const isHospital = log.refTable === 'Hospital'
+  const table = log.refTable
   try {
-    if (log.action === 'DELETE') {
+    // ── ยืม-คืน: ต้อง sync สถานะของในคลัง (ใช้เงื่อนไขสถานะกันทับงานที่เปลี่ยนไปแล้ว) ──
+    if (table === 'Loan') {
+      if (log.action === 'CREATE') {
+        const itemId = (after as Row | null)?.itemId as string | undefined
+        await prisma.loan.delete({ where: { id } }).catch(() => {})
+        if (itemId) await prisma.stockItem.updateMany({ where: { id: itemId, status: 'BORROWED' }, data: { status: 'IN_STOCK' } })
+      } else if (log.action === 'UPDATE') {
+        if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองก่อนแก้ไข' }
+        const cur = await prisma.loan.findUnique({ where: { id } })
+        if (!cur) return { ok: false, error: 'ไม่พบรายการยืม-คืนปัจจุบัน' }
+        await prisma.loan.update({ where: { id }, data: omit(before, ['id', 'createdAt', 'updatedAt', 'itemId']) as never })
+        const itemId = (before as Row).itemId as string | undefined
+        if (itemId && (before as Row).status === 'BORROWED') await prisma.stockItem.updateMany({ where: { id: itemId, status: 'IN_STOCK' }, data: { status: 'BORROWED' } })
+      } else if (log.action === 'DELETE') {
+        if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองของรายการที่ลบ' }
+        if (await prisma.loan.findUnique({ where: { id } })) return { ok: false, error: 'มีรายการนี้อยู่แล้ว' }
+        await prisma.loan.create({ data: omit(before, ['updatedAt']) as never })
+      }
+    }
+    // ── คลังสินค้า: ลบชิ้นว่างต้องคืนจำนวนใน Lot ด้วย ──
+    else if (table === 'StockItem' && log.action === 'DELETE') {
       if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองของรายการที่ลบ' }
-      const exists = await model.findUnique({ where: { id } })
-      if (exists) return { ok: false, error: 'มีรายการนี้อยู่แล้ว ย้อนคืนไม่ได้' }
-      if (isHospital) {
+      if (await prisma.stockItem.findUnique({ where: { id } })) return { ok: false, error: 'มีรายการนี้อยู่แล้ว' }
+      await prisma.stockItem.create({ data: omit(before, ['updatedAt']) as never })
+      const meta = after as Row | null
+      if (meta?.lotDec && meta?.lotId) await prisma.stockLot.update({ where: { id: meta.lotId as string }, data: { receivedQty: { increment: 1 } } }).catch(() => {})
+    }
+    // ── โรงพยาบาล: คืนผู้ติดต่อด้วย ──
+    else if (table === 'Hospital') {
+      if (log.action === 'DELETE') {
+        if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองของรายการที่ลบ' }
+        if (await model.findUnique({ where: { id } })) return { ok: false, error: 'มีรายการนี้อยู่แล้ว' }
         const { contacts, ...h } = before as Row & { contacts?: Row[] }
         await prisma.hospital.create({ data: omit(h, ['updatedAt']) as never })
         if (Array.isArray(contacts) && contacts.length) await prisma.hospitalContact.createMany({ data: contacts.map((c) => omit(c, ['updatedAt'])) as never })
-      } else {
-        await model.create({ data: omit(before, ['updatedAt']) })
-      }
-    } else if (log.action === 'UPDATE') {
-      if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองก่อนแก้ไข' }
-      const cur = await model.findUnique({ where: { id } })
-      if (!cur) return { ok: false, error: 'ไม่พบรายการปัจจุบัน (อาจถูกลบไปแล้ว)' }
-      if (isHospital) {
+      } else if (log.action === 'UPDATE') {
+        if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองก่อนแก้ไข' }
+        if (!(await model.findUnique({ where: { id } }))) return { ok: false, error: 'ไม่พบรายการปัจจุบัน (อาจถูกลบไปแล้ว)' }
         const { contacts, ...h } = before as Row & { contacts?: Row[] }
         await prisma.hospital.update({ where: { id }, data: omit(h, ['id']) as never })
         await prisma.hospitalContact.deleteMany({ where: { hospitalId: id } })
         if (Array.isArray(contacts) && contacts.length) await prisma.hospitalContact.createMany({ data: contacts.map((c) => omit(c, ['updatedAt'])) as never })
       } else {
-        await model.update({ where: { id }, data: omit(before, ['id', 'createdAt', 'updatedAt']) })
+        const cur = await model.findUnique({ where: { id } }); if (cur) await model.delete({ where: { id } })
       }
+    }
+    // ── ทั่วไป: ตารางเดี่ยว ──
+    else if (log.action === 'DELETE') {
+      if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองของรายการที่ลบ' }
+      if (await model.findUnique({ where: { id } })) return { ok: false, error: 'มีรายการนี้อยู่แล้ว ย้อนคืนไม่ได้' }
+      await model.create({ data: omit(before, ['updatedAt']) })
+    } else if (log.action === 'UPDATE') {
+      if (!before) return { ok: false, error: 'ไม่มีข้อมูลสำรองก่อนแก้ไข' }
+      if (!(await model.findUnique({ where: { id } }))) return { ok: false, error: 'ไม่พบรายการปัจจุบัน (อาจถูกลบไปแล้ว)' }
+      await model.update({ where: { id }, data: omit(before, ['id', 'createdAt', 'updatedAt']) })
     } else if (log.action === 'CREATE') {
       const cur = await model.findUnique({ where: { id } })
       if (cur) await model.delete({ where: { id } })

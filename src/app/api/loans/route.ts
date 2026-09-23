@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 // Lend one stock unit out. Borrower name + phone are mandatory — an item must
 // never leave the shelf anonymously — and only units actually sitting in stock
@@ -62,6 +62,6 @@ export async function POST(req: Request) {
     return created
   })
 
-  await logAction(session.user, 'CREATE', 'ยืม-คืน', `ยืมของให้ ${borrowerName}`)
+  await logChange(session.user, 'CREATE', 'ยืม-คืน', `ยืมของให้ ${borrowerName}`, { refTable: 'Loan', refId: loan.id, after: loan })
   return NextResponse.json({ id: loan.id }, { status: 201 })
 }

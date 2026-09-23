@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 // Deduct an already-assigned component serial from warehouse stock (จ่ายออก).
 // Factory serials only run unique *within* a product — the same number legitimately
@@ -65,13 +65,14 @@ export async function POST(req: Request) {
     target = { id: candidates[0].id }
   }
 
-  await prisma.stockItem.update({
+  const before = await prisma.stockItem.findUnique({ where: { id: target.id } })
+  const updated = await prisma.stockItem.update({
     where: { id: target.id },
     data: {
       status: 'ISSUED', jobId: serial.jobId, hospitalId: serial.job?.hospitalId ?? null,
       serialBMS: serial.parent?.serialNo ?? null, issuedDate: new Date(),
     },
   })
-  await logAction(session.user, 'UPDATE', 'คลังสินค้า', `ตัดจ่ายออก serial ${serial.serialNo}`)
+  await logChange(session.user, 'UPDATE', 'คลังสินค้า', `ตัดจ่ายออก serial ${serial.serialNo}`, { refTable: 'StockItem', refId: target.id, before, after: updated })
   return NextResponse.json({ ok: true, stockItemId: target.id })
 }

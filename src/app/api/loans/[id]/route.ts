@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 // Take a lent unit back: closes the loan and returns the unit to stock.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,9 +11,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params
   const body = await req.json().catch(() => ({}))
 
-  const loan = await prisma.loan.findUnique({ where: { id }, select: { id: true, itemId: true, status: true } })
-  if (!loan) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  if (loan.status === 'RETURNED') {
+  const before = await prisma.loan.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (before.status === 'RETURNED') {
     return NextResponse.json({ error: 'already returned', message: 'รายการนี้รับคืนไปแล้ว' }, { status: 409 })
   }
 
@@ -21,16 +21,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   await prisma.$transaction(async (tx) => {
     await tx.loan.update({
-      where: { id: loan.id },
+      where: { id: before.id },
       data: { status: 'RETURNED', returnedAt: new Date(), returnNote: note || null },
     })
     // Only pull the unit back into stock if the loan still owns it; if it was
     // issued out meanwhile, leave that status alone.
-    await tx.stockItem.updateMany({ where: { id: loan.itemId, status: 'BORROWED' }, data: { status: 'IN_STOCK' } })
+    await tx.stockItem.updateMany({ where: { id: before.itemId, status: 'BORROWED' }, data: { status: 'IN_STOCK' } })
   })
 
-  await logAction(session.user, 'UPDATE', 'ยืม-คืน', 'รับคืนอุปกรณ์')
-  return NextResponse.json({ id: loan.id, status: 'RETURNED' })
+  const after = await prisma.loan.findUnique({ where: { id } })
+  await logChange(session.user, 'UPDATE', 'ยืม-คืน', 'รับคืนอุปกรณ์', { refTable: 'Loan', refId: id, before, after })
+  return NextResponse.json({ id: before.id, status: 'RETURNED' })
 }
 
 // Delete a loan record — only once the unit has been returned, so an open loan
@@ -41,13 +42,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const loan = await prisma.loan.findUnique({ where: { id }, select: { id: true, status: true } })
-  if (!loan) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  if (loan.status !== 'RETURNED') {
+  const before = await prisma.loan.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (before.status !== 'RETURNED') {
     return NextResponse.json({ error: 'not returned', message: 'ลบได้เฉพาะรายการที่รับคืนแล้ว' }, { status: 409 })
   }
 
-  await prisma.loan.delete({ where: { id: loan.id } })
-  await logAction(session.user, 'DELETE', 'ยืม-คืน', 'ลบรายการยืม-คืนที่คืนแล้ว')
+  await prisma.loan.delete({ where: { id: before.id } })
+  await logChange(session.user, 'DELETE', 'ยืม-คืน', `ลบรายการยืม-คืนที่คืนแล้ว (${before.borrowerName})`, { refTable: 'Loan', refId: id, before })
   return NextResponse.json({ ok: true })
 }

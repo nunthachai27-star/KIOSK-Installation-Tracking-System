@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logAction, logChange } from '@/lib/audit'
 import { IssueStatus, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { ISSUE_WARRANTY, warrantyStateFrom } from '@/lib/issue'
 
@@ -74,13 +74,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     events.push({ type: 'SOLUTION_UPDATED', note: data.solution, actorName })
   }
 
+  const before = await prisma.issue.findUnique({ where: { id } })
   const updated = await prisma.issue.update({
     where: { id },
     data: { ...data, ...(events.length ? { events: { create: events } } : {}) },
   })
   const convertNote = data.issueType && data.issueType !== existing.issueType
     ? (data.issueType === 'CLAIM' ? ' — แปลงเป็นงานเคลม' : ' — แปลงกลับเป็นแจ้งปัญหาทั่วไป') : ''
-  await logAction(session.user, 'UPDATE', 'แจ้งปัญหา/เคลม', `แก้ไข "${updated.title}"${convertNote}`)
+  await logChange(session.user, 'UPDATE', 'แจ้งปัญหา/เคลม', `แก้ไข "${updated.title}"${convertNote}`, { refTable: 'Issue', refId: id, before, after: updated })
   return NextResponse.json(updated)
 }
 

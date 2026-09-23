@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 // Edit an individual stock unit's identity fields (serial BMS / serial NO. / color).
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -37,9 +37,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
+  const before = await prisma.stockItem.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
   const updated = await prisma.stockItem.update({ where: { id }, data }).catch(() => null)
   if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  await logAction(session.user, 'UPDATE', 'คลังสินค้า', `แก้ไขข้อมูลเครื่อง (serial ${updated.serialNo ?? updated.serialBMS ?? updated.id})`)
+  await logChange(session.user, 'UPDATE', 'คลังสินค้า', `แก้ไขข้อมูลเครื่อง (serial ${updated.serialNo ?? updated.serialBMS ?? updated.id})`, { refTable: 'StockItem', refId: id, before, after: updated })
   return NextResponse.json({ id: updated.id, serialBMS: updated.serialBMS, serialNo: updated.serialNo, color: updated.color })
 }
 
@@ -71,13 +73,15 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'has_loans', message: 'รายการนี้มีประวัติการยืม — ลบไม่ได้' }, { status: 409 })
   }
 
+  const before = await prisma.stockItem.findUnique({ where: { id } })
+  const lotDec = item.lot.receivedQty > 0
   // Keep the lot's recorded quantity in step with the unit rows.
   await prisma.$transaction([
     prisma.stockItem.delete({ where: { id } }),
-    ...(item.lot.receivedQty > 0
+    ...(lotDec
       ? [prisma.stockLot.update({ where: { id: item.lotId }, data: { receivedQty: { decrement: 1 } } })]
       : []),
   ])
-  await logAction(session.user, 'DELETE', 'คลังสินค้า', `ลบเครื่องว่างใน Lot ${item.lot.lotCode}`)
+  await logChange(session.user, 'DELETE', 'คลังสินค้า', `ลบเครื่องว่างใน Lot ${item.lot.lotCode}`, { refTable: 'StockItem', refId: id, before, after: { lotDec, lotId: item.lotId } })
   return NextResponse.json({ ok: true })
 }
