@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 // Rename / edit a hospital. The name change propagates to every job via the FK,
 // so no data migration is needed.
@@ -32,8 +32,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (!Object.keys(data).length && !hasContacts) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
 
-  const exists = await prisma.hospital.findUnique({ where: { id }, select: { id: true } })
-  if (!exists) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  const before = await prisma.hospital.findUnique({ where: { id }, include: { contacts: { orderBy: { sortOrder: 'asc' } } } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   await prisma.$transaction(async (tx) => {
     if (Object.keys(data).length) await tx.hospital.update({ where: { id }, data })
@@ -43,7 +43,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   })
   const updated = await prisma.hospital.findUnique({ where: { id }, include: { contacts: { orderBy: { sortOrder: 'asc' } } } })
-  await logAction(session.user, 'UPDATE', 'โรงพยาบาล', `แก้ไข "${updated?.name ?? ''}"`)
+  await logChange(session.user, 'UPDATE', 'โรงพยาบาล', `แก้ไข "${updated?.name ?? ''}"`, { refTable: 'Hospital', refId: id, before, after: updated })
   return NextResponse.json(updated)
 }
 
@@ -56,7 +56,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const jobCount = await prisma.job.count({ where: { hospitalId: id } })
   if (jobCount > 0) return NextResponse.json({ error: 'has_jobs', jobCount }, { status: 409 })
 
-  const gone = await prisma.hospital.delete({ where: { id }, select: { name: true } }).catch(() => null)
-  if (gone) await logAction(session.user, 'DELETE', 'โรงพยาบาล', `ลบ "${gone.name}"`)
+  const before = await prisma.hospital.findUnique({ where: { id }, include: { contacts: { orderBy: { sortOrder: 'asc' } } } })
+  const gone = await prisma.hospital.delete({ where: { id } }).catch(() => null)
+  if (gone && before) await logChange(session.user, 'DELETE', 'โรงพยาบาล', `ลบ "${before.name}"`, { refTable: 'Hospital', refId: id, before })
   return NextResponse.json({ ok: true })
 }

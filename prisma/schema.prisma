@@ -183,6 +183,14 @@ model AuditLog {
   action    String   // CREATE | UPDATE | DELETE
   entity    String   // หมวด เช่น "งานจัดซื้อ", "คลังสินค้า", "งาน"
   summary   String   // อ่านเข้าใจง่าย เช่น เพิ่ม "ทดสอบ"
+  // สำหรับ "ย้อนคืน" (undo) โดย super admin — เก็บ snapshot ค่าก่อน/หลัง
+  refTable   String?   // ชื่อโมเดล เช่น 'Note' (มีเฉพาะรายการที่ย้อนคืนได้)
+  refId      String?   // id ของเรคคอร์ดที่ถูกกระทำ
+  beforeJson Json?     // ค่าก่อนเปลี่ยน (UPDATE/DELETE)
+  afterJson  Json?     // ค่าหลังเปลี่ยน (CREATE/UPDATE) — ไว้ตรวจว่ามีการแก้ทับ
+  restorable Boolean  @default(false)
+  restoredAt DateTime? // ย้อนคืนไปแล้วเมื่อไหร่ (null = ยังย้อนได้)
+  restoredBy String?   // ใครกดย้อนคืน
   createdAt DateTime @default(now())
 
   @@index([createdAt])

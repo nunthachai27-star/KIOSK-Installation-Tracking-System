@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 const COLORS = new Set(['yellow', 'green', 'blue', 'pink', 'gray'])
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
@@ -28,6 +28,6 @@ export async function POST(req: Request) {
       authorName: session.user?.name ?? null,
     },
   })
-  await logAction(session.user, 'CREATE', 'โน้ต', `เพิ่มโน้ต "${(created.title ?? created.body).slice(0, 40)}"`)
+  await logChange(session.user, 'CREATE', 'โน้ต', `เพิ่มโน้ต "${(created.title ?? created.body).slice(0, 40)}"`, { refTable: 'Note', refId: created.id, after: created })
   return NextResponse.json({ id: created.id }, { status: 201 })
 }

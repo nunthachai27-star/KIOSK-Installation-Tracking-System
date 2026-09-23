@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 import { str } from '@/lib/kioskProductServer'
 
 export const dynamic = 'force-dynamic'
@@ -13,8 +13,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const { id } = await params
-  const cur = await prisma.kioskProduct.findUnique({ where: { id }, select: { id: true } })
-  if (!cur) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  const before = await prisma.kioskProduct.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   const b = await req.json().catch(() => ({} as Record<string, unknown>))
   const data: Record<string, unknown> = {}
@@ -28,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (Object.keys(data).length === 0) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
 
   const p = await prisma.kioskProduct.update({ where: { id }, data })
-  await logAction(session.user, 'UPDATE', 'โปรดัก Kiosk', `แก้ไขรุ่น "${p.name}"`)
+  await logChange(session.user, 'UPDATE', 'โปรดัก Kiosk', `แก้ไขรุ่น "${p.name}"`, { refTable: 'KioskProduct', refId: id, before, after: p })
   const img = await prisma.attachment.findFirst({ where: { refTable: 'KioskProduct', refId: id }, orderBy: { uploadedAt: 'desc' }, select: { id: true } })
   return NextResponse.json({
     ok: true,
@@ -41,10 +41,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const session = await auth()
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const { id } = await params
-  const row = await prisma.kioskProduct.findUnique({ where: { id }, select: { name: true } })
-  if (!row) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  const before = await prisma.kioskProduct.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
   await prisma.attachment.deleteMany({ where: { refTable: 'KioskProduct', refId: id } })
   await prisma.kioskProduct.delete({ where: { id } })
-  await logAction(session.user, 'DELETE', 'โปรดัก Kiosk', `ลบรุ่น "${row.name}"`)
+  await logChange(session.user, 'DELETE', 'โปรดัก Kiosk', `ลบรุ่น "${before.name}"`, { refTable: 'KioskProduct', refId: id, before })
   return NextResponse.json({ ok: true, id })
 }

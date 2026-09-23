@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 import { listProducts, str } from '@/lib/kioskProductServer'
 
 export const dynamic = 'force-dynamic'
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       sortOrder: (last?.sortOrder ?? 0) + 10,
     },
   })
-  await logAction(session.user, 'CREATE', 'โปรดัก Kiosk', `เพิ่มรุ่น "${name}"`)
+  await logChange(session.user, 'CREATE', 'โปรดัก Kiosk', `เพิ่มรุ่น "${name}"`, { refTable: 'KioskProduct', refId: created.id, after: created })
   const lines = (s: string | null) => (s ?? '').split('\n').map((x) => x.trim()).filter(Boolean)
   return NextResponse.json({
     ok: true,

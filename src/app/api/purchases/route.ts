@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PurchaseStatus } from '@prisma/client'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 const VALID = new Set<string>(Object.values(PurchaseStatus))
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     },
     include: { requestedBy: { select: { name: true } } },
   })
-  await logAction(session.user, 'CREATE', 'งานจัดซื้อ', `เพิ่ม "${itemName}"`)
+  await logChange(session.user, 'CREATE', 'งานจัดซื้อ', `เพิ่ม "${itemName}"`, { refTable: 'Purchase', refId: created.id })
   // Return the full row so the client can show it instantly (no refresh needed).
   return NextResponse.json({
     id: created.id,

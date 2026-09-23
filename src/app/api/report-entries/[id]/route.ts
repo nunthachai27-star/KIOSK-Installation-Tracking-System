@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,18 +17,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (session?.user?.role !== 'OFFICE' || !session.user.id) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const row = await prisma.reportEntry.findUnique({ where: { id }, select: { userId: true } })
-  if (!row) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  if (row.userId !== session.user.id) return NextResponse.json({ error: 'forbidden', message: 'แก้ได้เฉพาะงานของตัวเอง' }, { status: 403 })
+  const before = await prisma.reportEntry.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (before.userId !== session.user.id) return NextResponse.json({ error: 'forbidden', message: 'แก้ได้เฉพาะงานของตัวเอง' }, { status: 403 })
 
   const b = await req.json().catch(() => ({} as Record<string, unknown>))
   const heading = clean(b.heading, 200)
   const detail = clean(b.detail, 4000)
   if (!heading) return NextResponse.json({ error: 'missing', message: 'กรุณากรอกหัวข้อ' }, { status: 400 })
 
-  const updated = await prisma.reportEntry.update({ where: { id }, data: { heading, detail }, select: { id: true, heading: true, detail: true } })
-  await logAction(session.user, 'UPDATE', 'สรุปงาน (พิมพ์เอง)', heading)
-  return NextResponse.json({ ok: true, entry: updated })
+  const updated = await prisma.reportEntry.update({ where: { id }, data: { heading, detail } })
+  await logChange(session.user, 'UPDATE', 'สรุปงาน (พิมพ์เอง)', heading, { refTable: 'ReportEntry', refId: id, before, after: updated })
+  return NextResponse.json({ ok: true, entry: { id: updated.id, heading: updated.heading, detail: updated.detail } })
 }
 
 // ── DELETE: ลบงานสรุปพิมพ์เอง (เฉพาะเจ้าของ) ─────────────────────────────────
@@ -37,11 +37,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (session?.user?.role !== 'OFFICE' || !session.user.id) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const row = await prisma.reportEntry.findUnique({ where: { id }, select: { userId: true, heading: true } })
-  if (!row) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  if (row.userId !== session.user.id) return NextResponse.json({ error: 'forbidden', message: 'ลบได้เฉพาะงานของตัวเอง' }, { status: 403 })
+  const before = await prisma.reportEntry.findUnique({ where: { id } })
+  if (!before) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  if (before.userId !== session.user.id) return NextResponse.json({ error: 'forbidden', message: 'ลบได้เฉพาะงานของตัวเอง' }, { status: 403 })
 
   await prisma.reportEntry.delete({ where: { id } })
-  await logAction(session.user, 'DELETE', 'สรุปงาน (พิมพ์เอง)', row.heading)
+  await logChange(session.user, 'DELETE', 'สรุปงาน (พิมพ์เอง)', before.heading, { refTable: 'ReportEntry', refId: id, before })
   return NextResponse.json({ ok: true, id })
 }

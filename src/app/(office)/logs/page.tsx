@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { AUDIT_ACTION_LABEL, type AuditAction } from '@/lib/audit'
+import { isSuperAdmin } from '@/lib/superAdmin'
+import { RestoreButton } from '@/components/RestoreButton'
+
+const dtFmt2 = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 const PER = 50
 const dtFmt = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -11,9 +15,10 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
   const action = sp.action && ['CREATE', 'UPDATE', 'DELETE'].includes(sp.action) ? (sp.action as AuditAction) : undefined
   const where = action ? { action } : {}
 
-  const [rows, total] = await Promise.all([
+  const [rows, total, canRestore] = await Promise.all([
     prisma.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * PER, take: PER }),
     prisma.auditLog.count({ where }),
+    isSuperAdmin(),
   ])
   const pageCount = Math.max(1, Math.ceil(total / PER))
   const q = (p: number, a?: string) => `/logs?page=${p}${a ? `&action=${a}` : ''}`
@@ -47,10 +52,11 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
               <th className="px-4 py-2.5 font-semibold">การกระทำ</th>
               <th className="px-4 py-2.5 font-semibold">หมวด</th>
               <th className="px-4 py-2.5 font-semibold">รายละเอียด</th>
+              <th className="px-4 py-2.5 font-semibold text-right">ย้อนคืน</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-[#8492A6]">ยังไม่มีบันทึก</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-[#8492A6]">ยังไม่มีบันทึก</td></tr>}
             {rows.map((r) => {
               const a = AUDIT_ACTION_LABEL[r.action as AuditAction] ?? { label: r.action, color: '#5A6B82', bg: '#EEF1F5' }
               return (
@@ -60,6 +66,13 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
                   <td className="px-4 py-2.5"><span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: a.bg, color: a.color }}>{a.label}</span></td>
                   <td className="px-4 py-2.5 text-[#5A6B82] whitespace-nowrap">{r.entity}</td>
                   <td className="px-4 py-2.5 text-[#3C4A5E]">{r.summary}</td>
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    {r.restoredAt
+                      ? <span className="text-[11px] text-[#8492A6]" title={r.restoredBy ? `โดย ${r.restoredBy}` : ''}>↩ ย้อนแล้ว · {dtFmt2.format(r.restoredAt)}</span>
+                      : r.restorable && canRestore
+                        ? <RestoreButton id={r.id} summary={r.summary} />
+                        : <span className="text-[11px] text-[#C7CDD6]">—</span>}
+                  </td>
                 </tr>
               )
             })}

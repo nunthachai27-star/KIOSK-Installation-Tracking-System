@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { logAction } from '@/lib/audit'
+import { logChange } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,8 +26,7 @@ export async function POST(req: Request) {
 
   const created = await prisma.reportEntry.create({
     data: { userId: session.user.id, userName: session.user.name ?? null, dateKey, heading, detail },
-    select: { id: true, heading: true, detail: true },
   })
-  await logAction(session.user, 'CREATE', 'สรุปงาน (พิมพ์เอง)', `${heading} (${dateKey})`)
-  return NextResponse.json({ ok: true, entry: created }, { status: 201 })
+  await logChange(session.user, 'CREATE', 'สรุปงาน (พิมพ์เอง)', `${heading} (${dateKey})`, { refTable: 'ReportEntry', refId: created.id, after: created })
+  return NextResponse.json({ ok: true, entry: { id: created.id, heading: created.heading, detail: created.detail } }, { status: 201 })
 }
