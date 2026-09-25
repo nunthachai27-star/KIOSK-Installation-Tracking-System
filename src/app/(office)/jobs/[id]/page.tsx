@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { JobForm } from '@/components/JobForm'
 import { JobDetailShell } from '@/components/JobDetailShell'
+import { JobDeleteButton } from '@/components/JobDeleteButton'
 import { serializeJob } from '@/lib/serialize'
 import { getJobFormOptions } from '@/lib/master'
+import { isSuperAdmin } from '@/lib/superAdmin'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -21,7 +23,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     getJobFormOptions(),
   ])
 
-  if (!job) notFound()
+  if (!job || job.deletedAt) notFound()
+  const canTrash = await isSuperAdmin()
 
   // Group equipment serials under their BMS unit for the delivery-note report.
   const reportUnits = job.serials
@@ -37,6 +40,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     <JobDetailShell jobId={id} active={1}>
       <JobForm job={serializeJob(job)} hospitals={hospitals} users={users} productTypes={options.productTypes} provinces={options.provinces}
         report={{ hospitalName: job.hospital.name, units: reportUnits }} />
+      <div className="mt-6 pt-4 border-t border-[#EEF2F8]">
+        <JobDeleteButton jobId={id} jobCode={job.jobCode} isSuper={canTrash} />
+      </div>
     </JobDetailShell>
   )
 }

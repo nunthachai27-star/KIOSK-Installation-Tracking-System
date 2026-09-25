@@ -28,7 +28,7 @@ export async function getCalendarEvents(from: Date, to: Date): Promise<CalEvent[
   const events: CalEvent[] = []
 
   const deliveries = await prisma.deliveryRecord.findMany({
-    where: { OR: [{ shippedDate: { gte: from, lte: to } }, { arrivedDate: { gte: from, lte: to } }] },
+    where: { job: { deletedAt: null }, OR: [{ shippedDate: { gte: from, lte: to } }, { arrivedDate: { gte: from, lte: to } }] },
     include: jobInc,
   })
   for (const d of deliveries) {
@@ -37,7 +37,7 @@ export async function getCalendarEvents(from: Date, to: Date): Promise<CalEvent[
   }
 
   const installs = await prisma.installationRecord.findMany({
-    where: { remoteDate: { gte: from, lte: to } },
+    where: { job: { deletedAt: null }, remoteDate: { gte: from, lte: to } },
     include: jobInc,
   })
   for (const i of installs) if (i.remoteDate) events.push(ev(i.job, i.remoteDate, 'remote'))

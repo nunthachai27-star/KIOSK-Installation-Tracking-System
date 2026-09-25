@@ -7,7 +7,7 @@ import { HospitalManager } from '@/components/HospitalManager'
 export default async function SettingsHospitalsPage() {
   const [hospitals, provinces] = await Promise.all([
     prisma.hospital.findMany({
-      include: { _count: { select: { jobs: true } }, contacts: { orderBy: { sortOrder: 'asc' } } },
+      include: { _count: { select: { jobs: { where: { deletedAt: null } } } }, contacts: { orderBy: { sortOrder: 'asc' } } },
       orderBy: { name: 'asc' },
     }),
     getMasterValues('PROVINCE'),

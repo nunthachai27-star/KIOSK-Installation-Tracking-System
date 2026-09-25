@@ -61,7 +61,7 @@ export function dayRangeLocal(d: Date): { from: Date; to: Date } {
 
 export async function getQueueForDate(from: Date, to: Date) {
   return prisma.jobActivity.findMany({
-    where: { activityDate: { gte: from, lte: to } },
+    where: { job: { deletedAt: null }, activityDate: { gte: from, lte: to } },
     include: { job: { include: { hospital: true } }, responsibleUser: true },
     orderBy: { activityDate: 'asc' },
   })
@@ -122,30 +122,30 @@ export async function getMonitorQueueForDate(from: Date, to: Date): Promise<Moni
 
   const [activities, deliveries, installs, qcPlans, handovers, shippedDeliveries, tasks] = await Promise.all([
     prisma.jobActivity.findMany({
-      where: { activityDate: { gte: from, lte: to } },
+      where: { job: { deletedAt: null }, activityDate: { gte: from, lte: to } },
       include: { job: { include: { hospital: true, installerOwner: true, adminOwner: true } }, responsibleUser: true },
     }),
     prisma.deliveryRecord.findMany({
-      where: { OR: [{ shippedDate: { gte: from, lte: to } }, { arrivedDate: { gte: from, lte: to } }] },
+      where: { job: { deletedAt: null }, OR: [{ shippedDate: { gte: from, lte: to } }, { arrivedDate: { gte: from, lte: to } }] },
       include: { job: { include: jobInclude } },
     }),
     prisma.installationRecord.findMany({
-      where: { OR: [{ remoteDate: { gte: from, lte: to } }, { onsiteDate: { gte: from, lte: to } }] },
+      where: { job: { deletedAt: null }, OR: [{ remoteDate: { gte: from, lte: to } }, { onsiteDate: { gte: from, lte: to } }] },
       include: { job: { include: jobInclude } },
     }),
     // Auto-planned QC dates (set when serial install is "ลงครบแล้ว").
     prisma.serialRecord.findMany({
-      where: { status: 'DONE', qcPlannedDate: { gte: from, lte: to } },
+      where: { job: { deletedAt: null }, status: 'DONE', qcPlannedDate: { gte: from, lte: to } },
       include: { job: { include: jobInclude } },
     }),
     // Handover (ส่งมอบงาน) dates.
     prisma.handoverRecord.findMany({
-      where: { handoverDate: { gte: from, lte: to } },
+      where: { job: { deletedAt: null }, handoverDate: { gte: from, lte: to } },
       include: { job: { include: jobInclude } },
     }),
     // Shipped deliveries — used to raise the "call to book install" reminder.
     prisma.deliveryRecord.findMany({
-      where: { shippedDate: { gte: callFrom, lte: to } },
+      where: { job: { deletedAt: null }, shippedDate: { gte: callFrom, lte: to } },
       include: { job: { include: { ...jobInclude, installation: { select: { remoteDate: true, onsiteDate: true } } } } },
     }),
     // Ad-hoc tasks (งานอื่นๆ) overlapping the window.

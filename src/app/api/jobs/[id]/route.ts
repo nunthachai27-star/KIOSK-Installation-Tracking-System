@@ -34,3 +34,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   await logAction(session.user, 'UPDATE', 'งาน', `แก้ไขงาน ${job.jobCode}`)
   return NextResponse.json(job)
 }
+
+// ย้ายงานลงถังขยะ (soft delete) — ไม่ลบจริง กู้คืนได้จากหน้าถังขยะ
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  const { id } = await params
+  const job = await prisma.job.update({ where: { id }, data: { deletedAt: new Date(), deletedBy: session.user?.name ?? null } }).catch(() => null)
+  if (!job) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  await logAction(session.user, 'DELETE', 'งาน', `ย้ายงาน ${job.jobCode} ลงถังขยะ`)
+  return NextResponse.json({ ok: true })
+}

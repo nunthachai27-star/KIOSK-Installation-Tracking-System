@@ -311,6 +311,9 @@ model Job {
   createdById       String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+  // ถังขยะ (soft delete): มีค่า = ถูกลบลงถังขยะ (ซ่อนจากหน้าปกติ, กู้คืนได้)
+  deletedAt         DateTime?
+  deletedBy         String?
   serials           SerialNumber[]
   serialRecord      SerialRecord?
   issues            Issue[]
@@ -327,6 +330,7 @@ model Job {
   @@index([deliveryDueDate])
   @@index([createdAt])
   @@index([contractStartDate])
+  @@index([deletedAt])
 }
 
 model SerialNumber {

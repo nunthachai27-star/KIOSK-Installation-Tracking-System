@@ -19,12 +19,12 @@ export default async function HospitalDetailPage({ params }: { params: Promise<{
     prisma.hospital.findUnique({
       where: { id },
       include: {
-        jobs: { include: jobInclude, orderBy: [{ isPlanned: 'asc' }, { updatedAt: 'desc' }] },
+        jobs: { where: { deletedAt: null }, include: jobInclude, orderBy: [{ isPlanned: 'asc' }, { updatedAt: 'desc' }] },
         contacts: { orderBy: { sortOrder: 'asc' } },
       },
     }),
     prisma.serialNumber.findMany({
-      where: { serialType: 'BMS', job: { hospitalId: id } },
+      where: { serialType: 'BMS', job: { hospitalId: id, deletedAt: null } },
       include: { job: { select: { jobCode: true, productType: true } }, unitQc: { select: { status: true } } },
       orderBy: { serialNo: 'asc' },
     }),

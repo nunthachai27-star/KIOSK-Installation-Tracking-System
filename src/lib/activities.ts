@@ -8,7 +8,7 @@ export function dayRange(d: Date): { from: Date; to: Date } {
 
 export async function getActivitiesBetween(from: Date, to: Date, userId?: string) {
   return prisma.jobActivity.findMany({
-    where: { activityDate: { gte: from, lte: to }, ...(userId ? { responsibleUserId: userId } : {}) },
+    where: { job: { deletedAt: null }, activityDate: { gte: from, lte: to }, ...(userId ? { responsibleUserId: userId } : {}) },
     include: { job: { include: { hospital: true } } },
     orderBy: { activityDate: 'asc' },
   })

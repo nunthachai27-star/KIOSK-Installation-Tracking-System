@@ -5,8 +5,8 @@ export default async function HospitalsPage() {
   const [hospitals, openIssues] = await Promise.all([
     prisma.hospital.findMany({
       // ดึงเฉพาะโรงพยาบาลที่มีงานจริง (หน้านี้แสดงเฉพาะที่มีงานอยู่แล้ว) — ลดจำนวนแถวที่โหลด
-      where: { jobs: { some: { isPlanned: false } } },
-      include: { jobs: { where: { isPlanned: false }, select: { currentStatus: true, quantity: true, updatedAt: true, productType: true } } },
+      where: { jobs: { some: { isPlanned: false, deletedAt: null } } },
+      include: { jobs: { where: { isPlanned: false, deletedAt: null }, select: { currentStatus: true, quantity: true, updatedAt: true, productType: true } } },
       orderBy: { name: 'asc' },
     }),
     // Open claims/problems linked to a hospital via their job — used to flag "มีปัญหา".
