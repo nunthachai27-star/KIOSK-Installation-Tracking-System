@@ -39,7 +39,7 @@ export async function getProductSpec(
 export async function getProductTypesForConfig(): Promise<string[]> {
   const [master, jobs] = await Promise.all([
     prisma.masterOption.findMany({ where: { category: 'PRODUCT_TYPE', active: true }, select: { value: true } }),
-    prisma.job.findMany({ distinct: ['productType'], select: { productType: true } }),
+    prisma.job.findMany({ where: { deletedAt: null }, distinct: ['productType'], select: { productType: true } }),
   ])
   const set = new Set<string>()
   master.forEach((m) => set.add(m.value))

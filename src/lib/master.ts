@@ -57,7 +57,7 @@ export async function getJobFormOptions(): Promise<{ productTypes: string[]; pro
   const provinces = prov.length ? prov : [...THAI_PROVINCES]
   let productTypes = pt
   if (!productTypes.length) {
-    const d = await prisma.job.findMany({ distinct: ['productType'], select: { productType: true }, orderBy: { productType: 'asc' } })
+    const d = await prisma.job.findMany({ where: { deletedAt: null }, distinct: ['productType'], select: { productType: true }, orderBy: { productType: 'asc' } })
     productTypes = d.map((x) => x.productType).filter(Boolean)
   }
   return { productTypes, provinces }

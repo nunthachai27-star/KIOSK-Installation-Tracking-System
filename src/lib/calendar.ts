@@ -43,7 +43,7 @@ export async function getCalendarEvents(from: Date, to: Date): Promise<CalEvent[
   for (const i of installs) if (i.remoteDate) events.push(ev(i.job, i.remoteDate, 'remote'))
 
   const due = await prisma.job.findMany({
-    where: { deliveryDueDate: { gte: from, lte: to } },
+    where: { deletedAt: null, deliveryDueDate: { gte: from, lte: to } },
     include: { hospital: true },
   })
   for (const j of due) if (j.deliveryDueDate) events.push(ev(j, j.deliveryDueDate, 'due'))
@@ -60,7 +60,7 @@ export async function latestEventDate(): Promise<Date | null> {
     prisma.deliveryRecord.findFirst({ where: { arrivedDate: { lte: now } }, orderBy: { arrivedDate: 'desc' }, select: { arrivedDate: true } }),
     prisma.deliveryRecord.findFirst({ where: { shippedDate: { lte: now } }, orderBy: { shippedDate: 'desc' }, select: { shippedDate: true } }),
     prisma.installationRecord.findFirst({ where: { remoteDate: { lte: now } }, orderBy: { remoteDate: 'desc' }, select: { remoteDate: true } }),
-    prisma.job.findFirst({ where: { deliveryDueDate: { lte: now } }, orderBy: { deliveryDueDate: 'desc' }, select: { deliveryDueDate: true } }),
+    prisma.job.findFirst({ where: { deletedAt: null, deliveryDueDate: { lte: now } }, orderBy: { deliveryDueDate: 'desc' }, select: { deliveryDueDate: true } }),
   ])
   const dates = [a?.arrivedDate, s?.shippedDate, r?.remoteDate, d?.deliveryDueDate].filter((x): x is Date => x != null)
   if (!dates.length) return null

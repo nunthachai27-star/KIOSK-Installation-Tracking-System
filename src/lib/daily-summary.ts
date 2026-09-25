@@ -57,7 +57,7 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   const inDay = { gte: from, lte: to }
   const jobSel = { hospital: { select: { name: true } }, productType: true, jobCode: true } as const
   const [jobsCreated, serialRecs, unitQcs, activities, issues, deliveries, installs, handovers, invoices, devEvents, users] = await Promise.all([
-    prisma.job.findMany({ where: { createdById: { not: null }, createdAt: inDay }, select: { createdById: true, hospital: { select: { name: true } }, productType: true, jobCode: true } }),
+    prisma.job.findMany({ where: { deletedAt: null, createdById: { not: null }, createdAt: inDay }, select: { createdById: true, hospital: { select: { name: true } }, productType: true, jobCode: true } }),
     prisma.serialRecord.findMany({ where: { staffId: { not: null }, updatedAt: inDay }, select: { staffId: true, job: { select: jobSel } } }),
     prisma.unitQc.findMany({ where: { updatedAt: inDay }, select: { staffId: true, checklist: true, serial: { select: { serialNo: true, job: { select: { hospital: { select: { name: true } }, productType: true } } } } } }),
     prisma.jobActivity.findMany({ where: { responsibleUserId: { not: null }, activityDate: inDay }, select: { responsibleUserId: true, activityType: true, job: { select: { hospital: { select: { name: true } }, productType: true } } } }),

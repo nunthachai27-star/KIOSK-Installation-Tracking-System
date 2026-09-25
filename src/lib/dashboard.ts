@@ -4,7 +4,7 @@ import { isOverdue, PROGRESS_RANK } from './status'
 
 export async function getSummary(now: Date) {
   // Stats reflect signed jobs (planned jobs live in their own registry).
-  const jobs = await prisma.job.findMany({ where: { isPlanned: false }, select: { currentStatus: true, deliveryDueDate: true } })
+  const jobs = await prisma.job.findMany({ where: { deletedAt: null, isPlanned: false }, select: { currentStatus: true, deliveryDueDate: true } })
   const total = jobs.length
   const toShip = jobs.filter(j => j.currentStatus === 'READY_TO_SHIP').length
   const toHandover = jobs.filter(j => j.currentStatus === 'HANDED_OVER' || j.currentStatus === 'WAIT_INVOICE').length
@@ -14,7 +14,7 @@ export async function getSummary(now: Date) {
 
 // Count of planned (unsigned) jobs — shown as a link to the planned registry.
 export function countPlanned(): Promise<number> {
-  return prisma.job.count({ where: { isPlanned: true } })
+  return prisma.job.count({ where: { deletedAt: null, isPlanned: true } })
 }
 
 // Monthly order-count + revenue for the dashboard charts.
@@ -30,7 +30,7 @@ const TH_OFFSET_MS = 7 * 60 * 60 * 1000 // bucket by Asia/Bangkok local month
 
 export async function getDashboardData(selectedYearCE?: number): Promise<DashboardData> {
   const jobs = await prisma.job.findMany({
-    where: { isPlanned: false, currentStatus: { not: 'CANCELLED' } },
+    where: { deletedAt: null, isPlanned: false, currentStatus: { not: 'CANCELLED' } },
     select: { createdAt: true, salesAmount: true },
   })
 
@@ -55,6 +55,7 @@ export async function getDashboardData(selectedYearCE?: number): Promise<Dashboa
 
 export async function getProductTypes(): Promise<string[]> {
   const rows = await prisma.job.findMany({
+    where: { deletedAt: null },
     distinct: ['productType'],
     select: { productType: true },
     orderBy: { productType: 'asc' },
@@ -65,7 +66,7 @@ export async function getProductTypes(): Promise<string[]> {
 // Distinct Buddhist-era years of contract start dates, newest first.
 export async function getContractYears(): Promise<number[]> {
   const rows = await prisma.job.findMany({
-    where: { contractStartDate: { not: null } },
+    where: { deletedAt: null, contractStartDate: { not: null } },
     select: { contractStartDate: true },
   })
   const years = new Set<number>()
@@ -81,7 +82,7 @@ export async function getJobList(
   const { includeClosed = false, productType, status, year, planned } = opts
   // Ordered by workflow progress (just-received on top, finished last); within
   // the same stage, most-recent contract first.
-  const where: Prisma.JobWhereInput = {}
+  const where: Prisma.JobWhereInput = { deletedAt: null }
   // An explicit status filter takes precedence over the open/closed toggle.
   // Default view hides finished (CLOSED) and voided (CANCELLED) jobs; both
   // reappear under "แสดงทั้งหมด".
@@ -128,7 +129,7 @@ export async function getClosedJobsPaged(
   opts: { productType?: string; year?: number; q?: string; skip?: number; take?: number } = {},
 ) {
   const { productType, year, q, skip = 0, take = 10 } = opts
-  const where: Prisma.JobWhereInput = { currentStatus: 'CLOSED', isPlanned: false }
+  const where: Prisma.JobWhereInput = { deletedAt: null, currentStatus: 'CLOSED', isPlanned: false }
   if (productType) where.productType = productType
   if (year) {
     const ce = year - 543
@@ -163,5 +164,5 @@ export async function getClosedJobsPaged(
 }
 
 export async function countClosed(): Promise<number> {
-  return prisma.job.count({ where: { currentStatus: 'CLOSED', isPlanned: false } })
+  return prisma.job.count({ where: { deletedAt: null, currentStatus: 'CLOSED', isPlanned: false } })
 }
