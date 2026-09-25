@@ -38,7 +38,7 @@ export default async function Home({
     getProductTypes(),
     getContractYears(),
     countPlanned(),
-    prisma.job.count({ where: { isPlanned: false, createdAt: { gte: monthStart } } }),
+    prisma.job.count({ where: { deletedAt: null, isPlanned: false, createdAt: { gte: monthStart } } }),
     closedMode
       ? getClosedJobsPaged({ productType: type || undefined, year: year ? Number(year) : undefined, q: q || undefined, skip: (page - 1) * PER_PAGE, take: PER_PAGE })
       : Promise.resolve({ rows: [], total: 0 }),

@@ -1,6 +1,6 @@
 'use client'
 import { useMemo } from 'react'
-import { FAT_METRICS } from '@/lib/fatTest'
+import { FAT_METRICS } from '@/lib/fatMetrics'
 
 export type Ref = { n?: string; s?: number }
 export type Reading = { id: string; at: string; device: string | null; name: string | null; idcard: string | null; metrics: Record<string, number>; refs?: Record<string, Ref> }

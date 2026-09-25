@@ -1,8 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
-import type { GroupSummary, ProductSummary, StockStatusLevel } from '@/lib/stock'
-import { STOCK_LEVEL_META } from '@/lib/stock'
+import type { GroupSummary, ProductSummary, StockStatusLevel } from '@/lib/stock-shared'
+import { STOCK_LEVEL_META } from '@/lib/stock-shared'
 
 const nf = new Intl.NumberFormat('th-TH')
 type Kpi = { received: number; issued: number; borrowed: number; remaining: number; low: number; out: number; products: number }

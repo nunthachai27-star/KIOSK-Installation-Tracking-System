@@ -53,7 +53,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const { id } = await params
-  const jobCount = await prisma.job.count({ where: { hospitalId: id } })
+  const jobCount = await prisma.job.count({ where: { hospitalId: id, deletedAt: null } })
   if (jobCount > 0) return NextResponse.json({ error: 'has_jobs', jobCount }, { status: 409 })
 
   const before = await prisma.hospital.findUnique({ where: { id }, include: { contacts: { orderBy: { sortOrder: 'asc' } } } })

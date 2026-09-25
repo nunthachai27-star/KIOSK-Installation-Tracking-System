@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { confirmDialog } from '@/lib/dialog'
-import { FAT_METRICS } from '@/lib/fatTest'
+import { FAT_METRICS } from '@/lib/fatMetrics'
 
 type Ref = { n?: string; s?: number }
 type Reading = { id: string; at: string; device: string | null; name: string | null; idcard: string | null; metrics: Record<string, number>; refs?: Record<string, Ref>; raw: unknown }

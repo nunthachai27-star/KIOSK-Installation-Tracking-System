@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   switch (type) {
     case 'hospital': {
       const [jobs, stock, contacts] = await Promise.all([
-        prisma.job.count({ where: { hospitalId: id } }),
+        prisma.job.count({ where: { hospitalId: id, deletedAt: null } }),
         prisma.stockItem.count({ where: { hospitalId: id } }),
         prisma.hospitalContact.count({ where: { hospitalId: id } }),
       ])
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     case 'productType': {
       // id = ชื่อประเภทสินค้า
       const [jobs, components] = await Promise.all([
-        prisma.job.count({ where: { productType: id } }),
+        prisma.job.count({ where: { productType: id, deletedAt: null } }),
         prisma.productComponent.count({ where: { productType: id } }),
       ])
       if (jobs > 0) impacts.push({ label: 'งานที่เป็นประเภทสินค้านี้', count: jobs, tone: 'danger' })

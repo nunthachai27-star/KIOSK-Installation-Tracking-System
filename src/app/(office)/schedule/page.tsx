@@ -22,7 +22,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   const { from, to } = dayRangeLocal(viewDate)
 
   const [jobs, users, queue, tasks] = await Promise.all([
-    prisma.job.findMany({ include: { hospital: true }, orderBy: { jobCode: 'asc' } }),
+    prisma.job.findMany({ where: { deletedAt: null }, include: { hospital: true }, orderBy: { jobCode: 'asc' } }),
     prisma.user.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     getQueueForDate(from, to),
     prisma.task.findMany({ include: { responsibleUser: { select: { name: true } } }, orderBy: { startDate: 'desc' }, take: 100 }),

@@ -28,7 +28,7 @@ export default async function OfficeLayout({ children }: { children: React.React
   const now = new Date()
   const [pendingClaims, overdue, overdueLoans, me, leadsUnread] = await Promise.all([
     prisma.issue.count({ where: { status: 'RECEIVED' } }),
-    prisma.job.count({ where: { isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
+    prisma.job.count({ where: { deletedAt: null, isPlanned: false, deliveryDueDate: { lt: now }, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } }),
     prisma.loan.count({ where: { status: 'BORROWED', dueDate: { lt: now } } }),
     session?.user?.id ? prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true, avatarIcon: true, avatarColor: true, theme: true, bg: true } }) : Promise.resolve(null),
     prisma.kioskLead.count({ where: { seenAt: null } }),
