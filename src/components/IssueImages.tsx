@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { enhanceImage } from '@/lib/enhanceImage'
+import { confirmDialog } from '@/lib/dialog'
 
 type Img = { id: string; fileName: string; fileType: string; fileSize: number; uploadedAt: string; category: string | null }
 
@@ -54,7 +55,7 @@ export function IssueImages({ issueId }: { issueId: string }) {
     } finally { setBusy(false); setPhase('') }
   }
   async function del(id: string) {
-    if (!confirm('ลบรูปนี้?')) return
+    if (!(await confirmDialog({ title: 'ลบรูป', message: 'ลบรูปนี้ออกจากรายการเคลม?', danger: true, confirmText: 'ลบ' }))) return
     const r = await fetch(`/api/issues/${issueId}/images/${id}`, { method: 'DELETE' })
     if (r.ok) setImgs((p) => p.filter((d) => d.id !== id))
   }
