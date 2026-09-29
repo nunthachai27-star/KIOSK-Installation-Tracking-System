@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { confirmDialog, alertDialog } from '@/lib/dialog'
 import type { IssueStatus, IssueEventType, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { Combobox } from './Combobox'
+import { IssueImages } from './IssueImages'
 import {
   ISSUE_STATUS, ISSUE_STATUS_ORDER, ISSUE_OPEN_STATUSES, ISSUE_EVENT,
   ISSUE_METHOD, ISSUE_WARRANTY, warrantyStateFrom,
@@ -811,6 +812,9 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
             className="bg-[var(--brand)] text-white text-[12px] font-semibold rounded-lg px-3 py-2 hover:bg-[var(--brand-strong)] disabled:opacity-50 shrink-0">＋ เพิ่ม</button>
         </div>
       </div>
+
+      {/* รูปอุปกรณ์ที่เคลม — ถ่าย/แนบรูป ดูใหญ่ ลบได้ */}
+      <IssueImages issueId={item.id} />
 
       {/* responsible resolver — the satisfaction rating is attributed to this staff */}
       <div className="mt-3 flex items-center gap-2 flex-wrap">
