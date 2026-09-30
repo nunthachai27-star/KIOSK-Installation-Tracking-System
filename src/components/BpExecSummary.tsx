@@ -35,8 +35,10 @@ export function BpExecSummary() {
   const [s, setS] = useState<Summary | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [sort, setSort] = useState<'sys' | 'diff' | 'name'>('sys')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
+  // ค่าเริ่มต้น = "วันนี้" (เข้ามาแล้วเห็นเฉพาะของวันนี้ ไม่ใช่ทั้งหมด)
+  const initToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' })
+  const [from, setFrom] = useState(initToday)
+  const [to, setTo] = useState(initToday)
 
   useEffect(() => {
     let alive = true
