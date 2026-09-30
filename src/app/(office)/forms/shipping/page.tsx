@@ -5,7 +5,7 @@ import { ShippingCostReport, type ShipRowC } from '@/components/ShippingCostRepo
 
 export const dynamic = 'force-dynamic'
 
-export default async function ShippingReportPage({
+export default async function ShippingFormPage({
   searchParams,
 }: {
   searchParams: Promise<{ y?: string; m?: string; method?: string }>
@@ -35,9 +35,9 @@ export default async function ShippingReportPage({
   return (
     <div className="p-6 max-w-[1000px] mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm print:hidden">
-        <Link href="/report" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ รายงาน</Link>
+        <Link href="/forms" className="text-[#5A6B82] hover:text-[var(--brand)]">‹ แบบฟอร์ม</Link>
         <span className="text-[#C7D2E0]">/</span>
-        <h1 className="text-xl font-bold text-[#1C1917]">ฟอร์มค่าขนส่ง</h1>
+        <h1 className="text-xl font-bold text-[#1C1917]">ฟอร์มค่าขนส่ง (รายเดือน)</h1>
       </div>
       <ShippingCostReport
         rows={rows}
