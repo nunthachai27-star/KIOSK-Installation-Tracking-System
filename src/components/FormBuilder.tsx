@@ -62,7 +62,8 @@ const TEMPLATES: Template[] = [
 
 type JobHit = { id: string; jobCode: string; contractNo: string | null; province: string | null; hospital: { name: string } | null }
 
-const A4_W = 794 // px @ ~96dpi
+const A4_W = 794 // px @ ~96dpi (แนวตั้ง)
+const A4_L = 1123 // px @ ~96dpi (แนวนอน)
 
 // ฟอนต์ให้เลือก (ฟอนต์ไทยที่มักติดตั้งในเครื่อง Windows)
 const FONTS: { key: string; label: string; stack: string }[] = [
@@ -627,7 +628,7 @@ function buildShippingCost(): string {
       <div ${ed} style="color:#333;">${role}</div>
     </div>`
   return `
-  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:12.5px;line-height:1.55;padding:22px 30px 26px;">
+  <div id="ff-sheet" style="width:${A4_L}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:12.5px;line-height:1.55;padding:22px 34px 26px;">
     <div style="display:flex;align-items:flex-start;gap:12px;">
       <div style="flex:0 0 auto;">${bmsLogoImg(52)}</div>
       <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
@@ -737,8 +738,9 @@ async function nodeToPngBlob(node: HTMLElement, scale = 2): Promise<Blob> {
 
 // ── Canvas(es) (JPEG) → PDF ขนาด A4 (สร้าง PDF เองแบบไม่พึ่ง library) ─────────
 // รองรับหลายหน้า: ส่ง canvas ได้หลายตัว จะได้ PDF หลายหน้า (1 canvas = 1 หน้า A4)
-async function canvasesToPdfBlob(canvases: HTMLCanvasElement[]): Promise<Blob> {
-  const pageW = 595.28, pageH = 841.89, margin = 28 // A4 @72dpi
+async function canvasesToPdfBlob(canvases: HTMLCanvasElement[], landscape = false): Promise<Blob> {
+  // A4 @72dpi — สลับด้านเมื่อแนวนอน
+  const pageW = landscape ? 841.89 : 595.28, pageH = landscape ? 595.28 : 841.89, margin = 28
   const enc = new TextEncoder()
   const chunks: Uint8Array[] = []
   let len = 0
@@ -783,10 +785,10 @@ async function canvasesToPdfBlob(canvases: HTMLCanvasElement[]): Promise<Blob> {
 
 // ── เอกสาร → Word (.doc) : HTML ที่ Word เปิดได้ (ไม่พึ่ง library) ─────────────
 // รองรับหลายหน้า: คั่นแต่ละหน้าด้วย page-break
-function sheetsToDocBlob(nodes: HTMLElement[], title: string): Blob {
+function sheetsToDocBlob(nodes: HTMLElement[], title: string, landscape = false): Blob {
   const inner = nodes.map((n, i) =>
     `<div style="${i < nodes.length - 1 ? 'page-break-after:always;' : ''}">${cleanSheetClone(n).outerHTML}</div>`).join('')
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${title}</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>@page{size:A4;margin:1.2cm}body{margin:0}</style></head><body>${inner}</body></html>`
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${title}</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>@page{size:A4 ${landscape ? 'landscape' : ''};margin:1.2cm}body{margin:0}</style></head><body>${inner}</body></html>`
   return new Blob(['﻿', html], { type: 'application/msword' })
 }
 
@@ -1088,10 +1090,11 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
     const wrap = sheetWrap.current
     const pages = wrap ? sheetPages(wrap) : []
     if (!pages.length) throw new Error('no sheet')
-    if (fmt === 'doc') return [{ blob: sheetsToDocBlob(pages, tpl?.title ?? 'แบบฟอร์ม'), ext: 'doc', mime: 'application/msword', suffix: '' }]
+    const landscape = tpl?.id === 'shipping-cost'
+    if (fmt === 'doc') return [{ blob: sheetsToDocBlob(pages, tpl?.title ?? 'แบบฟอร์ม', landscape), ext: 'doc', mime: 'application/msword', suffix: '' }]
     const canvases: HTMLCanvasElement[] = []
     for (const p of pages) canvases.push(await nodeToCanvas(p, 3))
-    if (fmt === 'pdf') return [{ blob: await canvasesToPdfBlob(canvases), ext: 'pdf', mime: 'application/pdf', suffix: '' }]
+    if (fmt === 'pdf') return [{ blob: await canvasesToPdfBlob(canvases, landscape), ext: 'pdf', mime: 'application/pdf', suffix: '' }]
     // png — 1 ไฟล์ต่อ 1 หน้า
     const out: { blob: Blob; ext: string; mime: string; suffix: string }[] = []
     for (let i = 0; i < canvases.length; i++) {
@@ -1153,16 +1156,19 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
     const pages = sheetPages(wrap)
     if (!pages.length) return
     // ย่อให้พอดี 1 หน้า A4 เสมอ (A4 @96dpi = 794×1123px, เว้นขอบ ~9mm) — คิดสเกลแยกแต่ละหน้า
-    const PAGE_W = 794, PAGE_H = 1123, PAD = 34
+    // ฟอร์มค่าขนส่งใช้ A4 แนวนอน (สลับด้านหน้า)
+    const landscape = tpl?.id === 'shipping-cost'
+    const PAGE_W = landscape ? 1123 : 794, PAGE_H = landscape ? 794 : 1123, PAD = 34
     const pagesHtml = pages.map((sheet) => {
       const clone = sheet.cloneNode(true) as HTMLElement
       clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
       clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
+      const sheetW = sheet.offsetWidth || A4_W
       const sheetH = sheet.scrollHeight || sheet.offsetHeight
-      const scale = Math.min((PAGE_W - 2 * PAD) / A4_W, (PAGE_H - 2 * PAD) / sheetH, 1)
+      const scale = Math.min((PAGE_W - 2 * PAD) / sheetW, (PAGE_H - 2 * PAD) / sheetH, 1)
       return `<div class="pg"><div class="ft" style="transform:scale(${scale})">${clone.outerHTML}</div></div>`
     }).join('')
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${tpl?.title ?? 'แบบฟอร์ม'}</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}.pg{width:${PAGE_W}px;height:${PAGE_H}px;box-sizing:border-box;padding:${PAD}px;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;page-break-after:always}.ft{transform-origin:top center}</style></head><body>${pagesHtml}</body></html>`
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${tpl?.title ?? 'แบบฟอร์ม'}</title><style>@page{size:A4 ${landscape ? 'landscape' : ''};margin:0}html,body{margin:0;padding:0}.pg{width:${PAGE_W}px;height:${PAGE_H}px;box-sizing:border-box;padding:${PAD}px;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;page-break-after:always}.ft{transform-origin:top center}</style></head><body>${pagesHtml}</body></html>`
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
     const ifr = document.createElement('iframe')
     ifr.setAttribute('aria-hidden', 'true')
