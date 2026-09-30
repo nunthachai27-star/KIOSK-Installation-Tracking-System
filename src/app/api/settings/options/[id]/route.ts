@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { logAction, logChange } from '@/lib/audit'
 import { isCategory } from '@/lib/master'
 import { applyRename, findCollisions } from '@/lib/master-rename'
+import { isSuperAdmin } from '@/lib/superAdmin'
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -54,4 +55,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   await logAction(session.user, 'UPDATE', 'ตั้งค่า', `เปลี่ยนชื่อ "${from}" → "${to}"`)
   return NextResponse.json({ ...updated, renamedFrom: from, updatedRows: moved })
+}
+
+// ── DELETE: ลบตัวเลือกตั้งค่า — เฉพาะ super admin (กู้คืนได้จากหน้า Log) ─────────
+// ลบเฉพาะรายการในลิสต์เท่านั้น ไม่แตะข้อความที่บันทึกไว้บนงานเดิม
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (session?.user?.role !== 'OFFICE') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (!(await isSuperAdmin())) return NextResponse.json({ error: 'forbidden', message: 'เฉพาะ super admin เท่านั้นที่ลบรายการตั้งค่าได้' }, { status: 403 })
+
+  const { id } = await params
+  const existing = await prisma.masterOption.findUnique({ where: { id } })
+  if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 })
+
+  await prisma.masterOption.delete({ where: { id } })
+  await logChange(session.user, 'DELETE', 'ตั้งค่า', `ลบตัวเลือก "${existing.value}"`, { refTable: 'MasterOption', refId: id, before: existing })
+  return NextResponse.json({ ok: true, id })
 }

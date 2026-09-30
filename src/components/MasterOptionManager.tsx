@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { confirmDialog } from '@/lib/dialog'
 
 type Item = { id: string; value: string; active: boolean }
 
@@ -9,11 +10,14 @@ export function MasterOptionManager({
   category,
   initial,
   configHrefBase,
+  canDelete = false,
 }: {
   category: string
   initial: Item[]
   // When set, each row links to a per-value config page (used for product types).
   configHrefBase?: string
+  // super admin เท่านั้น — แสดงปุ่มลบรายการออกจากลิสต์
+  canDelete?: boolean
 }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
@@ -69,6 +73,24 @@ export function MasterOptionManager({
     if (await patch(id, { value: editValue })) setEditId(null)
   }
 
+  async function del(it: Item) {
+    const ok = await confirmDialog({
+      title: 'ลบรายการตั้งค่า',
+      message: `ลบ "${it.value}" ออกจากลิสต์?\nข้อมูลงานเดิมที่ใช้ค่านี้ไว้จะไม่ถูกแตะต้อง · กู้คืนได้จากหน้า Log`,
+      danger: true, confirmText: 'ลบ',
+    })
+    if (!ok) return
+    setErr(''); setNote('')
+    const res = await fetch(`/api/settings/options/${it.id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const d = await res.json().catch(() => null)
+      setErr(d?.message || 'ลบไม่สำเร็จ')
+      return
+    }
+    setItems((x) => x.filter((r) => r.id !== it.id))
+    router.refresh()
+  }
+
   return (
     <div className="ds-card overflow-hidden">
       <div className="flex gap-2 p-4 border-b border-[#EEF2F8]">
@@ -112,6 +134,10 @@ export function MasterOptionManager({
                 className={`text-[12px] font-semibold px-2.5 py-1 rounded-full ${it.active ? 'bg-[#E2F3EA] text-[#157F4C]' : 'bg-[#EEF1F5] text-[#8492A6]'}`}>
                 {it.active ? 'เปิดใช้งาน' : 'ปิด'}
               </button>
+              {canDelete && (
+                <button onClick={() => del(it)} title="ลบออกจากลิสต์ (super admin)"
+                  className="text-[13px] font-semibold text-[#C13540] hover:bg-[#FBE4E4] rounded px-2 py-1">ลบ</button>
+              )}
             </>
           )}
         </div>

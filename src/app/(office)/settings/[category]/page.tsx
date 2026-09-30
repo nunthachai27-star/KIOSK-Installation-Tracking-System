@@ -2,17 +2,21 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { isCategory, categoryLabel } from '@/lib/master'
+import { isSuperAdmin } from '@/lib/superAdmin'
 import { MasterOptionManager } from '@/components/MasterOptionManager'
 
 export default async function SettingsCategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params
   if (!isCategory(category)) notFound()
 
-  const items = await prisma.masterOption.findMany({
-    where: { category },
-    orderBy: [{ sortOrder: 'asc' }, { value: 'asc' }],
-    select: { id: true, value: true, active: true },
-  })
+  const [items, canDelete] = await Promise.all([
+    prisma.masterOption.findMany({
+      where: { category },
+      orderBy: [{ sortOrder: 'asc' }, { value: 'asc' }],
+      select: { id: true, value: true, active: true },
+    }),
+    isSuperAdmin(),
+  ])
 
   return (
     <div className="p-6 max-w-[720px] mx-auto flex flex-col gap-4">
@@ -24,6 +28,7 @@ export default async function SettingsCategoryPage({ params }: { params: Promise
       <MasterOptionManager
         category={category}
         initial={items}
+        canDelete={canDelete}
         configHrefBase={category === 'PRODUCT_TYPE' ? '/settings/product-spec' : undefined}
       />
     </div>
