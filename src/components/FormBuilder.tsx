@@ -6,7 +6,7 @@ import { EquipSetLabel } from '@/components/EquipSetLabel'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
-type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check' | 'kiosk-startsmart-plus'
+type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check' | 'kiosk-startsmart-plus' | 'shipping-cost'
 type Template = { id: TemplateId; title: string; desc: string; defaultCat: string; accent: string }
 const TEMPLATES: Template[] = [
   {
@@ -50,6 +50,13 @@ const TEMPLATES: Template[] = [
     desc: 'ขออนุมัติเปิดสิทธิ์ Kiosk รุ่น Start Smart Plus + HOSxP Mobile Gateway + API Payment — ดึงชื่อ รพ./Key ID ต่อเครื่อง',
     defaultCat: 'สัญญา / PO',
     accent: '#7A44C6',
+  },
+  {
+    id: 'shipping-cost',
+    title: 'แบบฟอร์มค่าขนส่ง (รายการส่งของ)',
+    desc: 'รายการส่งของ/ค่าขนส่งรายเดือน — หัวจดหมายบริษัท + ผู้ลงนาม · เพิ่ม/ลบบรรทัด แก้ไขได้ทุกช่อง',
+    defaultCat: 'รายการส่งของ',
+    accent: '#157F4C',
   },
 ]
 
@@ -573,6 +580,73 @@ function buildKioskCheck(): string {
   return `<div id="ff-doc" style="display:flex;flex-direction:column;gap:16px;">${buildKioskCheckPage()}</div>`
 }
 
+// ── แบบฟอร์มค่าขนส่ง (รายการส่งของ) ───────────────────────────────────────────
+// หนึ่งบรรทัด = หนึ่งรายการ (แก้ไขได้ทุกช่อง) · เพิ่ม/ลบบรรทัดได้
+function shipRowHtml(n: number): string {
+  const ed = 'contenteditable="true"'
+  const c = (align = 'left') => `border:1px solid #000;padding:4px 6px;text-align:${align};`
+  return `<tr>
+      <td ${ed} style="${c('center')}">${n}</td>
+      <td ${ed} style="${c()}"></td>
+      <td ${ed} style="${c('center')}"></td>
+      <td ${ed} style="${c()}"></td>
+      <td ${ed} style="${c('center')}"></td>
+      <td ${ed} style="${c('center')}"></td>
+      <td ${ed} style="${c('right')}"></td>
+      <td ${ed} style="${c('right')}"></td>
+      <td ${ed} style="${c('center')}"></td>
+      <td class="ff-noprint" style="border:0;width:26px;text-align:center;vertical-align:middle;"><button type="button" class="ff-delrow" title="ลบบรรทัด" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:22px;height:22px;cursor:pointer;font-weight:700;">✕</button></td>
+    </tr>`
+}
+
+function buildShippingCost(): string {
+  const ed = 'contenteditable="true"'
+  const font = "'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif"
+  const headers = ['ลำดับ', 'หน่วยงาน', 'จังหวัด', 'รายการ', 'จำนวน', 'จำนวนรถ', 'ประมาณการค่าขนส่ง', 'ค่าขนส่งจริง', 'วันที่']
+  const th = (t: string) => `<th style="border:1px solid #000;padding:5px 6px;background:#eef2f7;font-weight:700;text-align:center;">${t}</th>`
+  const rows = Array.from({ length: 15 }, (_, i) => shipRowHtml(i + 1)).join('')
+  const cell = (align: string, txt = '') => `<td ${ed} style="border:1px solid #000;padding:4px 6px;text-align:${align};font-weight:700;">${txt}</td>`
+  const totalRow = `<tr>
+      <td colspan="4" style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;">รวม</td>
+      ${cell('center')}${cell('center')}${cell('right')}${cell('right')}
+      <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;">-</td>
+      <td class="ff-noprint" style="border:0;"></td>
+    </tr>`
+  const signer = (role: string, name: string) => `<div style="text-align:center;">
+      <div ${ed} style="margin-bottom:2px;">..............................................................</div>
+      <div ${ed}>(${name})</div>
+      <div ${ed} style="color:#333;">${role}</div>
+    </div>`
+  return `
+  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:12.5px;line-height:1.55;padding:22px 30px 26px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div style="flex:0 0 auto;">${bmsLogoImg(46)}</div>
+      <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
+    </div>
+
+    <div style="text-align:center;margin:14px 0 10px;">
+      <div ${ed} style="font-size:15px;font-weight:700;">รายการส่งของเดือน ....................</div>
+      <div style="font-size:12px;margin-top:2px;">วิธีจัดส่ง: <span ${ed} style="border-bottom:1px dotted #000;padding:0 6px;">ขนส่งลุงแดงโลจิสติก</span></div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr>${headers.map(th).join('')}<th class="ff-noprint" style="border:0;"></th></tr></thead>
+      <tbody id="ff-units">${rows}</tbody>
+      <tfoot>${totalRow}</tfoot>
+    </table>
+    <div class="ff-noprint" style="margin:6px 0 2px;"><button type="button" id="ff-addrow" style="border:1px dashed #b9c2cf;background:#f7f9fc;color:#3c4a5e;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;">＋ เพิ่มบรรทัด</button></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:34px 20px;margin-top:34px;font-size:12px;">
+      ${signer('ผู้จัดทำ', 'คุณธนิตา สายวารี')}
+      ${signer('ผู้ตรวจสอบ', 'คุณภัคธินันท์ วิโรจน์ธานีกุล')}
+      ${signer('ผู้รับเอกสาร', 'คุณนฤมล แซ่ก๊วย')}
+      <div></div>
+      ${signer('ผู้ตรวจสอบ', 'คุณสุมาลี เหรียญไพโรจน์')}
+      <div></div>
+    </div>
+  </div>`
+}
+
 function buildSheet(id: TemplateId): string {
   switch (id) {
     case 'kiosk-activation': return buildKioskActivation()
@@ -581,6 +655,7 @@ function buildSheet(id: TemplateId): string {
     case 'shipment-notice': return buildShipmentNotice()
     case 'kiosk-check': return buildKioskCheck()
     case 'kiosk-startsmart-plus': return buildKioskStartSmartPlus()
+    case 'shipping-cost': return buildShippingCost()
     default: return ''
   }
 }
@@ -758,7 +833,8 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
     function makeRow(): HTMLTableRowElement {
       const tbl = document.createElement('tbody')
       const n = (tbody?.rows.length ?? 0) + 1
-      tbl.innerHTML = tpl?.id === 'kiosk-startsmart-plus' ? keyRowHtml(n) : unitRowHtml(n)
+      tbl.innerHTML = tpl?.id === 'shipping-cost' ? shipRowHtml(n)
+        : tpl?.id === 'kiosk-startsmart-plus' ? keyRowHtml(n) : unitRowHtml(n)
       return tbl.rows[0]
     }
     wrap.addEventListener('click', (e) => {
