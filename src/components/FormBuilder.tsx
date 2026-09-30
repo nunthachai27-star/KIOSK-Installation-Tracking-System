@@ -6,7 +6,7 @@ import { EquipSetLabel } from '@/components/EquipSetLabel'
 
 // ── คลังแบบฟอร์ม ─────────────────────────────────────────────────────────────
 // เพิ่มแม่แบบใหม่ได้ที่นี่ (สร้าง builder อีกตัวแล้วผูกใน SHEETS)
-type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check' | 'kiosk-startsmart-plus'
+type TemplateId = 'kiosk-activation' | 'delivery-handover' | 'work-notice' | 'shipment-notice' | 'kiosk-check' | 'kiosk-startsmart-plus' | 'shipping-cost'
 type Template = { id: TemplateId; title: string; desc: string; defaultCat: string; accent: string }
 const TEMPLATES: Template[] = [
   {
@@ -50,6 +50,13 @@ const TEMPLATES: Template[] = [
     desc: 'ขออนุมัติเปิดสิทธิ์ Kiosk รุ่น Start Smart Plus + HOSxP Mobile Gateway + API Payment — ดึงชื่อ รพ./Key ID ต่อเครื่อง',
     defaultCat: 'สัญญา / PO',
     accent: '#7A44C6',
+  },
+  {
+    id: 'shipping-cost',
+    title: 'แบบฟอร์มค่าขนส่ง (รายเดือน)',
+    desc: 'รายการส่งของ/ค่าขนส่ง — ดึงรายการจัดส่งตามเดือนอัตโนมัติ (เลือกเดือนได้) แล้วแก้ไข/เพิ่ม-ลบบรรทัดได้ทุกช่อง',
+    defaultCat: 'รายการส่งของ',
+    accent: '#157F4C',
   },
 ]
 
@@ -573,6 +580,88 @@ function buildKioskCheck(): string {
   return `<div id="ff-doc" style="display:flex;flex-direction:column;gap:16px;">${buildKioskCheckPage()}</div>`
 }
 
+// ── แบบฟอร์มค่าขนส่ง (รายเดือน) ────────────────────────────────────────────────
+// เงื่อนไขต่างจากตัวอื่น: ดึงรายการจัดส่งตามเดือนมาเติมอัตโนมัติ (ผ่าน API) แล้วยัง
+// แก้ไข/เพิ่ม-ลบบรรทัดได้ทุกช่องเหมือน template อื่น
+export type ShipCellData = { hospital: string; province: string; item: string; qty: number; estCost: number | null; shippedDate: string }
+const shipBaht = new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function shipBeDate(iso: string) { const d = new Date(iso); return isNaN(d.getTime()) ? '' : `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543}` }
+
+function shipRowHtml(n: number, r?: ShipCellData): string {
+  const ed = 'contenteditable="true"'
+  const c = (align = 'left') => `border:1px solid #000;padding:4px 6px;text-align:${align};`
+  const est = r && r.estCost != null ? shipBaht.format(r.estCost) : ''
+  return `<tr>
+      <td ${ed} style="${c('center')}">${n}</td>
+      <td ${ed} style="${c()}">${r ? esc(r.hospital) : ''}</td>
+      <td ${ed} style="${c('center')}">${r ? esc(r.province) : ''}</td>
+      <td ${ed} style="${c()}">${r ? esc(r.item) : ''}</td>
+      <td ${ed} style="${c('center')}">${r ? r.qty : ''}</td>
+      <td ${ed} style="${c('center')}"></td>
+      <td ${ed} style="${c('right')}">${est}</td>
+      <td ${ed} style="${c('right')}"></td>
+      <td ${ed} style="${c('center')}">${r ? shipBeDate(r.shippedDate) : ''}</td>
+      <td class="ff-noprint" style="border:0;width:26px;text-align:center;vertical-align:middle;"><button type="button" class="ff-delrow" title="ลบบรรทัด" style="border:0;background:#f3d9db;color:#a02a32;border-radius:6px;width:22px;height:22px;cursor:pointer;font-weight:700;">✕</button></td>
+    </tr>`
+}
+
+function buildShippingCost(): string {
+  const ed = 'contenteditable="true"'
+  const font = "'Sarabun','TH Sarabun New','Leelawadee UI',system-ui,'Segoe UI',sans-serif"
+  const headers = ['ลำดับ', 'หน่วยงาน', 'จังหวัด', 'รายการ', 'จำนวน', 'จำนวนรถ', 'ประมาณการค่าขนส่ง', 'ค่าขนส่งจริง', 'วันที่']
+  const th = (t: string) => `<th style="border:1px solid #000;padding:5px 6px;background:#eef2f7;font-weight:700;text-align:center;">${t}</th>`
+  const rows = Array.from({ length: 12 }, (_, i) => shipRowHtml(i + 1)).join('')
+  const cell = (align: string) => `<td ${ed} style="border:1px solid #000;padding:4px 6px;text-align:${align};font-weight:700;"></td>`
+  const totalRow = `<tr>
+      <td colspan="4" style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;">รวม</td>
+      <td id="ff-ship-tqty" style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;"></td>
+      ${cell('center')}
+      <td id="ff-ship-test" style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:700;"></td>
+      ${cell('right')}
+      <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;">-</td>
+      <td class="ff-noprint" style="border:0;"></td>
+    </tr>`
+  const signer = (role: string, name: string) => `<div style="text-align:center;">
+      <div ${ed} style="margin-bottom:2px;">..............................................................</div>
+      <div ${ed}>(${name})</div>
+      <div ${ed} style="color:#333;">${role}</div>
+    </div>`
+  return `
+  <div id="ff-sheet" style="width:${A4_W}px;box-sizing:border-box;background:#fff;color:#000;font-family:${font};font-size:12.5px;line-height:1.55;padding:22px 30px 26px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div style="flex:0 0 auto;">${bmsLogoImg(52)}</div>
+      <div ${ed} style="font-size:10px;line-height:1.5;">${COMPANY_LINES}</div>
+    </div>
+
+    <div class="ff-noprint" style="margin:12px 0 4px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:12px;color:#5A6B82;font-weight:600;">เลือกเดือน:</span>
+      <select id="ff-ship-month" style="border:1px solid #D6DFEA;border-radius:8px;padding:4px 10px;font-size:12.5px;"></select>
+      <span style="font-size:11px;color:#8492A6;">ดึงรายการจัดส่งตามเดือนอัตโนมัติ · แก้ไขต่อได้ทุกช่อง</span>
+    </div>
+
+    <div style="text-align:center;margin:6px 0 10px;">
+      <div style="font-size:15px;font-weight:700;">รายการส่งของเดือน <span id="ff-ship-title" ${ed}>....................</span></div>
+      <div style="font-size:12px;margin-top:2px;">วิธีจัดส่ง: <span id="ff-ship-method" ${ed} style="border-bottom:1px dotted #000;padding:0 6px;">ขนส่งลุงแดงโลจิสติก</span></div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr>${headers.map(th).join('')}<th class="ff-noprint" style="border:0;"></th></tr></thead>
+      <tbody id="ff-units">${rows}</tbody>
+      <tfoot>${totalRow}</tfoot>
+    </table>
+    <div class="ff-noprint" style="margin:6px 0 2px;"><button type="button" id="ff-addrow" style="border:1px dashed #b9c2cf;background:#f7f9fc;color:#3c4a5e;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;">＋ เพิ่มบรรทัด</button></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:34px 20px;margin-top:34px;font-size:12px;">
+      ${signer('ผู้จัดทำ', 'คุณธนิตา สายวารี')}
+      ${signer('ผู้ตรวจสอบ', 'คุณภัคธินันท์ วิโรจน์ธานีกุล')}
+      ${signer('ผู้รับเอกสาร', 'คุณนฤมล แซ่ก๊วย')}
+      <div></div>
+      ${signer('ผู้ตรวจสอบ', 'คุณสุมาลี เหรียญไพโรจน์')}
+      <div></div>
+    </div>
+  </div>`
+}
+
 function buildSheet(id: TemplateId): string {
   switch (id) {
     case 'kiosk-activation': return buildKioskActivation()
@@ -581,9 +670,12 @@ function buildSheet(id: TemplateId): string {
     case 'shipment-notice': return buildShipmentNotice()
     case 'kiosk-check': return buildKioskCheck()
     case 'kiosk-startsmart-plus': return buildKioskStartSmartPlus()
+    case 'shipping-cost': return buildShippingCost()
     default: return ''
   }
 }
+
+const TH_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
 
 // รวมทุก "หน้า" ของเอกสาร (แบบหลายใบใช้ .ff-sheet, แบบใบเดียวใช้ #ff-sheet)
 function sheetPages(wrap: HTMLElement): HTMLElement[] {
@@ -747,10 +839,12 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
   useEffect(() => {
     const wrap = sheetWrap.current
     if (!wrap || !tpl) return
+    // ฟอร์มค่าขนส่งดึงข้อมูลสดตามเดือน — ไม่โหลดจากที่บันทึกไว้ (กันข้อมูลค้าง)
+    const isShip = tpl.id === 'shipping-cost'
     let saved: string | null = null
-    try { saved = localStorage.getItem(`kioskFormTpl:${userId}:${tpl.id}`) } catch { /* ignore */ }
+    if (!isShip) { try { saved = localStorage.getItem(`kioskFormTpl:${userId}:${tpl.id}`) } catch { /* ignore */ } }
     wrap.innerHTML = saved || buildSheet(tpl.id)
-    setSavedExists(!!saved)
+    setSavedExists(!isShip && !!saved)
     setCat((c) => c || tpl.defaultCat)
 
     const ac = new AbortController()
@@ -758,7 +852,8 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
     function makeRow(): HTMLTableRowElement {
       const tbl = document.createElement('tbody')
       const n = (tbody?.rows.length ?? 0) + 1
-      tbl.innerHTML = tpl?.id === 'kiosk-startsmart-plus' ? keyRowHtml(n) : unitRowHtml(n)
+      tbl.innerHTML = isShip ? shipRowHtml(n)
+        : tpl?.id === 'kiosk-startsmart-plus' ? keyRowHtml(n) : unitRowHtml(n)
       return tbl.rows[0]
     }
     wrap.addEventListener('click', (e) => {
@@ -771,6 +866,46 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
         t.textContent = on ? '' : '✓'
       }
     }, { signal: ac.signal })
+
+    // เติมข้อมูลรายเดือนให้ฟอร์มค่าขนส่ง + ผูก dropdown เลือกเดือน
+    if (isShip) {
+      const sel = wrap.querySelector('#ff-ship-month') as HTMLSelectElement | null
+      const title = wrap.querySelector('#ff-ship-title') as HTMLElement | null
+      const methodEl = wrap.querySelector('#ff-ship-method') as HTMLElement | null
+      const tQty = wrap.querySelector('#ff-ship-tqty') as HTMLElement | null
+      const tEst = wrap.querySelector('#ff-ship-test') as HTMLElement | null
+      const method = () => (methodEl?.textContent || 'ขนส่งลุงแดงโลจิสติก').trim()
+      async function load(y?: number, m?: number) {
+        const qs = new URLSearchParams({ method: method() })
+        if (y != null && m != null) { qs.set('y', String(y)); qs.set('m', String(m)) }
+        const res = await fetch(`/api/forms/shipping?${qs}`, { cache: 'no-store', signal: ac.signal }).catch(() => null)
+        if (!res || !res.ok) return
+        const data = await res.json() as {
+          year: number; month: number; months: { year: number; month: number }[]
+          totalQty: number; totalEst: number; hasEst: boolean; rows: ShipCellData[]
+        }
+        // เดือนใน dropdown (ครั้งแรก)
+        if (sel && !sel.options.length) {
+          const opts = data.months.length ? data.months : [{ year: data.year, month: data.month }]
+          sel.innerHTML = opts.map((o) => `<option value="${o.year}-${o.month}">${TH_MONTHS_FULL[o.month]} ${o.year + 543}</option>`).join('')
+        }
+        if (sel) sel.value = `${data.year}-${data.month}`
+        if (title) title.textContent = `${TH_MONTHS_FULL[data.month]} ${data.year + 543}`
+        // เติมแถว (แก้ไขได้) — ถ้าไม่มีข้อมูล เว้นแถวว่างไว้ให้กรอก
+        if (tbody) {
+          const list = data.rows.length ? data.rows.map((r, i) => shipRowHtml(i + 1, r)) : Array.from({ length: 12 }, (_, i) => shipRowHtml(i + 1))
+          tbody.innerHTML = list.join('')
+        }
+        if (tQty) tQty.textContent = data.rows.length ? String(data.totalQty) : ''
+        if (tEst) tEst.textContent = data.hasEst ? shipBaht.format(data.totalEst) : ''
+      }
+      sel?.addEventListener('change', () => {
+        const [y, m] = (sel.value || '').split('-').map(Number)
+        if (!Number.isNaN(y) && !Number.isNaN(m)) load(y, m)
+      }, { signal: ac.signal })
+      load()
+    }
+
     return () => ac.abort()
   }, [tpl, reload])
 
