@@ -11,6 +11,22 @@ export type ShipRowC = {
 const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
 const baht = new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+// ข้อมูลตั้งต้นตามฟอร์มตัวอย่าง (หัวจดหมาย + ผู้ลงนาม)
+const COMPANY = {
+  name: 'บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)',
+  address: 'เลขที่ 2 ชั้น 2 ซ.สุขสวัสดิ์ 33 แขวง/เขต ราษฎร์บูรณะ กรุงเทพมหานคร',
+  phone: 'โทรศัพท์ 0-2427-9991 โทรสาร 0-2873-0292',
+  taxId: 'เลขที่ประจำตัวผู้เสียภาษี 0105548152334',
+}
+const SIGNERS = [
+  { role: 'ผู้จัดทำ', name: 'คุณธนิตา สายวารี' },
+  { role: 'ผู้ตรวจสอบ', name: 'คุณภัคธินันท์ วิโรจน์ธานีกุล' },
+  { role: 'ผู้รับเอกสาร', name: 'คุณนฤมล แซ่ก๊วย' },
+  { role: 'ผู้ตรวจสอบ', name: 'คุณสุมาลี เหรียญไพโรจน์' },
+]
+// จำนวนแถวว่างสำหรับฟอร์มเปล่า (เดือนที่ยังไม่มีข้อมูล)
+const BLANK_ROWS = 15
+
 function beDate(iso: string) {
   const d = new Date(iso)
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543}`
@@ -36,48 +52,53 @@ export function ShippingCostReport({
   async function downloadExcel() {
     const XLSX = await import('xlsx')
     const header = ['ลำดับ', 'หน่วยงาน', 'จังหวัด', 'รายการ', 'จำนวน', 'จำนวนรถ', 'ประมาณการค่าขนส่ง', 'ค่าขนส่งจริง', 'วันที่']
+    const empty = rows.length === 0
     const aoa: (string | number | null)[][] = []
-    aoa.push(['บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)'])
-    aoa.push([`รายการส่งของเดือน ${monthTitle}`])
-    aoa.push([`วิธีจัดส่ง: ${method}`])
-    const headerRowIdx = aoa.length
+    type Range = { s: { r: number; c: number }; e: { r: number; c: number } }
+    const merges: Range[] = []
+    const spanAll = (r: number) => merges.push({ s: { r, c: 0 }, e: { r, c: 8 } })
+    // หัวจดหมายบริษัท
+    for (const line of [COMPANY.name, COMPANY.address, COMPANY.phone, COMPANY.taxId, `รายการส่งของเดือน ${monthTitle}`, `วิธีจัดส่ง: ${method}`]) {
+      spanAll(aoa.length); aoa.push([line])
+    }
+    aoa.push([]) // เว้นบรรทัด
     aoa.push(header)
     const dataStart = aoa.length
-    rows.forEach((r, i) => {
-      aoa.push([
-        i + 1,
-        r.hospitalSpan > 0 ? r.hospital : null,
-        r.provinceSpan > 0 ? r.province : null,
-        r.item,
-        r.qty,
-        null, // จำนวนรถ (กรอกเอง)
-        r.estCost ?? null,
-        null, // ค่าขนส่งจริง (กรอกเอง)
-        r.provinceSpan > 0 ? beDate(r.shippedDate) : null,
-      ])
-    })
-    const totalRowIdx = aoa.length
-    aoa.push(['', '', '', 'รวม', totalQty, null, hasEst ? totalEst : null, null, '-'])
+    if (empty) {
+      for (let i = 0; i < BLANK_ROWS; i++) aoa.push([i + 1, null, null, null, null, null, null, null, null])
+      aoa.push(['', '', '', 'รวม', null, null, null, null, '-'])
+    } else {
+      rows.forEach((r, i) => {
+        aoa.push([
+          i + 1,
+          r.hospitalSpan > 0 ? r.hospital : null,
+          r.provinceSpan > 0 ? r.province : null,
+          r.item,
+          r.qty,
+          null, // จำนวนรถ (กรอกเอง)
+          r.estCost ?? null,
+          null, // ค่าขนส่งจริง (กรอกเอง)
+          r.provinceSpan > 0 ? beDate(r.shippedDate) : null,
+        ])
+      })
+      aoa.push(['', '', '', 'รวม', totalQty, null, hasEst ? totalEst : null, null, '-'])
+      // merge แนวตั้ง: จังหวัด(2)/จำนวนรถ(5)/วันที่(8) ตาม provinceSpan ; หน่วยงาน(1) ตาม hospitalSpan
+      rows.forEach((r, i) => {
+        const R = dataStart + i
+        if (r.provinceSpan > 1) for (const c of [2, 5, 8]) merges.push({ s: { r: R, c }, e: { r: R + r.provinceSpan - 1, c } })
+        if (r.hospitalSpan > 1) merges.push({ s: { r: R, c: 1 }, e: { r: R + r.hospitalSpan - 1, c: 1 } })
+      })
+    }
+    // ลายเซ็น
+    aoa.push([]); aoa.push([])
+    aoa.push([SIGNERS[0].role, null, null, SIGNERS[1].role, null, null, SIGNERS[2].role, null, null])
+    aoa.push([`(${SIGNERS[0].name})`, null, null, `(${SIGNERS[1].name})`, null, null, `(${SIGNERS[2].name})`, null, null])
+    aoa.push([]); aoa.push([null, null, null, SIGNERS[3].role])
+    aoa.push([null, null, null, `(${SIGNERS[3].name})`])
 
     const ws = XLSX.utils.aoa_to_sheet(aoa)
-    // merge: หัวเรื่อง 3 แถวแรก (A..I)
-    type Range = { s: { r: number; c: number }; e: { r: number; c: number } }
-    const merges: Range[] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
-    ]
-    // merge แนวตั้ง: จังหวัด(2)/จำนวนรถ(5)/วันที่(8) ตาม provinceSpan ; หน่วยงาน(1) ตาม hospitalSpan
-    rows.forEach((r, i) => {
-      const R = dataStart + i
-      if (r.provinceSpan > 1) {
-        for (const c of [2, 5, 8]) merges.push({ s: { r: R, c }, e: { r: R + r.provinceSpan - 1, c } })
-      }
-      if (r.hospitalSpan > 1) merges.push({ s: { r: R, c: 1 }, e: { r: R + r.hospitalSpan - 1, c: 1 } })
-    })
     ws['!merges'] = merges as unknown as typeof ws['!merges']
     ws['!cols'] = [{ wch: 6 }, { wch: 34 }, { wch: 14 }, { wch: 30 }, { wch: 8 }, { wch: 9 }, { wch: 18 }, { wch: 14 }, { wch: 12 }]
-    void headerRowIdx; void totalRowIdx
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, monthTitle)
     XLSX.writeFile(wb, `${fileBase}.xlsx`)
@@ -108,9 +129,14 @@ export function ShippingCostReport({
 
       {/* ฟอร์มพิมพ์ */}
       <div id="ship-report" className="bg-white text-[#1C1917] p-6 border border-[#E7EDF4] rounded-xl">
+        <div className="mb-3">
+          <div className="text-[14px] font-bold">{COMPANY.name}</div>
+          <div className="text-[11px] text-[#5A6B82]">{COMPANY.address}</div>
+          <div className="text-[11px] text-[#5A6B82]">{COMPANY.phone}</div>
+          <div className="text-[11px] text-[#5A6B82]">{COMPANY.taxId}</div>
+        </div>
         <div className="text-center mb-3">
-          <div className="text-[15px] font-bold">บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด (สำนักงานใหญ่)</div>
-          <div className="text-[16px] font-bold mt-1">รายการส่งของเดือน {monthTitle}</div>
+          <div className="text-[16px] font-bold">รายการส่งของเดือน {monthTitle}</div>
           <div className="text-[12px] text-[#5A6B82] mt-0.5">วิธีจัดส่ง: {method}</div>
         </div>
 
@@ -123,8 +149,22 @@ export function ShippingCostReport({
             </tr>
           </thead>
           <tbody>
+            {/* ฟอร์มเปล่า: เดือนที่ยังไม่มีข้อมูล → แถวว่างให้กรอกเอง */}
+            {rows.length === 0 && Array.from({ length: BLANK_ROWS }).map((_, i) => (
+              <tr key={`b${i}`}>
+                <td className="border border-[#B9C4D4] px-2 py-2 text-center">{i + 1}</td>
+                {Array.from({ length: 8 }).map((__, c) => <td key={c} className="border border-[#B9C4D4] px-2 py-2"></td>)}
+              </tr>
+            ))}
             {rows.length === 0 && (
-              <tr><td colSpan={9} className="border border-[#B9C4D4] px-2 py-6 text-center text-[#8492A6]">ไม่มีรายการจัดส่งด้วยวิธีนี้ในเดือนที่เลือก</td></tr>
+              <tr className="bg-[#F8FAFD] font-bold">
+                <td className="border border-[#B9C4D4] px-2 py-1.5 text-center" colSpan={4}>รวม</td>
+                <td className="border border-[#B9C4D4] px-2 py-1.5"></td>
+                <td className="border border-[#B9C4D4] px-2 py-1.5"></td>
+                <td className="border border-[#B9C4D4] px-2 py-1.5"></td>
+                <td className="border border-[#B9C4D4] px-2 py-1.5"></td>
+                <td className="border border-[#B9C4D4] px-2 py-1.5 text-center">-</td>
+              </tr>
             )}
             {rows.map((r, i) => (
               <tr key={i}>
@@ -160,12 +200,22 @@ export function ShippingCostReport({
           </tbody>
         </table>
 
-        {/* ลายเซ็น */}
-        <div className="grid grid-cols-2 gap-x-10 gap-y-8 mt-10 text-[12px] text-center">
-          <div><div className="border-b border-dotted border-[#8492A6] mb-1"></div>ผู้จัดทำ</div>
-          <div><div className="border-b border-dotted border-[#8492A6] mb-1"></div>ผู้ตรวจสอบ</div>
-          <div><div className="border-b border-dotted border-[#8492A6] mb-1"></div>ผู้รับเอกสาร</div>
-          <div><div className="border-b border-dotted border-[#8492A6] mb-1"></div>ผู้ตรวจสอบ</div>
+        {/* ลายเซ็น — ชื่อตามฟอร์มตัวอย่าง */}
+        <div className="grid grid-cols-3 gap-x-8 gap-y-10 mt-12 text-[12px] text-center">
+          {SIGNERS.slice(0, 3).map((s, i) => (
+            <div key={i}>
+              <div className="mb-1">..............................................................</div>
+              <div>({s.name})</div>
+              <div className="text-[#5A6B82]">{s.role}</div>
+            </div>
+          ))}
+          <div></div>
+          <div>
+            <div className="mb-1">..............................................................</div>
+            <div>({SIGNERS[3].name})</div>
+            <div className="text-[#5A6B82]">{SIGNERS[3].role}</div>
+          </div>
+          <div></div>
         </div>
       </div>
     </div>
