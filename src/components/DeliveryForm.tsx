@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DateField } from './DateField'
+import { Combobox } from './Combobox'
 import { useRouter } from 'next/navigation'
 import type { DeliveryStatus } from '@prisma/client'
 import type { SerializedJob, SerializedDelivery } from '@/lib/serialize'
@@ -61,6 +62,24 @@ export function DeliveryForm({
 }) {
   const router = useRouter()
   const [dForm, setDForm] = useState<DeliveryFormState>(() => initialDelivery(delivery))
+
+  // วิธีจัดส่ง — ตัวเลือกแก้ไขได้ที่ ตั้งค่า › วิธีจัดส่ง (ยังพิมพ์ค่าที่ไม่มีในลิสต์ได้)
+  const [shipMethods, setShipMethods] = useState<string[]>([])
+  useEffect(() => {
+    let alive = true
+    fetch('/api/settings/options?category=SHIP_METHOD', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((items: { value: string; active: boolean }[]) => {
+        if (alive) setShipMethods((items || []).filter((i) => i.active).map((i) => i.value))
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+  // แสดงค่าปัจจุบันเสมอ แม้ยังไม่มีในลิสต์ (กันข้อมูลเก่าหาย)
+  const methodOptions = (dForm.method && !shipMethods.includes(dForm.method)
+    ? [dForm.method, ...shipMethods]
+    : shipMethods
+  ).map((v) => ({ id: v, label: v }))
 
   const [dSaving, setDSaving] = useState(false)
   const [dSaved, setDSaved] = useState(false)
@@ -188,7 +207,15 @@ export function DeliveryForm({
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">วิธีจัดส่ง</label>
-            <input value={dForm.method} onChange={e => setD('method', e.target.value)} className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5" />
+            <Combobox
+              value={dForm.method}
+              options={methodOptions}
+              onChange={(v) => setD('method', v)}
+              onCreate={async (q) => { setD('method', q) }}
+              createLabel={(q) => `ใช้ "${q}" (พิมพ์เอง)`}
+              placeholder="เลือกหรือพิมพ์วิธีจัดส่ง…"
+            />
+            <a href="/settings/SHIP_METHOD" target="_blank" rel="noopener" className="inline-block mt-1 text-[11.5px] text-[#8492A6] underline hover:text-[var(--brand)]">แก้ไขรายการวิธีจัดส่ง</a>
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#5A6B82] mb-1">รถ/บริษัทขนส่ง</label>

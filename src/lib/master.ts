@@ -6,6 +6,7 @@ export const MASTER_CATEGORIES = [
   { key: 'PROVINCE', label: 'จังหวัด' },
   { key: 'COLOR', label: 'สี' },
   { key: 'JOB_DOC_TYPE', label: 'ชนิดเอกสารงาน' },
+  { key: 'SHIP_METHOD', label: 'วิธีจัดส่ง' },
 ] as const
 
 export type MasterCategory = (typeof MASTER_CATEGORIES)[number]['key']

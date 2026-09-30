@@ -64,6 +64,11 @@ const TARGETS: Record<MasterCategory, Target[]> = {
       (db, v) => db.attachment.count({ where: { refTable: 'JobDoc', category: v } }),
       (tx, f, t) => tx.attachment.updateMany({ where: { refTable: 'JobDoc', category: f }, data: { category: t } })),
   ],
+  SHIP_METHOD: [
+    productTypeTarget('การจัดส่ง',
+      (db, v) => db.deliveryRecord.count({ where: { method: v } }),
+      (tx, f, t) => tx.deliveryRecord.updateMany({ where: { method: f }, data: { method: t } })),
+  ],
 }
 
 export type RenameCounts = Record<string, number>
