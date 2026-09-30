@@ -56,15 +56,21 @@ export function MasterOptionManager({
       return false
     }
     const upd = await res.json()
-    // A rename also rewrites the copies held on jobs and product specs — say what moved,
-    // so it is obvious the change reached existing data and nothing was left behind.
+    // A rename/merge also rewrites the copies held on jobs, specs and delivery — say
+    // what moved, so it is obvious the change reached existing data.
     if (upd.renamedFrom && upd.updatedRows) {
       const moved = Object.entries(upd.updatedRows as Record<string, number>).filter(([, n]) => n > 0)
-      setNote(moved.length
-        ? `เปลี่ยนชื่อแล้ว · อัปเดตตาม ${moved.map(([k, n]) => `${k} ${n}`).join(' · ')}`
-        : 'เปลี่ยนชื่อแล้ว · ยังไม่มีข้อมูลเดิมที่ใช้ชื่อนี้')
+      const tail = moved.length ? ` · อัปเดตตาม ${moved.map(([k, n]) => `${k} ${n}`).join(' · ')}` : ''
+      setNote(upd.merged
+        ? `รวม "${upd.renamedFrom}" เข้ากับ "${upd.into}" แล้ว${tail}`
+        : (moved.length ? `เปลี่ยนชื่อแล้ว${tail}` : 'เปลี่ยนชื่อแล้ว · ยังไม่มีข้อมูลเดิมที่ใช้ชื่อนี้'))
     }
-    setItems((x) => x.map((it) => (it.id === id ? { ...it, value: upd.value, active: upd.active } : it)))
+    if (upd.merged) {
+      // แถวต้นทางถูกลบไปรวมกับปลายทาง — เอาออกจากลิสต์
+      setItems((x) => x.filter((it) => it.id !== id))
+    } else {
+      setItems((x) => x.map((it) => (it.id === id ? { ...it, value: upd.value, active: upd.active } : it)))
+    }
     router.refresh()
     return true
   }

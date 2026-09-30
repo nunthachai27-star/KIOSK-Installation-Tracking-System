@@ -19,18 +19,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (typeof body.value === 'string' && body.value.trim()) data.value = body.value.trim()
   if (typeof body.active === 'boolean') data.active = body.active
 
-  // guard against renaming into a duplicate within the same category
-  if (data.value && data.value !== existing.value) {
-    const dup = await prisma.masterOption.findUnique({
-      where: { category_value: { category: existing.category, value: data.value } },
-    })
-    if (dup) return NextResponse.json({ error: 'มีรายการนี้อยู่แล้ว' }, { status: 409 })
-  }
-
-  // A rename has to reach the copies of this value stored on jobs and product specs,
-  // or those rows keep the old text and their spec lookups stop matching.
+  // Rename vs. active-only toggle. A rename has to reach the copies of this value
+  // stored on jobs / product specs / delivery, or those rows keep the old text.
   const renaming = !!data.value && data.value !== existing.value
-  if (!renaming || !isCategory(existing.category)) {
+  if (!renaming) {
     const updated = await prisma.masterOption.update({ where: { id }, data })
     await logChange(session.user, 'UPDATE', 'ตั้งค่า', `แก้ตัวเลือก "${updated.value}"`, { refTable: 'MasterOption', refId: id, before: existing, after: updated })
     return NextResponse.json(updated)
@@ -38,15 +30,40 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const from = existing.value
   const to = data.value as string
+  const dup = await prisma.masterOption.findUnique({
+    where: { category_value: { category: existing.category, value: to } },
+  })
 
+  // Categories without copy-propagation (e.g. per-type equipment): plain rename only.
+  if (!isCategory(existing.category)) {
+    if (dup) return NextResponse.json({ error: 'มีรายการนี้อยู่แล้ว' }, { status: 409 })
+    const updated = await prisma.masterOption.update({ where: { id }, data })
+    await logChange(session.user, 'UPDATE', 'ตั้งค่า', `แก้ตัวเลือก "${updated.value}"`, { refTable: 'MasterOption', refId: id, before: existing, after: updated })
+    return NextResponse.json(updated)
+  }
+
+  // Renaming onto a name held in a uniquely-keyed table (QC/BOM/etc.) can't be merged.
   const collisions = await findCollisions(prisma, existing.category, to)
   if (collisions.length) {
     return NextResponse.json({
       error: 'collision',
-      message: `มีการตั้งค่าของ "${to}" อยู่แล้ว (${collisions.join(', ')}) — เปลี่ยนชื่อทับไม่ได้ ต้องรวมหรือลบของเดิมก่อน`,
+      message: `มีการตั้งค่าของ "${to}" อยู่แล้ว (${collisions.join(', ')}) — รวมกันไม่ได้ ต้องจัดการของเดิมก่อน`,
     }, { status: 409 })
   }
 
+  // Renaming onto an existing option = MERGE: rewrite every copy from→to, then remove
+  // the now-redundant source option (the destination option stays). Undoable via Log.
+  if (dup) {
+    const moved = await prisma.$transaction(async (tx) => {
+      const m = await applyRename(tx, existing.category as Parameters<typeof applyRename>[1], from, to)
+      await tx.masterOption.delete({ where: { id } })
+      return m
+    })
+    await logChange(session.user, 'DELETE', 'ตั้งค่า', `รวม "${from}" → "${to}"`, { refTable: 'MasterOption', refId: id, before: existing })
+    return NextResponse.json({ merged: true, into: to, renamedFrom: from, updatedRows: moved })
+  }
+
+  // Normal rename — destination name is free.
   const [updated, moved] = await prisma.$transaction(async (tx) => {
     const u = await tx.masterOption.update({ where: { id }, data })
     const m = await applyRename(tx, existing.category as Parameters<typeof applyRename>[1], from, to)
