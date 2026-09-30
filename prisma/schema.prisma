@@ -279,6 +279,22 @@ model HospitalContact {
   @@index([hospitalId])
 }
 
+// สำเนารายงานค่าขนส่งรายเดือน (บันทึกจากแถบแบบฟอร์ม) — เก็บ snapshot HTML ไว้พิมพ์ซ้ำ
+model ShipReportCopy {
+  id            String   @id @default(cuid())
+  year          Int      // ค.ศ.
+  month         Int      // 0-11
+  method        String
+  title         String   // เช่น "มิถุนายน 2568"
+  html          String   // snapshot ของฟอร์ม (พร้อมพิมพ์)
+  createdById   String?
+  createdByName String?
+  createdAt     DateTime @default(now())
+
+  @@index([year, month])
+  @@index([createdAt])
+}
+
 model Job {
   id                String              @id @default(cuid())
   jobCode           String              @unique

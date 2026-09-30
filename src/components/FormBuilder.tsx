@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { confirmDialog } from '@/lib/dialog'
 import { BMS_LOGO_DATA_URL } from '@/lib/bmsLogo'
 import { ShipLabel } from '@/components/ShipLabel'
 import { EquipSetLabel } from '@/components/EquipSetLabel'
@@ -612,13 +613,13 @@ function buildShippingCost(): string {
   const headers = ['ลำดับ', 'หน่วยงาน', 'จังหวัด', 'รายการ', 'จำนวน', 'จำนวนรถ', 'ประมาณการค่าขนส่ง', 'ค่าขนส่งจริง', 'วันที่']
   const th = (t: string) => `<th style="border:1px solid #000;padding:5px 6px;background:#eef2f7;font-weight:700;text-align:center;">${t}</th>`
   const rows = Array.from({ length: 12 }, (_, i) => shipRowHtml(i + 1)).join('')
-  const cell = (align: string) => `<td ${ed} style="border:1px solid #000;padding:4px 6px;text-align:${align};font-weight:700;"></td>`
+  const tot = (id: string, align: string) => `<td id="${id}" style="border:1px solid #000;padding:4px 6px;text-align:${align};font-weight:700;"></td>`
   const totalRow = `<tr>
       <td colspan="4" style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;">รวม</td>
-      <td id="ff-ship-tqty" style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;"></td>
-      ${cell('center')}
-      <td id="ff-ship-test" style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:700;"></td>
-      ${cell('right')}
+      ${tot('ff-ship-tqty', 'center')}
+      ${tot('ff-ship-ttruck', 'center')}
+      ${tot('ff-ship-test', 'right')}
+      ${tot('ff-ship-tactual', 'right')}
       <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:700;">-</td>
       <td class="ff-noprint" style="border:0;"></td>
     </tr>`
@@ -812,6 +813,9 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
   const [equip, setEquip] = useState(false)
   const [reload, setReload] = useState(0)
   const [savedExists, setSavedExists] = useState(false)
+  // สำเนารายงานค่าขนส่งรายเดือนที่บันทึกไว้
+  type ShipCopy = { id: string; year: number; month: number; title: string; createdByName: string | null; createdAt: string; createdById: string | null }
+  const [shipCopies, setShipCopies] = useState<ShipCopy[]>([])
   const [docBuilt, setDocBuilt] = useState(0) // เพิ่มขึ้นเมื่อสร้างหน้าใหม่ (แบบหลายใบ) เพื่อให้สไตล์/ฟอนต์รีอะพลาย
   const sheetWrap = useRef<HTMLDivElement>(null)
   const fitRef = useRef<HTMLDivElement>(null)
@@ -858,10 +862,11 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
         : tpl?.id === 'kiosk-startsmart-plus' ? keyRowHtml(n) : unitRowHtml(n)
       return tbl.rows[0]
     }
+    let shipRecalc: (() => void) | null = null
     wrap.addEventListener('click', (e) => {
       const t = e.target as HTMLElement
-      if (t.id === 'ff-addrow') { tbody?.appendChild(makeRow()); return }
-      if (t.classList?.contains('ff-delrow')) { t.closest('tr')?.remove(); return }
+      if (t.id === 'ff-addrow') { tbody?.appendChild(makeRow()); shipRecalc?.(); return }
+      if (t.classList?.contains('ff-delrow')) { t.closest('tr')?.remove(); shipRecalc?.(); return }
       if (t.classList?.contains('ff-check')) {
         const on = t.getAttribute('data-checked') === '1'
         t.setAttribute('data-checked', on ? '0' : '1')
@@ -874,9 +879,24 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
       const sel = wrap.querySelector('#ff-ship-month') as HTMLSelectElement | null
       const title = wrap.querySelector('#ff-ship-title') as HTMLElement | null
       const methodEl = wrap.querySelector('#ff-ship-method') as HTMLElement | null
-      const tQty = wrap.querySelector('#ff-ship-tqty') as HTMLElement | null
-      const tEst = wrap.querySelector('#ff-ship-test') as HTMLElement | null
       const method = () => (methodEl?.textContent || 'ขนส่งลุงแดงโลจิสติก').trim()
+      // รวมแต่ละคอลัมน์แบบคำนวณสด (จำนวน · จำนวนรถ · ประมาณการ · ค่าจริง)
+      const num = (el: Element | undefined) => { const v = parseFloat((el?.textContent || '').replace(/[^0-9.-]/g, '')); return Number.isFinite(v) ? v : 0 }
+      const recalc = () => {
+        let q = 0, tr = 0, est = 0, act = 0
+        for (const row of Array.from(tbody?.rows ?? [])) {
+          const c = row.cells
+          q += num(c[4]); tr += num(c[5]); est += num(c[6]); act += num(c[7])
+        }
+        const set = (id: string, txt: string) => { const el = wrap.querySelector('#' + id); if (el) el.textContent = txt }
+        set('ff-ship-tqty', q ? String(q) : '')
+        set('ff-ship-ttruck', tr ? String(tr) : '')
+        set('ff-ship-test', est ? shipBaht.format(est) : '')
+        set('ff-ship-tactual', act ? shipBaht.format(act) : '')
+      }
+      shipRecalc = recalc
+      // แก้ตัวเลขในตาราง → อัปเดตยอดรวมทันที
+      tbody?.addEventListener('input', recalc, { signal: ac.signal })
       async function load(y?: number, m?: number) {
         const qs = new URLSearchParams({ method: method() })
         if (y != null && m != null) { qs.set('y', String(y)); qs.set('m', String(m)) }
@@ -898,8 +918,7 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
           const list = data.rows.length ? data.rows.map((r, i) => shipRowHtml(i + 1, r)) : Array.from({ length: 12 }, (_, i) => shipRowHtml(i + 1))
           tbody.innerHTML = list.join('')
         }
-        if (tQty) tQty.textContent = data.rows.length ? String(data.totalQty) : ''
-        if (tEst) tEst.textContent = data.hasEst ? shipBaht.format(data.totalEst) : ''
+        recalc() // อัปเดตยอดรวมหลังเติมข้อมูล
       }
       sel?.addEventListener('change', () => {
         const [y, m] = (sel.value || '').split('-').map(Number)
@@ -1148,6 +1167,55 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
     } finally { setBusy(false); setPhase('') }
   }
 
+  // ── สำเนารายงานค่าขนส่งรายเดือน ─────────────────────────────────────────────
+  async function refreshShipCopies() {
+    const r = await fetch('/api/forms/shipping/copies', { cache: 'no-store' }).catch(() => null)
+    if (r?.ok) { const j = await r.json(); setShipCopies(j.copies ?? []) }
+  }
+  useEffect(() => { if (tpl?.id === 'shipping-cost') refreshShipCopies() }, [tpl])
+
+  async function saveShipCopy() {
+    const wrap = sheetWrap.current
+    const sheet = wrap?.querySelector('#ff-sheet') as HTMLElement | null
+    if (!wrap || !sheet) return
+    const clone = sheet.cloneNode(true) as HTMLElement
+    clone.querySelectorAll('.ff-noprint').forEach((n) => n.remove())
+    clone.querySelectorAll('.ff-sel').forEach((n) => n.classList.remove('ff-sel'))
+    clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'))
+    const sel = wrap.querySelector('#ff-ship-month') as HTMLSelectElement | null
+    const [y, m] = (sel?.value || '').split('-').map(Number)
+    const method = (wrap.querySelector('#ff-ship-method')?.textContent || 'ขนส่งลุงแดงโลจิสติก').trim()
+    const title = (wrap.querySelector('#ff-ship-title')?.textContent || '').trim() || `${y}/${m}`
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch('/api/forms/shipping/copies', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year: y, month: m, method, title, html: clone.outerHTML }),
+      })
+      if (r.ok) { setMsg({ kind: 'ok', text: `บันทึกสำเนา "${title}" แล้ว` }); refreshShipCopies() }
+      else { const d = await r.json().catch(() => null); setMsg({ kind: 'err', text: d?.message || 'บันทึกสำเนาไม่สำเร็จ' }) }
+    } finally { setBusy(false) }
+  }
+
+  async function loadShipCopy(id: string) {
+    const wrap = sheetWrap.current
+    const sheet = wrap?.querySelector('#ff-sheet') as HTMLElement | null
+    if (!wrap || !sheet) return
+    const r = await fetch(`/api/forms/shipping/copies/${id}`, { cache: 'no-store' }).catch(() => null)
+    if (!r?.ok) return
+    const j = await r.json()
+    sheet.outerHTML = j.copy.html // แทนที่ด้วย snapshot (อ่านอย่างเดียว, พิมพ์/บันทึกไฟล์ได้)
+    setMsg({ kind: 'ok', text: `เปิดสำเนา "${j.copy.title}" — พิมพ์/ดาวน์โหลดไฟล์ได้ (เลือกเดือนใหม่ในการ์ดเพื่อกลับไปแก้ไข)` })
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50)
+  }
+
+  async function delShipCopy(id: string, title: string) {
+    if (!(await confirmDialog({ title: 'ลบสำเนา', message: `ลบสำเนา "${title}"?`, danger: true, confirmText: 'ลบ' }))) return
+    const r = await fetch(`/api/forms/shipping/copies/${id}`, { method: 'DELETE' })
+    if (r.ok) setShipCopies((x) => x.filter((c) => c.id !== id))
+    else { const d = await r.json().catch(() => null); setMsg({ kind: 'err', text: d?.message || 'ลบไม่สำเร็จ' }) }
+  }
+
   // พิมพ์ผ่าน iframe + Blob URL (เสถียรกว่า window.open('about:blank') ที่ Chrome มัก
   // พิมพ์ไม่ผ่าน) และรอให้รูปโหลดเสร็จก่อนสั่งพิมพ์ กัน "Print Failed"
   function printSheet() {
@@ -1392,6 +1460,30 @@ export function FormBuilder({ initialJobId, userId = 'anon' }: { initialJobId?: 
               className="w-full text-[13px] font-semibold px-3 py-2.5 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)]">
               🖨️ พิมพ์
             </button>
+
+            {/* ฟอร์มค่าขนส่ง: บันทึกสำเนา + แถบสำเนารายเดือนที่เคยทำ */}
+            {tpl?.id === 'shipping-cost' && (
+              <div className="mt-1 rounded-lg border border-[#E7EDF4] bg-[#FBFCFE] p-2.5">
+                <button type="button" onClick={saveShipCopy} disabled={busy}
+                  className="w-full text-[13px] font-semibold px-3 py-2 rounded-lg bg-[#157F4C] text-white hover:bg-[#0F6B3E] disabled:opacity-60">
+                  💾 บันทึกสำเนาเดือนนี้
+                </button>
+                <div className="mt-2.5 text-[12px] font-bold text-[#5A6B82]">📁 สำเนาที่บันทึกไว้ ({shipCopies.length})</div>
+                <div className="mt-1 flex flex-col gap-1 max-h-[240px] overflow-auto">
+                  {shipCopies.length === 0 && <div className="text-[11.5px] text-[#96A2B5] px-1 py-2">ยังไม่มีสำเนา — กดปุ่มด้านบนเพื่อบันทึกเดือนนี้</div>}
+                  {shipCopies.map((c) => (
+                    <div key={c.id} className="flex items-center gap-1.5 text-[12px] border border-[#EEF2F8] rounded-lg px-2 py-1.5 bg-white">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[#1C1917] truncate">{c.title}</div>
+                        <div className="text-[10.5px] text-[#96A2B5] truncate">{c.createdByName ? `${c.createdByName} · ` : ''}{new Date(c.createdAt).toLocaleDateString('th-TH')}</div>
+                      </div>
+                      <button type="button" onClick={() => loadShipCopy(c.id)} className="text-[11.5px] font-semibold text-[var(--brand)] hover:underline shrink-0">เปิด</button>
+                      <button type="button" onClick={() => delShipCopy(c.id, c.title)} className="text-[11.5px] font-semibold text-[#C13540] hover:bg-[#FBE4E4] rounded px-1 shrink-0">ลบ</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {busy && <div className="text-[12.5px] text-[var(--brand)] font-semibold">{phase || 'กำลังทำงาน…'}</div>}
             {msg && (
               <div className={`text-[12.5px] rounded-lg px-3 py-2 ${msg.kind === 'ok' ? 'text-[#157F4C] bg-[#EAF7EF] border border-[#BFE6CE]' : 'text-[#B0272F] bg-[#FBE9E9] border border-[#E7B4B4]'}`}>
