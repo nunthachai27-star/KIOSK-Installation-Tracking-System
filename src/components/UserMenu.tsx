@@ -63,6 +63,10 @@ export function UserMenu({ userId, name, role, avatar, theme, bg, leadsUnread = 
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             📋 สรุปงาน
           </Link>
+          <Link href="/report/shipping" onClick={() => setOpen(false)}
+            className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
+            🚚 ฟอร์มค่าขนส่ง
+          </Link>
           <Link href="/settings" onClick={() => setOpen(false)}
             className="w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium text-[#3C4A5E] hover:bg-[#F0EEEC] flex items-center gap-2">
             ⚙️ ตั้งค่า
