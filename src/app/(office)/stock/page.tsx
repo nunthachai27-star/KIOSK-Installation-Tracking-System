@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { getStockSummary } from '@/lib/stock'
+import { isSuperAdmin } from '@/lib/superAdmin'
 import { StockDashboard } from '@/components/StockDashboard'
 import { StockAnomalyButton } from '@/components/StockAnomalyButton'
 import { StockReportButton } from '@/components/StockReportButton'
 
 export default async function StockPage() {
-  const { kpi, groups } = await getStockSummary()
+  const [{ kpi, groups }, canImport] = await Promise.all([getStockSummary(), isSuperAdmin()])
   return (
     <div className="p-4 sm:p-6 max-w-[1160px] mx-auto flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -19,6 +20,11 @@ export default async function StockPage() {
         <div className="flex items-center gap-2">
           <StockReportButton />
           <StockAnomalyButton />
+          {canImport && (
+            <Link href="/stock/import" className="ds-hover bg-white text-[#3C4A5E] text-sm font-semibold rounded-lg px-4 py-2.5 border border-[#DCE4EE] hover:border-[var(--brand)] hover:text-[var(--brand)]">
+              ⬆ นำเข้าจาก Excel
+            </Link>
+          )}
           <Link href="/stock/new" className="ds-hover bg-[var(--brand)] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[var(--brand-strong)] shadow-[0_6px_16px_-8px_rgba(234,88,12,0.6)]">
             ＋ เพิ่มสินค้า / รับเข้า
           </Link>
