@@ -37,10 +37,11 @@ export async function GET() {
     const swapFree = kbToMb(mem.SwapFree)
     const swapUsed = Math.max(0, swapTotal - swapFree)
 
-    // ประเมินว่าปลอดภัยที่จะ deploy ไหม (load ต่ำ + แรมพอ)
+    // ประเมินว่าปลอดภัยที่จะ deploy ไหม — ดู load + แรมว่างเป็นหลัก (ตัวชี้วัดจริงว่าจะ thrash ไหม)
+    // ไม่เอา swap มาตัดไฟ เพราะเครื่องนี้ swap เต็มเรื้อรัง (Linux ไม่คืน swap เอง) จะทำให้เหลืองตลอด
     let deploy: 'ok' | 'caution' | 'avoid' = 'ok'
     if (load1 >= 6 || memAvailable < 500) deploy = 'avoid'
-    else if (load1 >= 3 || memAvailable < 1000 || (swapTotal > 0 && swapUsed / swapTotal > 0.9)) deploy = 'caution'
+    else if (load1 >= 3 || memAvailable < 1000) deploy = 'caution'
 
     const cores = (() => { try { return os.cpus().length } catch { return 0 } })()
     return NextResponse.json(
