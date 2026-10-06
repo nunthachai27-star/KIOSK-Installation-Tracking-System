@@ -35,7 +35,7 @@ export function FeedbackButton({ source = 'fat', label = '📝 แจ้งป�
   return (
     <>
       <button type="button" onClick={() => { reset(); setOpen(true) }}
-        className="text-[13px] font-semibold px-3.5 py-2 rounded-lg border border-[#DCE4EE] text-[#3C4A5E] hover:border-[var(--brand)] hover:text-[var(--brand)]">
+        className="inline-flex items-center gap-1.5 text-[14px] font-bold px-5 py-2.5 rounded-xl bg-[#F59E0B] text-white hover:bg-[#D97706] shadow-[0_8px_20px_-6px_rgba(245,158,11,0.65)] transition-colors">
         {label}
       </button>
 
