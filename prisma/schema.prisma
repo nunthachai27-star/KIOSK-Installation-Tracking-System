@@ -14,6 +14,7 @@ enum Role {
   TECHNICIAN
   EXECUTIVE
   SYSTEM_ADMIN
+  VIEWER // ผู้ชม — เข้าได้ทุกหน้า (desktop) แต่แก้/ลบไม่ได้ (บล็อกทุก method ที่ไม่ใช่ GET ใน middleware)
 }
 
 enum JobStatus {

@@ -49,12 +49,21 @@ export default auth((req) => {
     return Response.redirect(new URL('/login', base))
   }
 
+  const role = session.user.role
+
+  // บัญชี "ผู้ชม" (VIEWER, read-only): เข้าดูได้ทุกหน้า แต่บล็อกทุก request ที่ไม่ใช่การอ่าน
+  // (POST/PUT/PATCH/DELETE) ทั้งเว็บ เพื่อกันแก้/ลบ — ยกเว้น /api/auth (ออกจากระบบ)
+  const isRead = req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS'
+  if (role === 'VIEWER' && !isRead && !pathname.startsWith('/api/auth')) {
+    return new Response('อ่านอย่างเดียว — บัญชีผู้ชมไม่สามารถแก้ไข/ลบข้อมูลได้', { status: 403 })
+  }
+
   const isApi = pathname.startsWith('/api')
   const isMobile = pathname === '/m' || pathname.startsWith('/m/')
   const isOfficePage = !isApi && !isMobile
 
-  if (isOfficePage && session.user.role !== 'OFFICE') {
-    // FIELD (and any non-OFFICE role) uses the mobile app, not the desktop office UI.
+  // หน้าเดสก์ท็อป (office) เปิดให้ OFFICE และ VIEWER (ผู้ชม) — role อื่นใช้แอปมือถือ /m
+  if (isOfficePage && role !== 'OFFICE' && role !== 'VIEWER') {
     return Response.redirect(new URL('/m', base))
   }
 })
