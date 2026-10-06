@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logAction } from '@/lib/audit'
 import { isThemeKey, isBgKey } from '@/lib/themes'
+import { isSuperAdmin } from '@/lib/superAdmin'
+import type { Role } from '@prisma/client'
+
+const ROLE_SET = new Set(['OFFICE', 'FIELD', 'VIEWER', 'EXECUTIVE', 'TECHNICIAN', 'ADMIN', 'SYSTEM_ADMIN'])
 
 // Edit a staff member's nickname (ชื่อเล่น) or profile avatar (icon/photo/colour).
+// super admin เพิ่มเติม: เปลี่ยนสิทธิ์ (role) / เปิด-ปิดใช้งาน / รีเซ็ตรหัสผ่าน
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   const { id } = await params
@@ -14,6 +20,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const body = await req.json()
+
+  // งานระดับผู้ดูแล (role/active/รหัสผ่าน) — เฉพาะ super admin
+  const adminFields = body.role !== undefined || body.active !== undefined || body.password !== undefined
+  if (adminFields) {
+    if (!(await isSuperAdmin())) return NextResponse.json({ error: 'forbidden', message: 'เฉพาะ super admin' }, { status: 403 })
+    const data: { role?: Role; active?: boolean; passwordHash?: string } = {}
+    if (body.role !== undefined) {
+      if (!ROLE_SET.has(String(body.role))) return NextResponse.json({ error: 'bad', message: 'สิทธิ์ไม่ถูกต้อง' }, { status: 400 })
+      data.role = body.role as Role
+    }
+    if (body.active !== undefined) data.active = !!body.active
+    if (body.password !== undefined) {
+      if (String(body.password).length < 4) return NextResponse.json({ error: 'bad', message: 'รหัสผ่านอย่างน้อย 4 ตัว' }, { status: 400 })
+      data.passwordHash = await bcrypt.hash(String(body.password), 10)
+    }
+    const u = await prisma.user.update({ where: { id }, data, select: { id: true, username: true, name: true, role: true, active: true } }).catch(() => null)
+    if (!u) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    await logAction(session.user, 'UPDATE', 'ผู้ใช้', `แก้สิทธิ์/บัญชี ${u.username} → role ${u.role}${body.active !== undefined ? (u.active ? ' · เปิด' : ' · ปิด') : ''}${body.password !== undefined ? ' · รีเซ็ตรหัส' : ''}`)
+    return NextResponse.json({ ok: true, user: u })
+  }
   const data: { nickname?: string | null; avatarIcon?: string | null; avatarColor?: string | null; avatarUrl?: string | null; theme?: string | null; bg?: string | null } = {}
   if (body.theme !== undefined) data.theme = isThemeKey(body.theme) ? body.theme : null
   if (body.bg !== undefined) data.bg = isBgKey(body.bg) ? body.bg : null

@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { MASTER_CATEGORIES, EQUIPMENT_PREFIX } from '@/lib/master'
+import { isSuperAdmin } from '@/lib/superAdmin'
 
 export default async function SettingsPage() {
-  const [counts, hospitalCount] = await Promise.all([
+  const [counts, hospitalCount, canManageUsers] = await Promise.all([
     prisma.masterOption.groupBy({ by: ['category'], _count: true, where: { active: true } }),
     prisma.hospital.count(),
+    isSuperAdmin(),
   ])
   const countMap = new Map(counts.map((c) => [c.category, c._count]))
   // Equipment lists live under per-product-type categories (EQUIPMENT_ITEM:<type>).
@@ -42,6 +44,13 @@ export default async function SettingsPage() {
           <div className="text-[13px] text-[#8492A6] mt-1">ชื่อเล่นสำหรับรายงาน</div>
           <div className="text-[12.5px] font-semibold text-[var(--brand)] mt-3">ตั้งชื่อเล่น ›</div>
         </Link>
+        {canManageUsers && (
+          <Link href="/settings/users" className="ds-card ds-hover ds-lift p-5">
+            <div className="font-bold text-[15px] text-[#1C1917] flex items-center gap-1.5">🔐 จัดการผู้ใช้</div>
+            <div className="text-[13px] text-[#8492A6] mt-1">เพิ่มผู้ใช้ · เลือกสิทธิ์ · รีเซ็ตรหัส (super admin)</div>
+            <div className="text-[12.5px] font-semibold text-[var(--brand)] mt-3">จัดการ ›</div>
+          </Link>
+        )}
       </div>
       <p className="text-[12.5px] text-[#8492A6] -mt-1">
         เปิดหมวด <span className="font-semibold text-[#5A6B82]">ประเภทสินค้า</span> เพื่อกำหนด Checklist และชนิด Serial ของสินค้าแต่ละรายการ
