@@ -280,6 +280,22 @@ model HospitalContact {
   @@index([hospitalId])
 }
 
+// แจ้งปัญหา/คำแนะนำ (จากหน้าทดสอบ/รายงานสาธารณะ) — ส่งได้โดยไม่ต้องล็อกอิน
+model Feedback {
+  id           String    @id @default(cuid())
+  source       String    @default("fat") // fat / bp / other
+  detail       String
+  name         String?
+  phone        String?
+  wantCallback Boolean   @default(false)
+  ip           String?   // สำหรับกันสแปม (ไม่แสดงในรายการ)
+  createdAt    DateTime  @default(now())
+  handledAt    DateTime?
+  handledBy    String?
+
+  @@index([source, createdAt])
+}
+
 // สำเนารายงานค่าขนส่งรายเดือน (บันทึกจากแถบแบบฟอร์ม) — เก็บ snapshot HTML ไว้พิมพ์ซ้ำ
 model ShipReportCopy {
   id            String   @id @default(cuid())

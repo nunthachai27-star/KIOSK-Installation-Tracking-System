@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { confirmDialog } from '@/lib/dialog'
 import { FAT_METRICS } from '@/lib/fatMetrics'
+import { FeedbackButton } from './FeedbackButton'
+import { FeedbackList } from './FeedbackList'
 
 type Ref = { n?: string; s?: number }
 type Reading = { id: string; at: string; device: string | null; name: string | null; idcard: string | null; metrics: Record<string, number>; refs?: Record<string, Ref>; raw: unknown }
@@ -175,6 +177,17 @@ export function FatTestDashboard({ endpoint, reportUrl, reportQr, canDelete }: {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* แจ้งปัญหา/คำแนะนำ + รายการที่แจ้งเข้ามา (เจ้าหน้าที่) */}
+      {view === 'live' && (
+        <div className="bg-white border border-[#E7EDF4] rounded-2xl p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <FeedbackButton source="fat" />
+            <span className="text-[12px] text-[#8492A6]">พบปัญหาหรือมีคำแนะนำจากการทดสอบ? แจ้งได้เลย (ติ๊กให้ติดต่อกลับได้)</span>
+          </div>
+          <FeedbackList source="fat" />
         </div>
       )}
 

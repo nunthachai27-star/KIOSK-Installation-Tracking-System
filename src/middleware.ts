@@ -34,6 +34,8 @@ export default auth((req) => {
     '/bp-summary',
     // ลิงก์ดูหน้าทดสอบความดันแบบ "ดูอย่างเดียว" (มี login bms/@1234 ของตัวเอง — ตรวจสิทธิ์ในหน้า/route เอง)
     '/bp-view', '/api/bp-view',
+    // แจ้งปัญหา/คำแนะนำ (POST สาธารณะจากหน้ารายงาน — GET/PATCH ตรวจสิทธิ์ OFFICE ในตัว)
+    '/api/feedback',
     // คู่มือสาธารณะ (เปิดจากลิงก์/QR) + ไฟล์คู่มือ — หน้า /manuals (จัดการ) ยังต้อง login
     '/manual', '/api/manual-file',
     // โชว์เคสโปรดัก Kiosk — เปิดหน้าสาธารณะ + API (leads GET ตรวจสิทธิ์ในตัวเอง).

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { FatReportBody, FAT_PRINT_CSS, type Reading } from '@/components/fatReport'
+import { FeedbackButton } from '@/components/FeedbackButton'
 
 export function FatPublicReport() {
   const [nameInput, setNameInput] = useState('')
@@ -78,6 +79,9 @@ export function FatPublicReport() {
             </button>
             <p className="text-[11.5px] text-[#96A2B5]">* ต้องกรอกชื่อให้ตรงกับที่กรอกบนเครื่องวัด · ระบบแสดงเฉพาะผลของชื่อนี้</p>
           </form>
+          <div className="mt-4 flex justify-center">
+            <FeedbackButton source="fat" />
+          </div>
         </div>
       </div>
     )
