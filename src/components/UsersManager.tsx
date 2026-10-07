@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { confirmDialog } from '@/lib/dialog'
 
 type Role = 'OFFICE' | 'FIELD' | 'VIEWER' | 'EXECUTIVE' | 'TECHNICIAN' | 'ADMIN' | 'SYSTEM_ADMIN'
-type User = { id: string; username: string; name: string; nickname: string | null; role: Role; active: boolean }
+type User = { id: string; username: string; name: string; nickname: string | null; role: Role; active: boolean; isSuper?: boolean }
 
 const ROLES: { value: Role; label: string; short: string }[] = [
   { value: 'OFFICE', label: 'เจ้าหน้าที่ (สำนักงาน) — แก้ไขได้', short: 'เจ้าหน้าที่' },
@@ -108,7 +108,11 @@ export function UsersManager({ initial }: { initial: User[] }) {
         {users.map((u) => (
           <div key={u.id} className={`flex items-center gap-2 px-4 py-2.5 border-t border-[#EEF2F8] flex-wrap ${u.active ? '' : 'bg-[#FAFAFA] opacity-70'}`}>
             <div className="flex-1 min-w-[160px]">
-              <div className="text-[13.5px] font-semibold text-[#1C1917]">{u.name}{u.nickname ? ` (${u.nickname})` : ''}{!u.active && <span className="ml-1.5 text-[11px] text-[#A2AEC0]">· ปิดใช้งาน</span>}</div>
+              <div className="text-[13.5px] font-semibold text-[#1C1917] flex items-center gap-1.5 flex-wrap">
+                {u.name}{u.nickname ? ` (${u.nickname})` : ''}
+                {u.isSuper && <span className="text-[10.5px] font-bold text-[#7A44C6] bg-[#F1E9FB] border border-[#E0D0F5] rounded px-1.5 py-0.5">🔐 super admin</span>}
+                {!u.active && <span className="text-[11px] text-[#A2AEC0]">· ปิดใช้งาน</span>}
+              </div>
               <div className="text-[11.5px] text-[#8492A6]">@{u.username}</div>
             </div>
             <select value={u.role} onChange={(e) => changeRole(u, e.target.value as Role)}

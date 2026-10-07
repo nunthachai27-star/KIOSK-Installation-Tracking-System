@@ -2,7 +2,7 @@ import { auth } from './auth'
 import { prisma } from './prisma'
 
 // รายชื่อ username ที่เป็น "super admin" (สิทธิ์ลบข้อมูลรายงานการวัด ฯลฯ)
-export const SUPER_ADMIN_USERNAMES = ['jakkrit']
+export const SUPER_ADMIN_USERNAMES = ['jakkrit', 'phattaradon']
 
 // เช็คว่าผู้ใช้ที่ล็อกอินอยู่เป็น super admin ไหม (อิงจาก username ใน DB — ไม่ผูกกับ role)
 export async function isSuperAdmin(): Promise<boolean> {

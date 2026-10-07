@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { isSuperAdmin } from '@/lib/superAdmin'
+import { isSuperAdmin, SUPER_ADMIN_USERNAMES } from '@/lib/superAdmin'
 import { UsersManager } from '@/components/UsersManager'
 
 export const dynamic = 'force-dynamic'
@@ -9,10 +9,12 @@ export const dynamic = 'force-dynamic'
 export default async function SettingsUsersPage() {
   if (!(await isSuperAdmin())) notFound() // เฉพาะ super admin
 
-  const users = await prisma.user.findMany({
+  const rows = await prisma.user.findMany({
     select: { id: true, username: true, name: true, nickname: true, role: true, active: true },
     orderBy: [{ active: 'desc' }, { role: 'asc' }, { name: 'asc' }],
   })
+  // ติดธง super admin (อิงจาก username ใน SUPER_ADMIN_USERNAMES)
+  const users = rows.map((u) => ({ ...u, isSuper: SUPER_ADMIN_USERNAMES.includes(u.username.trim().toLowerCase()) }))
 
   return (
     <div className="p-6 max-w-[840px] mx-auto flex flex-col gap-4">
