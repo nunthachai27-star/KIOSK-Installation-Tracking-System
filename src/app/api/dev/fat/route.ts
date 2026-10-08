@@ -50,11 +50,12 @@ export async function POST(req: Request) {
 // - เจ้าหน้าที่ (OFFICE): เห็นข้อมูลเต็ม + raw (ใช้ในเดชบอร์ด)
 // - สาธารณะ (หน้ารายงาน): ปิดบังเลขบัตร + ตัด raw ออก (กันข้อมูลส่วนบุคคลรั่ว)
 export async function GET(req: Request) {
-  const nameQ = (new URL(req.url).searchParams.get('name') || '').trim().toLowerCase()
+  const raw0 = (new URL(req.url).searchParams.get('name') || '').trim()
+  const nameQ = raw0.toLowerCase()
   const session = await auth()
   let readings = await listFatReadings()
-  // กรองตามชื่อ (หน้าสาธารณะกรอกชื่อ → ดึงเฉพาะคนนั้น ไม่ส่งข้อมูลคนอื่นมา)
-  if (nameQ) readings = readings.filter((r) => (r.name || '').trim().toLowerCase() === nameQ)
+  // กรองตาม "ชื่อ หรือ เลขบัตร" (หน้าสาธารณะกรอก → ดึงเฉพาะคนนั้น ไม่ส่งข้อมูลคนอื่นมา)
+  if (raw0) readings = readings.filter((r) => (r.name || '').trim().toLowerCase() === nameQ || (r.idcard || '').trim() === raw0)
   if (session?.user?.role === 'OFFICE') {
     return NextResponse.json({ readings }, { headers: { 'Cache-Control': 'no-store' } })
   }

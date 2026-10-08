@@ -67,12 +67,12 @@ export function FatPublicReport() {
             <span className="w-11 h-11 rounded-2xl bg-white grid place-items-center text-[22px] shadow-sm">⚖️</span>
             <div>
               <h1 className="text-lg font-bold text-[#1C2A3E]">รายงานผลวัดองค์ประกอบร่างกาย</h1>
-              <p className="text-[12.5px] text-[#5A6B82]">กรอกชื่อที่ใช้ตอนวัดเพื่อดูผลของคุณ</p>
+              <p className="text-[12.5px] text-[#5A6B82]">กรอกชื่อหรือเลขบัตรที่ใช้ตอนวัดเพื่อดูผลของคุณ</p>
             </div>
           </div>
           <form onSubmit={lookup} className="bg-white rounded-2xl border border-[#E3EAF2] shadow-sm p-5 flex flex-col gap-3">
-            <label className="text-[13px] font-semibold text-[#3C4A5E]">ชื่อผู้วัด (ตามที่กรอกในเครื่อง)</label>
-            <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} autoFocus placeholder="เช่น Tiger"
+            <label className="text-[13px] font-semibold text-[#3C4A5E]">กรอกชื่อหรือเลขบัตรประชาชน (ตามที่กรอกในเครื่อง)</label>
+            <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} autoFocus
               className="w-full border border-[#D6DFEA] rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-[var(--brand)]" />
             <button type="submit" disabled={loading || !nameInput.trim()} className="bg-[var(--brand)] text-white text-[14px] font-semibold rounded-lg px-5 py-2.5 hover:bg-[var(--brand-strong)] disabled:opacity-60">
               {loading ? 'กำลังค้นหา…' : 'ดูรายงาน'}
