@@ -33,12 +33,13 @@ export default async function LoansPage() {
     returnedAt: l.returnedAt ? l.returnedAt.toISOString() : null,
     returnNote: l.returnNote,
     level: loanLevel({ dueDate: l.dueDate, returnedAt: l.returnedAt }, now),
-    serialBMS: l.item.serialBMS,
-    serialNo: l.item.serialNo,
-    color: l.item.color,
-    lotCode: l.item.lot.lotCode,
-    productName: l.item.lot.product.name,
-    group: l.item.lot.product.group,
+    // โหมดปกติ = ข้อมูลจากคลัง · โหมดพิมพ์เอง (item เป็น null) = ใช้ itemSerial/itemName
+    serialBMS: l.item?.serialBMS ?? null,
+    serialNo: l.item?.serialNo ?? l.itemSerial ?? null,
+    color: l.item?.color ?? null,
+    lotCode: l.item?.lot.lotCode ?? '-',
+    productName: l.item?.lot.product.name ?? l.itemName ?? '(พิมพ์เอง)',
+    group: l.item?.lot.product.group ?? 'พิมพ์เอง',
     recordedBy: l.recordedBy?.nickname ?? l.recordedBy?.name ?? null,
   }))
 

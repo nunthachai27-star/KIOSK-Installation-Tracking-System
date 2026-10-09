@@ -25,8 +25,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: { status: 'RETURNED', returnedAt: new Date(), returnNote: note || null },
     })
     // Only pull the unit back into stock if the loan still owns it; if it was
-    // issued out meanwhile, leave that status alone.
-    await tx.stockItem.updateMany({ where: { id: before.itemId, status: 'BORROWED' }, data: { status: 'IN_STOCK' } })
+    // issued out meanwhile, leave that status alone. (โหมดพิมพ์เอง ไม่มีของในคลัง → ข้าม)
+    if (before.itemId) {
+      await tx.stockItem.updateMany({ where: { id: before.itemId, status: 'BORROWED' }, data: { status: 'IN_STOCK' } })
+    }
   })
 
   const after = await prisma.loan.findUnique({ where: { id } })

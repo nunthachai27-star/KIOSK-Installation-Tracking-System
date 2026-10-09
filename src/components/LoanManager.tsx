@@ -228,6 +228,9 @@ function LoanRow({ r, onDone }: { r: Row; onDone: () => void }) {
 
 function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options: Option[]; prefill?: Prefill; requestId?: string; onClose: () => void; onDone: () => void }) {
   const approving = !!requestId
+  const [mode, setMode] = useState<'stock' | 'manual'>('stock') // stock = เลือกจากคลัง, manual = พิมพ์ Serial เอง
+  const [mItemName, setMItemName] = useState('') // โหมดพิมพ์เอง: ชื่อ/รุ่น
+  const [mItemSerial, setMItemSerial] = useState('') // โหมดพิมพ์เอง: Serial
   const [itemId, setItemId] = useState('')
   const [pick, setPick] = useState('')
   // Narrow down group → product → lot before picking a serial, so the list of
@@ -268,15 +271,19 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
 
   // Mirrors the API's rules so the button only enables on input it will accept.
   const phoneOk = /^\d{9,10}$/.test(phone.replace(/[\s-]/g, ''))
-  const ready = !!itemId && !!name.trim() && phoneOk && /^\d{4}-\d{2}-\d{2}$/.test(due)
+  const itemOk = mode === 'stock' ? !!itemId : !!mItemSerial.trim()
+  const ready = itemOk && !!name.trim() && phoneOk && /^\d{4}-\d{2}-\d{2}$/.test(due)
 
   async function submit() {
     if (!ready) return
     setSaving(true); setErr('')
     try {
+      const payload = mode === 'stock'
+        ? { itemId }
+        : { itemSerial: mItemSerial.trim(), itemName: mItemName.trim() }
       const res = await fetch('/api/loans', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId, borrowerName: name, borrowerPhone: phone, borrowerOrg: org, purpose, dueDate: due, requestId }),
+        body: JSON.stringify({ ...payload, borrowerName: name, borrowerPhone: phone, borrowerOrg: org, purpose, dueDate: due, requestId }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => null)
@@ -301,7 +308,11 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="md:col-span-2">
           <label className="block text-sm font-semibold text-[#5A6B82] mb-1.5">อุปกรณ์ที่ยืม {req}</label>
-          {chosen ? (
+          <div className="flex gap-2 mb-2">
+            <button type="button" onClick={() => setMode('stock')} className={`text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border ${mode === 'stock' ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE]'}`}>📦 เลือกจากคลัง</button>
+            <button type="button" onClick={() => setMode('manual')} className={`text-[12.5px] font-semibold px-3 py-1.5 rounded-lg border ${mode === 'manual' ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-white text-[#5A6B82] border-[#DCE4EE]'}`}>✎ พิมพ์ Serial เอง</button>
+          </div>
+          {mode === 'stock' ? (chosen ? (
             <div className="flex items-center gap-2 border border-[#D6DFEA] rounded-lg px-3 py-2.5 bg-[#F8FAFD]">
               <span className="text-sm text-[#1C1917] flex-1 truncate">{labelOf(chosen)}</span>
               <button onClick={() => { setItemId(''); setPick('') }} className="text-[12px] font-semibold text-[var(--brand)] hover:underline shrink-0">เปลี่ยน</button>
@@ -356,6 +367,18 @@ function BorrowForm({ options, prefill, requestId, onClose, onDone }: { options:
                   </>
                 )}
               </div>
+            </div>
+          )) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 border border-[#EEF2F8] rounded-xl p-3 bg-[#FBFCFE]">
+              <div>
+                <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">ชื่อ / รุ่นอุปกรณ์</div>
+                <input value={mItemName} onChange={(e) => setMItemName(e.target.value)} placeholder="เช่น Notebook Dell" className={`${field} py-2`} />
+              </div>
+              <div>
+                <div className="text-[11.5px] font-semibold text-[#8492A6] mb-1">Serial {req}</div>
+                <input value={mItemSerial} onChange={(e) => setMItemSerial(e.target.value)} placeholder="พิมพ์ Serial เอง" className={`${field} py-2`} />
+              </div>
+              <div className="sm:col-span-2 text-[11.5px] text-[#A8A29E]">สำหรับของที่ไม่ได้ลงคลัง — บันทึกเป็นข้อความ ไม่ตัดสต็อก</div>
             </div>
           )}
         </div>

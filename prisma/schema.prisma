@@ -774,8 +774,11 @@ enum LoanStatus {
 // is open its StockItem sits in BORROWED so the stock board shows it as unavailable.
 model Loan {
   id            String     @id @default(cuid())
-  item          StockItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  itemId        String
+  // ผูกกับของในคลัง (โหมดปกติ) — optional เพราะรองรับ "พิมพ์ Serial เอง" กรณีของไม่ได้อยู่ในคลัง
+  item          StockItem? @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId        String?
+  itemName      String?    // โหมดพิมพ์เอง: ชื่อ/รุ่นอุปกรณ์
+  itemSerial    String?    // โหมดพิมพ์เอง: Serial
   borrowerName  String     // ชื่อผู้ยืม (บังคับ)
   borrowerPhone String     // เบอร์โทร (บังคับ)
   borrowerOrg   String?    // หน่วยงาน/สังกัด
