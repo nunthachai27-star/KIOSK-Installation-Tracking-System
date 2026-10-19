@@ -7,7 +7,7 @@ import { confirmDialog, alertDialog } from '@/lib/dialog'
 type Item = {
   id: string; lotCode: string; seq: number | null; serialBMS: string | null; serialNo: string | null
   color: string | null; status: 'IN_STOCK' | 'ISSUED' | 'BORROWED' | 'CLAIM'; receivedDate: string | null; issuedDate: string | null
-  deliveredDate: string | null; hospitalName: string | null; jobId: string | null; jobCode: string | null
+  deliveredDate: string | null; hospitalName: string | null; note: string | null; jobId: string | null; jobCode: string | null
   borrowerName: string | null; borrowerPhone: string | null; dueDate: string | null
   claimIssueId: string | null; claimMachineSerial: string | null
 }
@@ -25,7 +25,7 @@ const STATUS = {
   CLAIM: { label: 'เคลม', color: 'var(--brand)', bg: '#FCE7D6' },
 }
 
-export function StockItemList({ items: initial, lots, initialLot, initialQ = '' }: { items: Item[]; lots: { id: string; lotCode: string }[]; initialLot: string; initialQ?: string }) {
+export function StockItemList({ items: initial, lots, initialLot, initialQ = '', isSuper = false }: { items: Item[]; lots: { id: string; lotCode: string }[]; initialLot: string; initialQ?: string; isSuper?: boolean }) {
   const lotCodes = lots.map((l) => l.lotCode)
   const [items, setItems] = useState<Item[]>(initial)
   useEffect(() => { setItems(initial) }, [initial])
@@ -70,6 +70,9 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
   const patchField = (id: string, patch: Partial<Record<EditField, string | null>>) =>
     setItems((x) => x.map((it) => (it.id === id ? { ...it, ...patch } : it)))
   const dropItem = (id: string) => setItems((x) => x.filter((it) => it.id !== id))
+  // After a manual issue-out: flip the row to "จ่ายออกแล้ว" with the typed details.
+  const applyIssue = (id: string, patch: { hospitalName: string | null; note: string | null; issuedDate: string }) =>
+    setItems((x) => x.map((it) => (it.id === id ? { ...it, status: 'ISSUED' as const, ...patch } : it)))
 
   const ql = q.trim().toLowerCase()
   const filtered = useMemo(() => items.filter((i) => {
@@ -159,7 +162,7 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
           </thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={10} className="px-3 py-8 text-center text-[#8492A6]">ไม่พบรายการ</td></tr>}
-            {rows.map((it) => <StockItemRow key={it.id} it={it} onPatched={(p) => patchField(it.id, p)} onDeleted={() => dropItem(it.id)} />)}
+            {rows.map((it) => <StockItemRow key={it.id} it={it} isSuper={isSuper} onPatched={(p) => patchField(it.id, p)} onDeleted={() => dropItem(it.id)} onIssued={(p) => applyIssue(it.id, p)} />)}
           </tbody>
         </table>
       </div>
@@ -177,12 +180,44 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '' 
   )
 }
 
-function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: Partial<Record<EditField, string | null>>) => void; onDeleted: () => void }) {
+function StockItemRow({ it, isSuper, onPatched, onDeleted, onIssued }: { it: Item; isSuper: boolean; onPatched: (p: Partial<Record<EditField, string | null>>) => void; onDeleted: () => void; onIssued: (p: { hospitalName: string | null; note: string | null; issuedDate: string }) => void }) {
   const st = STATUS[it.status]
   // Serial NO. is locked once a unit leaves the shelf (issued or cut for a claim).
   const serialLocked = it.status === 'ISSUED' || it.status === 'CLAIM'
   // A unit can only be removed while untouched: in stock and with no serial yet.
   const canDelete = it.status === 'IN_STOCK' && !(it.serialNo ?? '').trim() && !(it.serialBMS ?? '').trim()
+  // Super admin can issue an in-stock unit out manually (no job link).
+  const canIssue = isSuper && it.status === 'IN_STOCK'
+
+  // Manual issue-out editor state.
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const [issuing, setIssuing] = useState(false)
+  const [dest, setDest] = useState('')
+  const [note, setNote] = useState('')
+  const [date, setDate] = useState(todayStr)
+  const [busy, setBusy] = useState(false)
+
+  function openIssue() { setDest(''); setNote(''); setDate(todayStr); setIssuing(true) }
+  async function doIssue() {
+    if (busy) return
+    const label = it.serialNo || it.serialBMS || it.lotCode
+    if (!(await confirmDialog({ title: 'จ่ายออกเอง (ไม่ผูกงาน)', message: `จ่ายออกเครื่อง ${label} ออกจากคลัง?\nรายการนี้จะเป็นสถานะ "จ่ายออกแล้ว" โดยไม่ผูกกับงานใด ๆ`, confirmText: 'จ่ายออก' }))) return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/stock/items/${it.id}/issue`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination: dest, note, issuedDate: date }),
+      })
+      if (res.ok) {
+        const d = await res.json().catch(() => null)
+        onIssued({ hospitalName: d?.hospitalName ?? (dest.trim() || null), note: d?.note ?? (note.trim() || null), issuedDate: d?.issuedDate ?? new Date(`${date}T00:00:00Z`).toISOString() })
+        setIssuing(false)
+      } else {
+        const d = await res.json().catch(() => null)
+        await alertDialog(d?.message || 'จ่ายออกไม่สำเร็จ')
+      }
+    } finally { setBusy(false) }
+  }
 
   async function remove() {
     if (!(await confirmDialog({ title: 'ลบเครื่องออกจาก Lot', message: `ลบเครื่องนี้ออกจาก Lot ${it.lotCode}?\nลบได้เฉพาะรายการที่ยังไม่มี Serial NO. และยังไม่จ่ายออก`, danger: true, confirmText: 'ลบ' }))) return
@@ -205,6 +240,7 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
   }
 
   return (
+    <>
     <tr className="border-b border-[#F7F8FA] last:border-0 hover:bg-[#FBFAF8]">
       <td className="px-3 py-1.5 text-[#5A6B82] tnum whitespace-nowrap">{it.lotCode}</td>
       <td className="px-3 py-1.5 whitespace-nowrap">
@@ -242,18 +278,60 @@ function StockItemRow({ it, onPatched, onDeleted }: { it: Item; onPatched: (p: P
           </Link>
         ) : it.jobId ? (
           <Link href={`/jobs/${it.jobId}`} className="text-[var(--brand)] hover:underline">{it.hospitalName ?? it.jobCode}</Link>
-        ) : (it.hospitalName ?? '—')}
+        ) : (
+          <span className="whitespace-normal">
+            {it.hospitalName ?? (it.status === 'ISSUED' ? 'จ่ายออก (ไม่ผูกงาน)' : '—')}
+            {it.note && <span className="block text-[11px] text-[#A8A29E]" title={it.note}>📝 {it.note}</span>}
+          </span>
+        )}
       </td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.receivedDate)}</td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.issuedDate)}</td>
       <td className="px-3 py-1.5 text-[11.5px] text-[#5A6B82] whitespace-nowrap">{fmt(it.deliveredDate)}</td>
       <td className="px-2 py-1.5 text-right whitespace-nowrap">
-        {canDelete && (
-          <button type="button" onClick={remove} title="ลบรายการนี้ (ยังไม่มี Serial NO. และยังไม่จ่ายออก)"
-            className="w-6 h-6 grid place-items-center rounded-md text-[12px] text-[#C4BFB9] hover:text-[#C13540] hover:bg-[#FBE4E4]">✕</button>
-        )}
+        <div className="flex items-center justify-end gap-1">
+          {canIssue && !issuing && (
+            <button type="button" onClick={openIssue} title="จ่ายออกเอง (ไม่ผูกงาน) — เฉพาะ super admin"
+              className="px-2 h-6 grid place-items-center rounded-md text-[11.5px] font-semibold text-[#6D28D9] border border-[#E4D9FB] hover:bg-[#F3EEFF]">จ่ายออก</button>
+          )}
+          {canDelete && (
+            <button type="button" onClick={remove} title="ลบรายการนี้ (ยังไม่มี Serial NO. และยังไม่จ่ายออก)"
+              className="w-6 h-6 grid place-items-center rounded-md text-[12px] text-[#C4BFB9] hover:text-[#C13540] hover:bg-[#FBE4E4]">✕</button>
+          )}
+        </div>
       </td>
     </tr>
+    {issuing && (
+      <tr className="border-b border-[#F7F8FA] bg-[#FBFAFF]">
+        <td colSpan={10} className="px-3 py-3">
+          <div className="flex items-end gap-2 flex-wrap">
+            <span className="text-[12px] font-semibold text-[#6D28D9] pb-2">จ่ายออกเอง · {it.serialNo || it.serialBMS || `Lot ${it.lotCode}`}</span>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11.5px] text-[#8492A6]">ปลายทาง / ผู้รับ</label>
+              <input value={dest} onChange={(e) => setDest(e.target.value)} placeholder="เช่น บริจาค รพ.X / ทดสอบ / ส่งซ่อม"
+                className="w-56 border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] outline-none focus:border-[#6D28D9]" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11.5px] text-[#8492A6]">หมายเหตุ</label>
+              <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)"
+                className="w-56 border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] outline-none focus:border-[#6D28D9]" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11.5px] text-[#8492A6]">วันที่จ่ายออก</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                className="border border-[#D6DFEA] rounded-lg px-3 py-1.5 text-[13px] tnum outline-none focus:border-[#6D28D9]" />
+            </div>
+            <button disabled={busy} onClick={doIssue}
+              className="bg-[#6D28D9] text-white text-[12.5px] font-semibold rounded-lg px-4 py-2 hover:bg-[#5B21B6] disabled:opacity-50">
+              {busy ? 'กำลังจ่ายออก…' : 'ยืนยันจ่ายออก'}
+            </button>
+            <button onClick={() => setIssuing(false)} className="text-[12.5px] text-[#5A6B82] rounded-lg px-3 py-2 hover:bg-[#F0EEEC]">ยกเลิก</button>
+          </div>
+          <div className="text-[11px] text-[#A8A29E] mt-1.5">⚠ จ่ายออกแบบไม่ผูกกับงานใด ๆ — เครื่องจะไม่นับเป็นคงเหลือ · มีบันทึกประวัติไว้ย้อนได้</div>
+        </td>
+      </tr>
+    )}
+    </>
   )
 }
 

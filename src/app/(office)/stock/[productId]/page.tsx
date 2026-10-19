@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { stockLevel } from '@/lib/stock'
+import { isSuperAdmin } from '@/lib/superAdmin'
 import { StockItemList } from '@/components/StockItemList'
 
 export default async function StockProductPage({ params, searchParams }: {
@@ -10,6 +11,7 @@ export default async function StockProductPage({ params, searchParams }: {
 }) {
   const { productId } = await params
   const { lot, q } = await searchParams
+  const isSuper = await isSuperAdmin()
 
   const product = await prisma.stockProduct.findUnique({
     where: { id: productId },
@@ -54,6 +56,7 @@ export default async function StockProductPage({ params, searchParams }: {
     issuedDate: it.issuedDate ? it.issuedDate.toISOString() : null,
     deliveredDate: it.deliveredDate ? it.deliveredDate.toISOString() : null,
     hospitalName: it.hospital?.name ?? it.hospitalName ?? null,
+    note: it.note ?? null,
     jobId: it.job?.id ?? null,
     jobCode: it.job?.jobCode ?? null,
     claimIssueId: it.claimIssueId,
@@ -102,7 +105,7 @@ export default async function StockProductPage({ params, searchParams }: {
       </div>
 
       {product.serialized ? (
-        <StockItemList items={items} lots={lotList} initialLot={lot ?? ''} initialQ={q ?? ''} />
+        <StockItemList items={items} lots={lotList} initialLot={lot ?? ''} initialQ={q ?? ''} isSuper={isSuper} />
       ) : (
         <div className="ds-card p-6 text-center text-[13px] text-[#8492A6]">
           สินค้านับจำนวน (อะไหล่) — คงเหลือ <span className="font-bold text-[#157F4C]">{remaining}</span> {unit} · ไม่มี Serial รายชิ้น
