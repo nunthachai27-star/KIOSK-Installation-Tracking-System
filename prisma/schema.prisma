@@ -723,6 +723,7 @@ model StockLot {
   receivedQty  Int          @default(0)
   receivedDate DateTime?
   note         String?
+  recordedById String?      // ผู้ลงรับเข้าคลัง (ไว้สรุปงานประจำวัน) — plain field เหมือน DeliveryRecord ฯลฯ
   items        StockItem[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt

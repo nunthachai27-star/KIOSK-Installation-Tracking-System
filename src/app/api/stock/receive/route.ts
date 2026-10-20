@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   const recv = typeof receivedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(receivedDate) ? new Date(`${receivedDate}T00:00:00Z`) : null
 
   const lot = await prisma.stockLot.create({
-    data: { productId: pid, lotCode: lotCode.trim(), receivedQty: rows.length, receivedDate: recv, note: clean(note) },
+    data: { productId: pid, lotCode: lotCode.trim(), receivedQty: rows.length, receivedDate: recv, note: clean(note), recordedById: session.user?.id ?? null },
   })
   await prisma.stockItem.createMany({
     data: rows.map((r, i) => ({

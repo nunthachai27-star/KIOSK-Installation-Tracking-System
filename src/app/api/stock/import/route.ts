@@ -122,7 +122,7 @@ export async function POST(req: Request) {
       targetLotId = lot.id; targetLotCode = lot.lotCode
     } else {
       const lot = await tx.stockLot.create({
-        data: { productId: pid, lotCode: (lotCode as string).trim(), receivedQty: rows.length, receivedDate: lotRecv, note: typeof note === 'string' && note.trim() ? note.trim() : null },
+        data: { productId: pid, lotCode: (lotCode as string).trim(), receivedQty: rows.length, receivedDate: lotRecv, note: typeof note === 'string' && note.trim() ? note.trim() : null, recordedById: session.user?.id ?? null },
       })
       await tx.stockItem.createMany({
         data: rows.map((r, i) => ({ lotId: lot.id, seq: i + 1, serialNo: r.serialNo, status: 'IN_STOCK' as const, receivedDate: toDate(r.date) })),
