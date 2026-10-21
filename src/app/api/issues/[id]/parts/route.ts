@@ -40,7 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       // Stamp the claim on the unit: issued date (วันจ่ายออก), hospital, and a back-link.
       const flipped = await tx.stockItem.updateMany({
         where: { id: unit.id, status: 'IN_STOCK' },
-        data: { status: 'CLAIM', note: 'ตัดใช้ในเคลม', issuedDate: new Date(), hospitalName: claimHospital, claimIssueId: id },
+        data: { status: 'CLAIM', note: 'ตัดใช้ในเคลม', issuedDate: new Date(), issuedAt: new Date(), issuedById: session.user?.id ?? null, hospitalName: claimHospital, claimIssueId: id },
       })
       if (flipped.count === 0) throw new Error('conflict')
       const cp = await tx.claimPart.create({

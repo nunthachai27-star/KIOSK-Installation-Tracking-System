@@ -742,7 +742,9 @@ model StockItem {
   color         String?     // สี (สำหรับตู้)
   status        StockStatus @default(IN_STOCK)
   receivedDate  DateTime?   // รับสินค้าเข้า
-  issuedDate    DateTime?   // วันจำหน่ายสินค้าออก
+  issuedDate    DateTime?   // วันจำหน่ายสินค้าออก (ผู้ใช้กรอก/เลือกได้)
+  issuedAt      DateTime?   // เวลาที่ "กดตัดจ่าย/เคลม" จริง (ไว้สรุปงานประจำวัน — ไม่เปลี่ยนตามการแก้ไข)
+  issuedById    String?     // ผู้ตัดจ่าย/จ่ายออก/ตัดเคลม — plain field เหมือน recordedById
   deliveredDate DateTime?   // วันจัดส่งถึงโรงพยาบาล
   // Issued-to: free-text hospital, plus optional links to existing system records.
   hospitalName  String?

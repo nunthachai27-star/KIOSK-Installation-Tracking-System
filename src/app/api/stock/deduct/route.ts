@@ -71,6 +71,7 @@ export async function POST(req: Request) {
     data: {
       status: 'ISSUED', jobId: serial.jobId, hospitalId: serial.job?.hospitalId ?? null,
       serialBMS: serial.parent?.serialNo ?? null, issuedDate: new Date(),
+      issuedAt: new Date(), issuedById: session.user?.id ?? null,
     },
   })
   await logChange(session.user, 'UPDATE', 'คลังสินค้า', `ตัดจ่ายออก serial ${serial.serialNo}`, { refTable: 'StockItem', refId: target.id, before, after: updated })

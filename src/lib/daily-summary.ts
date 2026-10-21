@@ -1,4 +1,4 @@
-import type { ActivityType, Role } from '@prisma/client'
+import type { ActivityType, Role, StockStatus } from '@prisma/client'
 import { prisma } from './prisma'
 import { ACTIVITY_LABEL } from './activity'
 import { ISSUE_STATUS, ISSUE_METHOD, ISSUE_WARRANTY } from './issue'
@@ -56,7 +56,7 @@ function qcGroupsFrom(raw: { serial: string; item: string; hospital: string }[])
 export async function getDailySummary(from: Date, to: Date): Promise<StaffSummary[]> {
   const inDay = { gte: from, lte: to }
   const jobSel = { hospital: { select: { name: true } }, productType: true, jobCode: true } as const
-  const [jobsCreated, serialRecs, unitQcs, activities, issues, deliveries, installs, handovers, invoices, stockLots, devEvents, users] = await Promise.all([
+  const [jobsCreated, serialRecs, unitQcs, activities, issues, deliveries, installs, handovers, invoices, stockLots, stockIssues, devEvents, users] = await Promise.all([
     prisma.job.findMany({ where: { deletedAt: null, createdById: { not: null }, createdAt: inDay }, select: { createdById: true, hospital: { select: { name: true } }, productType: true, jobCode: true } }),
     prisma.serialRecord.findMany({ where: { staffId: { not: null }, updatedAt: inDay }, select: { staffId: true, job: { select: jobSel } } }),
     prisma.unitQc.findMany({ where: { updatedAt: inDay }, select: { staffId: true, checklist: true, serial: { select: { serialNo: true, job: { select: { hospital: { select: { name: true } }, productType: true } } } } } }),
@@ -76,6 +76,8 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     prisma.invoiceRecord.findMany({ where: { recordedById: { not: null }, updatedAt: inDay }, select: { recordedById: true, job: { select: jobSel } } }),
     // ลงรับสินค้าเข้าคลัง (ลอตใหม่ที่ถูกสร้างในวันนั้น) — ผูกกับผู้ลงรับ
     prisma.stockLot.findMany({ where: { recordedById: { not: null }, createdAt: inDay }, select: { recordedById: true, lotCode: true, receivedQty: true, product: { select: { name: true, serialized: true, unit: true } } } }),
+    // ตัดจ่าย/จ่ายออก/ตัดเคลม สินค้าจากคลัง ที่ทำในวันนั้น (ตามเวลาที่กดตัดจริง) — ผูกกับผู้ตัด
+    prisma.stockItem.findMany({ where: { issuedById: { not: null }, issuedAt: inDay, status: { in: ['ISSUED', 'CLAIM'] as StockStatus[] } }, select: { issuedById: true, status: true, serialNo: true, serialBMS: true, hospitalName: true, lot: { select: { product: { select: { name: true } } } }, job: { select: { jobCode: true, hospital: { select: { name: true } } } } } }),
     // กิจกรรมแถบพัฒนาที่ "เจ้าหน้าที่" ทำในวันนั้น (เปิดคำขอ/เปลี่ยนสถานะ/คอมเมนต์) — ฝั่งทีมพัฒนา (DEV) ไม่นับ
     prisma.devRequestEvent.findMany({
       where: { actor: 'STAFF', createdAt: inDay },
@@ -103,14 +105,14 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
   type QcRaw = { serial: string; item: string; hospital: string }
   type Acc = {
     jobs: string[]; serials: string[]; qcRaw: QcRaw[]; issueDetails: IssueDetail[]
-    delivery: string[]; install: string[]; handover: string[]; invoice: string[]; receive: string[]; dev: Map<number, DevDetail>
+    delivery: string[]; install: string[]; handover: string[]; invoice: string[]; receive: string[]; issueOut: string[]; dev: Map<number, DevDetail>
     manual: ManualEntry[]
     act: Partial<Record<ActivityType, string[]>>
   }
   const map = new Map<string, Acc>()
   const acc = (id: string): Acc => {
     let a = map.get(id)
-    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], receive: [], dev: new Map(), manual: [], act: {} }; map.set(id, a) }
+    if (!a) { a = { jobs: [], serials: [], qcRaw: [], issueDetails: [], delivery: [], install: [], handover: [], invoice: [], receive: [], issueOut: [], dev: new Map(), manual: [], act: {} }; map.set(id, a) }
     return a
   }
 
@@ -163,6 +165,13 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     const unit = lot.product.serialized ? 'เครื่อง' : (lot.product.unit || 'ชิ้น')
     acc(lot.recordedById).receive.push(`${lot.product.name} · Lot ${lot.lotCode} · ${lot.receivedQty} ${unit}`)
   }
+  for (const si of stockIssues) {
+    if (!si.issuedById) continue
+    const serial = si.serialBMS || si.serialNo || '-'
+    const dest = si.hospitalName || si.job?.hospital.name || null
+    const kind = si.status === 'CLAIM' ? 'เคลม' : si.job ? 'ตามงาน' : 'จ่ายเอง'
+    acc(si.issuedById).issueOut.push(`${si.lot.product.name} · ${serial}${dest ? ` → ${dest}` : ''} (${kind})`)
+  }
   for (const a of activities) {
     if (!a.responsibleUserId) continue
     const x = acc(a.responsibleUserId).act
@@ -198,6 +207,7 @@ export async function getDailySummary(from: Date, to: Date): Promise<StaffSummar
     if (a.handover.length) lines.push({ heading: 'งานส่งมอบงานและอบรมการใช้งาน', text: `ดำเนินการส่งมอบงานและอบรมการใช้งานให้แก่หน่วยงานที่เกี่ยวข้อง จำนวน ${a.handover.length} งาน พร้อมบันทึกรายละเอียดการส่งมอบเรียบร้อยแล้ว`, items: a.handover })
     if (a.invoice.length) lines.push({ heading: 'งานจัดทำเอกสารใบแจ้งหนี้/ใบเสร็จ', text: `ดำเนินการจัดทำและบันทึกเอกสารใบแจ้งหนี้/ใบเสร็จ จำนวน ${a.invoice.length} งาน เรียบร้อยแล้ว`, items: a.invoice })
     if (a.receive.length) lines.push({ heading: 'งานลงรับสินค้าเข้าคลัง', text: `ดำเนินการลงรับสินค้าเข้าคลัง จำนวน ${a.receive.length} ล็อต พร้อมบันทึกรายละเอียดและจำนวนเรียบร้อยแล้ว`, items: a.receive })
+    if (a.issueOut.length) lines.push({ heading: 'งานตัดจ่าย/จ่ายออกสินค้าจากคลัง', text: `ดำเนินการตัดจ่าย/จ่ายออกอุปกรณ์จากคลัง จำนวน ${a.issueOut.length} เครื่อง พร้อมบันทึกรายละเอียดเรียบร้อยแล้ว`, items: a.issueOut })
     for (const [type, list] of Object.entries(a.act)) {
       if (!list || !list.length) continue
       const label = ACTIVITY_LABEL[type as ActivityType] ?? 'งานอื่นๆ'

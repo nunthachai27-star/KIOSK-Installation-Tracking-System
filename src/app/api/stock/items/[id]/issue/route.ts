@@ -51,6 +51,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: {
       status: 'ISSUED',
       issuedDate,
+      issuedAt: new Date(),
+      issuedById: session.user?.id ?? null,
       serialBMS: serialBMS || item.serialBMS || null,
       // ไม่ผูกงาน: jobId/hospitalId เป็น null, เก็บปลายทางเป็น free-text
       jobId: null,
@@ -116,8 +118,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const before = await prisma.stockItem.findUnique({ where: { id } })
   const updated = await prisma.stockItem.update({
     where: { id },
-    // คืนสู่คลัง: ล้างวันจ่ายออก/ปลายทาง/หมายเหตุ ให้กลับเป็นเหมือนก่อนตัด
-    data: { status: 'IN_STOCK', issuedDate: null, hospitalName: null, hospitalId: null, note: null },
+    // คืนสู่คลัง: ล้างวันจ่ายออก/ปลายทาง/หมายเหตุ/ผู้ตัด ให้กลับเป็นเหมือนก่อนตัด
+    data: { status: 'IN_STOCK', issuedDate: null, issuedAt: null, issuedById: null, hospitalName: null, hospitalId: null, note: null },
   })
   const label = item.serialNo || item.serialBMS || id
   await logChange(session.user, 'UPDATE', 'คลังสินค้า', `ยกเลิกการจ่ายออกเอง ${label} (คืนเข้าคลัง)`, { refTable: 'StockItem', refId: id, before, after: updated })

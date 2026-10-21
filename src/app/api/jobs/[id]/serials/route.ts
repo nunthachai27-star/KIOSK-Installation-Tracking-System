@@ -47,7 +47,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
       prisma.stockItem.update({
         where: { id: stockItemId },
-        data: { status: 'ISSUED', jobId: id, hospitalId: job.hospitalId, issuedDate: new Date(), serialBMS: parentBms },
+        data: { status: 'ISSUED', jobId: id, hospitalId: job.hospitalId, issuedDate: new Date(), serialBMS: parentBms, issuedAt: new Date(), issuedById: session.user?.id ?? null },
       }),
     ])
     return NextResponse.json(created, { status: 201 })
