@@ -13,9 +13,10 @@ export const STOCK_LEVEL_META: Record<StockStatusLevel, { label: string; color: 
   OUT: { label: 'สินค้าหมด', color: '#C13540', bg: '#FBE4E4' },
 }
 
-export type LotSummary = { id: string; lotCode: string; received: number; issued: number; borrowed: number; remaining: number }
+// issued = ออกจากคลังแล้วทั้งหมด (จ่ายออก + ตัดเคลม) · claimed = ส่วนที่เป็นตัดเคลม (แสดงเป็นรายละเอียด)
+export type LotSummary = { id: string; lotCode: string; received: number; issued: number; claimed: number; borrowed: number; remaining: number }
 export type ProductSummary = {
   id: string; name: string; group: string; unit: string; lowStockQty: number
-  received: number; issued: number; borrowed: number; remaining: number; level: StockStatusLevel; lots: LotSummary[]
+  received: number; issued: number; claimed: number; borrowed: number; remaining: number; level: StockStatusLevel; lots: LotSummary[]
 }
 export type GroupSummary = { group: string; received: number; issued: number; borrowed: number; remaining: number; products: ProductSummary[] }

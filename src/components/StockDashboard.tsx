@@ -223,7 +223,7 @@ function ProductRow({ p }: { p: ProductSummary }) {
         </div>
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pl-5 md:pl-0 md:contents text-[12.5px]">
           <span className="tnum text-[#3C4A5E] md:text-right md:text-[13px]"><span className="text-[#8492A6] md:hidden">รับ </span>{nf.format(p.received)}</span>
-          <span className="tnum text-[#6D28D9] md:text-right md:text-[13px]"><span className="text-[#8492A6] md:hidden">จ่าย </span>{nf.format(p.issued)}</span>
+          <span className="tnum text-[#6D28D9] md:text-right md:text-[13px]" title={p.claimed ? `รวมตัดเคลม ${nf.format(p.claimed)} ชิ้น` : undefined}><span className="text-[#8492A6] md:hidden">จ่าย </span>{nf.format(p.issued)}</span>
           <span className="tnum font-bold md:text-right md:text-[13px]" style={{ color: meta.color }}><span className="text-[#8492A6] font-normal md:hidden">เหลือ </span>{nf.format(p.remaining)}</span>
           <span className="md:text-right md:pr-1 ml-auto md:ml-0">
             <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: meta.bg, color: meta.color }}>{meta.label} ({nf.format(p.remaining)})</span>
@@ -244,7 +244,7 @@ function ProductRow({ p }: { p: ProductSummary }) {
               <div className="text-[#3C4A5E] tnum flex items-center gap-1">Lot {l.lotCode} <span className="text-[#C4BFB9]">›</span></div>
               <div className="flex items-center gap-x-3 flex-wrap md:contents">
                 <span className="tnum text-[#5A6B82] md:text-right"><span className="text-[#A8A29E] md:hidden">รับ </span>{nf.format(l.received)}</span>
-                <span className="tnum text-[#6D28D9] md:text-right"><span className="text-[#A8A29E] md:hidden">จ่าย </span>{nf.format(l.issued)}</span>
+                <span className="tnum text-[#6D28D9] md:text-right" title={l.claimed ? `รวมตัดเคลม ${nf.format(l.claimed)} ชิ้น` : undefined}><span className="text-[#A8A29E] md:hidden">จ่าย </span>{nf.format(l.issued)}{l.claimed > 0 && <span className="text-[10.5px] text-[var(--brand)] ml-1">(เคลม {nf.format(l.claimed)})</span>}</span>
                 <span className="tnum font-semibold md:text-right" style={{ color: l.remaining <= 0 ? '#C13540' : l.remaining <= p.lowStockQty ? '#B45309' : '#157F4C' }}><span className="text-[#A8A29E] font-normal md:hidden">เหลือ </span>{nf.format(l.remaining)}</span>
                 <span className="hidden md:block" />
               </div>

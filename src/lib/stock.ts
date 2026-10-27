@@ -22,13 +22,14 @@ export async function getStockSummary() {
     // Serial products count individual items; quantity-only products (spare parts) use receivedQty.
     const serialized = serializedOf.get(l.productId) ?? true
     const received = serialized ? l._count.items : l.receivedQty
-    const issued = serialized ? (issuedMap.get(l.id) ?? 0) : 0
+    // Units cut out for a claim have also left the shelf, so they count under "จ่าย"
+    // (otherwise รับ − จ่าย ≠ เหลือ); `claimed` keeps the claim share for display.
+    const claimed = serialized ? (claimedMap.get(l.id) ?? 0) : 0
+    const issued = serialized ? (issuedMap.get(l.id) ?? 0) + claimed : 0
     // Units out on loan are still owned but not available to hand out.
     const borrowed = serialized ? (borrowedMap.get(l.id) ?? 0) : 0
-    // Units cut out for a claim leave the available pool.
-    const claimed = serialized ? (claimedMap.get(l.id) ?? 0) : 0
     const arr = lotsByProduct.get(l.productId) ?? []
-    arr.push({ id: l.id, lotCode: l.lotCode, received, issued, borrowed, remaining: received - issued - borrowed - claimed })
+    arr.push({ id: l.id, lotCode: l.lotCode, received, issued, claimed, borrowed, remaining: received - issued - borrowed })
     lotsByProduct.set(l.productId, arr)
   }
 
@@ -38,13 +39,13 @@ export async function getStockSummary() {
     const plots = (lotsByProduct.get(p.id) ?? []).sort((a, b) => a.lotCode.localeCompare(b.lotCode))
     const received = plots.reduce((s, l) => s + l.received, 0)
     const issued = plots.reduce((s, l) => s + l.issued, 0)
+    const claimed = plots.reduce((s, l) => s + l.claimed, 0)
     const borrowed = plots.reduce((s, l) => s + l.borrowed, 0)
-    // Sum lot remainders so claimed units (baked into each lot's remaining) are excluded.
     const remaining = plots.reduce((s, l) => s + l.remaining, 0)
     const level = stockLevel(remaining, p.lowStockQty)
     kReceived += received; kIssued += issued; kBorrowed += borrowed; kRemaining += remaining
     if (level === 'LOW') kLow++; if (level === 'OUT') kOut++
-    const ps: ProductSummary = { id: p.id, name: p.name, group: p.group, unit: p.unit, lowStockQty: p.lowStockQty, received, issued, borrowed, remaining, level, lots: plots }
+    const ps: ProductSummary = { id: p.id, name: p.name, group: p.group, unit: p.unit, lowStockQty: p.lowStockQty, received, issued, claimed, borrowed, remaining, level, lots: plots }
     const g = groupMap.get(p.group) ?? { group: p.group, received: 0, issued: 0, borrowed: 0, remaining: 0, products: [] }
     g.received += received; g.issued += issued; g.borrowed += borrowed; g.remaining += remaining; g.products.push(ps)
     groupMap.set(p.group, g)
