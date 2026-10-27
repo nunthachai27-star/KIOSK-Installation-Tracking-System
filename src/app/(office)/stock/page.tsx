@@ -4,6 +4,7 @@ import { isSuperAdmin } from '@/lib/superAdmin'
 import { StockDashboard } from '@/components/StockDashboard'
 import { StockAnomalyButton } from '@/components/StockAnomalyButton'
 import { StockReportButton } from '@/components/StockReportButton'
+import { StockExportButton } from '@/components/StockExportButton'
 
 export default async function StockPage() {
   const [{ kpi, groups }, canImport] = await Promise.all([getStockSummary(), isSuperAdmin()])
@@ -17,8 +18,9 @@ export default async function StockPage() {
             <p className="text-[13px] text-[#8492A6] mt-0.5">สต็อกอุปกรณ์ของฝ่าย · รับเข้า / จ่ายออก / คงเหลือ แยกตามรุ่นและ Lot · แจ้งเตือนสินค้าใกล้หมด</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <StockReportButton />
+          <StockExportButton groups={groups} />
           <StockAnomalyButton />
           {canImport && (
             <Link href="/stock/import" className="ds-hover bg-white text-[#3C4A5E] text-sm font-semibold rounded-lg px-4 py-2.5 border border-[#DCE4EE] hover:border-[var(--brand)] hover:text-[var(--brand)]">
