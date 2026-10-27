@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   wb.creator = 'KIOSK Installation Tracking'
 
   // ── ชีตสรุป ──
-  const head = ['สินค้า', 'Lot', 'หน่วย', 'รับเข้า', 'จ่ายออก', 'ในนั้นตัดเคลม', 'ยืม', 'คงเหลือ', 'สถานะ']
+  const head = ['สินค้า', 'Lot', 'หน่วย', 'รับเข้า', 'จ่ายออก', 'ตัดเคลม', 'ยืม', 'คงเหลือ', 'สถานะ']
   const ws = wb.addWorksheet('สรุปคงเหลือ', { views: [{ state: 'frozen', ySplit: 4 }], pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } })
   ws.columns = [{ width: 38 }, { width: 26 }, { width: 9 }, { width: 10 }, { width: 10 }, { width: 13 }, { width: 8 }, { width: 11 }, { width: 13 }]
   sheetTitle(ws, 'สรุปคงเหลือคลังสินค้า', asOf, head.length)
