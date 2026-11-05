@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { confirmDialog, type ImpactItem } from '@/lib/dialog'
+import { confirmDialog, promptDialog, type ImpactItem } from '@/lib/dialog'
 
 type Item = { id: string; name: string; quantity: number; needsSerial: boolean }
 
@@ -34,10 +34,44 @@ export function ProductComponentManager({ productType, initial }: { productType:
     const res = await fetch(`/api/settings/components/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
-    if (!res.ok) { setErr('บันทึกไม่สำเร็จ'); return }
+    if (!res.ok) { setErr(res.status === 409 ? 'มีรายการชื่อนี้อยู่แล้ว' : 'บันทึกไม่สำเร็จ'); return }
     const u = await res.json()
     setItems((x) => x.map((it) => (it.id === id ? { ...it, name: u.name, quantity: u.quantity, needsSerial: u.needsSerial } : it)))
     router.refresh()
+    return u as Item & { movedSerials?: number }
+  }
+
+  async function rename(it: Item) {
+    const next = (await promptDialog({ title: `เปลี่ยนชื่ออุปกรณ์ “${it.name}”`, defaultValue: it.name, placeholder: 'ชื่อใหม่', confirmText: 'ถัดไป' }))?.trim()
+    if (!next || next === it.name) return
+    if (items.some((i) => i.id !== it.id && i.name === next)) { setErr('มีรายการชื่อนี้อยู่แล้ว'); return }
+
+    // งานเดิมที่ตัด/ผูกอุปกรณ์ชื่อนี้ไว้ จะถูกย้ายไปใช้ชื่อใหม่ด้วย (ไม่หลุดจากหน้างาน)
+    let impacts: ImpactItem[] = []
+    try {
+      const r = await fetch(`/api/settings/components/${it.id}`, { cache: 'no-store' })
+      if (r.ok) {
+        const d = await r.json() as { serials: number; jobs: number }
+        if (d.serials > 0) impacts = [
+          { label: 'Serial ในงานเดิมที่จะเปลี่ยนชื่อตาม', count: d.serials, tone: 'ok' },
+          { label: 'งานที่เกี่ยวข้อง', count: d.jobs, tone: 'ok' },
+        ]
+      }
+    } catch { /* เช็คไม่ได้ก็ยังถามยืนยัน */ }
+
+    const ok = await confirmDialog({
+      title: `เปลี่ยน “${it.name}” → “${next}”?`,
+      message: impacts.length
+        ? 'Serial ที่เคยตัดไว้ในงานประเภทนี้จะย้ายไปอยู่ใต้ชื่อใหม่ทั้งหมด · สต็อกไม่เปลี่ยน'
+        : 'ยังไม่มีงานใดใช้อุปกรณ์นี้',
+      confirmText: 'เปลี่ยนชื่อ',
+      cancelText: 'ยกเลิก',
+      impacts,
+      impactHeading: 'จะเปลี่ยนตามด้วย',
+    })
+    if (!ok) return
+    setErr('')
+    await patch(it.id, { name: next })
   }
 
   async function remove(it: Item) {
@@ -100,6 +134,7 @@ export function ProductComponentManager({ productType, initial }: { productType:
           >
             {it.needsSerial ? 'เก็บ Serial' : 'ไม่เก็บ Serial'}
           </button>
+          <button onClick={() => rename(it)} className="text-[13px] text-[#3C4A5E] hover:text-[var(--brand)] hover:underline">แก้ชื่อ</button>
           <button onClick={() => remove(it)} className="text-[13px] text-[#C13540] hover:underline">ลบ</button>
         </div>
       ))}
