@@ -2,7 +2,8 @@
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
 import { ScanButton } from './ScanButton'
-import { confirmDialog, alertDialog } from '@/lib/dialog'
+import { useRouter } from 'next/navigation'
+import { confirmDialog, alertDialog, promptDialog } from '@/lib/dialog'
 
 type Item = {
   id: string; lotCode: string; seq: number | null; serialBMS: string | null; serialNo: string | null
@@ -26,6 +27,7 @@ const STATUS = {
 }
 
 export function StockItemList({ items: initial, lots, initialLot, initialQ = '', isSuper = false }: { items: Item[]; lots: { id: string; lotCode: string }[]; initialLot: string; initialQ?: string; isSuper?: boolean }) {
+  const router = useRouter()
   const lotCodes = lots.map((l) => l.lotCode)
   const [items, setItems] = useState<Item[]>(initial)
   useEffect(() => { setItems(initial) }, [initial])
@@ -67,6 +69,24 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '',
     } finally { setAddBusy(false) }
   }
 
+  async function renameLot() {
+    const target = lots.find((l) => l.lotCode === lot)
+    if (!target) return
+    const next = (await promptDialog({ title: `แก้ชื่อ Lot ${target.lotCode}`, defaultValue: target.lotCode, placeholder: 'เช่น 8/68 (Mini Kiosk ปิดสิทธิ)', confirmText: 'บันทึก' }))?.trim()
+    if (!next || next === target.lotCode) return
+    const res = await fetch(`/api/stock/lots/${target.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lotCode: next }),
+    })
+    const d = await res.json().catch(() => null)
+    if (!res.ok) { await alertDialog(d?.message || 'แก้ชื่อไม่สำเร็จ'); return }
+    // อัปเดตแถวในหน้าทันที แล้วให้ server ส่งรายชื่อ Lot ใหม่มา
+    setItems((x) => x.map((it) => (it.lotCode === target.lotCode ? { ...it, lotCode: d.lotCode } : it)))
+    setLot(d.lotCode)
+    const u = new URL(window.location.href)
+    if (u.searchParams.has('lot')) { u.searchParams.set('lot', d.lotCode); window.history.replaceState(null, '', u) }
+    router.refresh()
+  }
+
   const patchField = (id: string, patch: Partial<Record<EditField, string | null>>) =>
     setItems((x) => x.map((it) => (it.id === id ? { ...it, ...patch } : it)))
   const dropItem = (id: string) => setItems((x) => x.filter((it) => it.id !== id))
@@ -104,6 +124,10 @@ export function StockItemList({ items: initial, lots, initialLot, initialQ = '',
           <option value="">ทุก Lot</option>
           {lotCodes.map((l) => <option key={l} value={l}>Lot {l}</option>)}
         </select>
+        {isSuper && lot && (
+          <button onClick={renameLot} title="เปลี่ยนชื่อ Lot นี้"
+            className="px-2.5 py-1.5 rounded-lg text-[12.5px] font-semibold border border-[#E1E8F2] text-[#5A6B82] bg-white hover:border-[var(--brand)] hover:text-[var(--brand)]">✎ แก้ชื่อ Lot</button>
+        )}
         {(['', 'IN_STOCK', 'BORROWED', 'ISSUED', 'CLAIM'] as const).map((s) => (
           <button key={s || 'all'} onClick={() => setStatus(s)}
             className={`px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border ${status === s ? 'bg-[#1C1917] text-white border-[#1C1917]' : 'bg-white text-[#5A6B82] border-[#E1E8F2] hover:bg-[#F6F9FC]'}`}>
