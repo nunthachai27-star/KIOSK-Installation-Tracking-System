@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { VIRA_PENDING_EVENT } from '@/lib/vira-shared'
 
 export const NAV_ITEMS = [
   { href: '/', label: 'งานทั้งหมด', icon: 'jobs' },
@@ -48,6 +50,13 @@ function NavIcon({ name }: { name: string }) {
 
 export function OfficeNav() {
   const path = usePathname()
+  // จำนวนเรื่องจาก Vira ที่ยังไม่มีคนรับ — ViraNotifier เป็นคน poll แล้วกระจายมาทาง window event
+  const [viraPending, setViraPending] = useState(0)
+  useEffect(() => {
+    const on = (e: Event) => setViraPending(Number((e as CustomEvent).detail) || 0)
+    window.addEventListener(VIRA_PENDING_EVENT, on)
+    return () => window.removeEventListener(VIRA_PENDING_EVENT, on)
+  }, [])
   return (
     <nav className="flex items-stretch gap-0.5">
       <style>{NAV_ANIM}</style>
@@ -62,7 +71,13 @@ export function OfficeNav() {
               active ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'text-[#6B7686] hover:bg-[#F4F7FB] hover:text-[#3C4A5E]'
             }`}
           >
-            <NavIcon name={it.icon} />
+            <span className="relative">
+              <NavIcon name={it.icon} />
+              {it.href === '/issues' && viraPending > 0 && (
+                <span title={`เรื่องจาก Vira รอรับ ${viraPending} เรื่อง`}
+                  className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full bg-[#1B5FD9] text-white text-[10px] font-bold leading-[17px] text-center animate-pulse">{viraPending}</span>
+              )}
+            </span>
             <span className="text-[10.5px] font-semibold leading-none whitespace-nowrap">{it.label}</span>
           </Link>
         )

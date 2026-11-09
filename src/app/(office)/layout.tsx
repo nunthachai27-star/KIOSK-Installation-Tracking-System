@@ -5,6 +5,7 @@ import { OfficeNav } from '@/components/OfficeNav'
 import { BrandRefresh } from '@/components/BrandRefresh'
 import { RunningCritter } from '@/components/RunningCritter'
 import { LeadNotifier } from '@/components/LeadNotifier'
+import { ViraNotifier } from '@/components/ViraNotifier'
 import { MobileMenu } from '@/components/MobileMenu'
 import { NotificationBell } from '@/components/NotificationBell'
 import { UserMenu } from '@/components/UserMenu'
@@ -67,6 +68,7 @@ export default async function OfficeLayout({ children }: { children: React.React
       <TodoDock />
       <RunningCritter />
       <LeadNotifier />
+      <ViraNotifier canAccept={session?.user?.role === 'OFFICE'} />
     </div>
   )
 }

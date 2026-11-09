@@ -6,6 +6,7 @@ import { confirmDialog, alertDialog } from '@/lib/dialog'
 import type { IssueStatus, IssueEventType, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { Combobox } from './Combobox'
 import { IssueImages } from './IssueImages'
+import { VIRA_REFRESH_EVENT } from '@/lib/vira-shared'
 import {
   ISSUE_STATUS, ISSUE_STATUS_ORDER, ISSUE_OPEN_STATUSES, ISSUE_EVENT,
   ISSUE_METHOD, ISSUE_WARRANTY, warrantyStateFrom,
@@ -74,7 +75,7 @@ function StatusCard({ active, label, n, color, onClick }: { active: boolean; lab
   )
 }
 
-export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, stockCatalog, users, stats, openId = null }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; stockCatalog: StockCatGroup[]; users: UserOpt[]; stats: ClaimStats; openId?: string | null }) {
+export function IssueManager({ serials, initial, productTypes, productTypeOptions, equipmentByProduct, stockCatalog, users, stats, openId = null, meId = null }: { serials: SerialOpt[]; initial: Item[]; productTypes: string[]; productTypeOptions: string[]; equipmentByProduct: Record<string, string[]>; stockCatalog: StockCatGroup[]; users: UserOpt[]; stats: ClaimStats; openId?: string | null; meId?: string | null }) {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>(initial)
   // Keep in sync with the server after router.refresh() so the timeline/claim data reflect updates.
@@ -166,6 +167,8 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
     if (res.ok) {
       setItems((x) => x.map((it) => (it.id === id ? { ...it, ...body } : it)))
       router.refresh()
+      // เรื่องจาก Vira ที่เพิ่งมีคนรับ → ให้ตัวแจ้งเตือนเช็คใหม่ เสียงจะหยุดทันที
+      if (body.assignedToId !== undefined || body.status) window.dispatchEvent(new Event(VIRA_REFRESH_EVENT))
     }
   }
 
@@ -471,7 +474,7 @@ export function IssueManager({ serials, initial, productTypes, productTypeOption
               <div className="font-bold text-[15px] text-[#1C1917]">รายละเอียดเคลม / แก้ไข</div>
               <button type="button" onClick={() => setDetailId(null)} className="w-8 h-8 grid place-items-center rounded-md text-[#5A6B82] hover:bg-[#F0EEEC]">✕</button>
             </div>
-            <IssueCard item={detailItem} stockCatalog={stockCatalog} users={users} repeatCount={repeatOf(detailItem)}
+            <IssueCard item={detailItem} stockCatalog={stockCatalog} users={users} meId={meId} repeatCount={repeatOf(detailItem)}
               onShowHistory={() => { setSearch(detailItem.serialNo ?? ''); setDetailId(null) }}
               onPatch={(b) => patch(detailItem.id, b)} onDelete={() => { remove(detailItem.id); setDetailId(null) }}
               onAddPart={(b) => addPart(detailItem.id, b)} onRemovePart={(pid) => removePart(detailItem.id, pid)} />
@@ -540,6 +543,9 @@ function IssueRow({ item, onOpen }: { item: Item; onOpen: () => void }) {
           <span className="text-[14px] font-bold text-[#1C1917] truncate">{item.hospital || '—'}</span>
           {item.serialNo && <span className="tnum text-[12px] text-[#5A6B82]">S/N {item.serialNo}</span>}
           <span className="text-[11.5px] text-[#A8A29E]">· {fmtDate(item.createdAt)}</span>
+          {item.vira && (item.vira.kind && !item.assignedToId && item.status === 'RECEIVED'
+            ? <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#1B5FD9] text-white animate-pulse">📞 Vira · รอรับงาน</span>
+            : <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#E4EEFF] text-[#1B5FD9]">📞 Vira</span>)}
         </div>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           <span className="text-[11px]">{item.issueType === 'CLAIM' ? '🔧' : '📝'}</span>
@@ -553,8 +559,8 @@ function IssueRow({ item, onOpen }: { item: Item; onOpen: () => void }) {
   )
 }
 
-function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPatch, onDelete, onAddPart, onRemovePart }: {
-  item: Item; stockCatalog: StockCatGroup[]; users: UserOpt[]; repeatCount: number; onShowHistory: () => void
+function IssueCard({ item, stockCatalog, users, meId, repeatCount, onShowHistory, onPatch, onDelete, onAddPart, onRemovePart }: {
+  item: Item; stockCatalog: StockCatGroup[]; users: UserOpt[]; meId: string | null; repeatCount: number; onShowHistory: () => void
   onPatch: (b: PatchBody) => void; onDelete: () => void
   onAddPart: (b: { stockItemId: string }) => void
   onRemovePart: (partId: string) => void
@@ -675,7 +681,8 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
             {item.equipment && <span className="inline-block mr-1.5 px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#EEF3FA] text-[#1B5FD9] align-middle">{item.equipment}</span>}
             {item.title}
           </div>
-          {item.vira && <ViraPanel v={item.vira} />}
+          {item.vira && <ViraPanel v={item.vira}
+            onAccept={meId && !item.assignedToId && item.status === 'RECEIVED' ? () => onPatch({ assignedToId: meId, status: 'IN_PROGRESS' }) : undefined} />}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <select value={item.status} onChange={(e) => onPatch({ status: e.target.value as IssueStatus })}
@@ -887,7 +894,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
 }
 
 // กล่องข้อมูลงานที่ Vira (Call Center) ส่งมา + สถานะการแจ้งกลับ
-function ViraPanel({ v }: { v: ViraLink }) {
+function ViraPanel({ v, onAccept }: { v: ViraLink; onAccept?: () => void }) {
   const t = (k: string) => (typeof v.info[k] === 'string' || typeof v.info[k] === 'number' ? String(v.info[k]) : '')
   const sync = v.kind === 'chat'
     ? { label: 'คืนแชทให้ Support แล้ว', color: '#5A6B82' }
@@ -904,6 +911,10 @@ function ViraPanel({ v }: { v: ViraLink }) {
         {t('severity') && <span className="text-[11px] font-bold text-[#C13540]">{t('severity')}</span>}
         <span className="ml-auto text-[11.5px] font-semibold" style={{ color: sync.color }} title={v.sync?.error ?? undefined}>{sync.label}</span>
       </div>
+      {onAccept && (
+        <button type="button" onClick={onAccept}
+          className="self-start my-1 bg-[#1B5FD9] text-white text-[13px] font-bold rounded-lg px-4 py-1.5 hover:bg-[#164FB3] animate-pulse">✋ รับงาน</button>
+      )}
       {t('ask') && <div><span className="text-[#5A6B82]">สิ่งที่ขอให้ทำ:</span> {t('ask')}</div>}
       {(t('contactName') || t('contactPhone')) && <div><span className="text-[#5A6B82]">ผู้ติดต่อ:</span> {[t('contactName'), t('contactPhone')].filter(Boolean).join(' · ')}{t('hospcode') ? ` · รหัส รพ. ${t('hospcode')}` : ''}</div>}
       {t('sentBy') && <div className="text-[#5A6B82]">ส่งโดย {t('sentBy')}{t('channel') ? ` · ช่องทาง ${t('channel')}` : ''}</div>}
