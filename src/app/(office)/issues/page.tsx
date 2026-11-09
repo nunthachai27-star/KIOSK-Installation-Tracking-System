@@ -70,6 +70,14 @@ export default async function IssuesPage({ searchParams }: { searchParams: Promi
   }
   const stockCatalog = [...catByGroup.entries()].map(([group, products]) => ({ group, products }))
 
+  // สถานะการแจ้งกลับ Vira ล่าสุดของแต่ละงาน (ส่งแล้ว / รอส่ง / ส่งไม่สำเร็จ)
+  const viraIds = issues.filter((i) => i.viraKind).map((i) => i.id)
+  const viraSync = new Map<string, { status: string; error: string | null; at: string }>()
+  if (viraIds.length) {
+    const rows = await prisma.viraOutbox.findMany({ where: { issueId: { in: viraIds } }, orderBy: { createdAt: 'desc' }, select: { issueId: true, status: true, lastError: true, createdAt: true } })
+    for (const r of rows) if (r.issueId && !viraSync.has(r.issueId)) viraSync.set(r.issueId, { status: r.status, error: r.lastError, at: r.createdAt.toISOString() })
+  }
+
   const serialOpts = serials.map((s) => ({
     id: s.id,
     serialNo: s.serialNo,
@@ -103,6 +111,7 @@ export default async function IssuesPage({ searchParams }: { searchParams: Promi
     createdAt: i.createdAt.toISOString(),
     updatedAt: i.updatedAt.toISOString(),
     eventCount: i._count.events,
+    vira: i.viraKind ? { kind: i.viraKind, info: (i.viraInfo ?? {}) as Record<string, unknown>, closed: !!i.viraClosedAt, sync: viraSync.get(i.id) ?? null } : null,
   }))
 
   return (

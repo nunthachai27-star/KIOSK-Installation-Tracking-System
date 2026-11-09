@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { logAction, logChange } from '@/lib/audit'
 import { IssueStatus, IssueMethod, IssueWarranty, IssueType } from '@prisma/client'
 import { ISSUE_WARRANTY, warrantyStateFrom } from '@/lib/issue'
+import { queueViraProgress } from '@/lib/vira'
 
 const VALID = new Set<string>(Object.values(IssueStatus))
 const METHODS = new Set<string>(Object.values(IssueMethod))
@@ -82,6 +83,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const convertNote = data.issueType && data.issueType !== existing.issueType
     ? (data.issueType === 'CLAIM' ? ' — แปลงเป็นงานเคลม' : ' — แปลงกลับเป็นแจ้งปัญหาทั่วไป') : ''
   await logChange(session.user, 'UPDATE', 'แจ้งปัญหา/เคลม', `แก้ไข "${updated.title}"${convertNote}`, { refTable: 'Issue', refId: id, before, after: updated })
+  // งานที่มาจาก Vira: เปลี่ยนสถานะแล้วแจ้งความคืบหน้ากลับ (ผ่านคิว ไม่รอผล)
+  if (updated.viraRef && data.status && data.status !== existing.status) {
+    await queueViraProgress(id).catch((e) => console.error('[vira] progress failed', e))
+  }
   return NextResponse.json(updated)
 }
 

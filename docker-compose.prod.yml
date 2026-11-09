@@ -33,6 +33,11 @@ services:
       #   LINE_CHANNEL_TOKEN=<channel access token>  ·  LINE_TO=<userId/groupId, คั่นหลายที่ด้วย ,>
       LINE_CHANNEL_TOKEN: ${LINE_CHANNEL_TOKEN:-}
       LINE_TO: ${LINE_TO:-}
+      # เชื่อม Vira (Call Center) — ดู src/lib/vira.ts (ไม่ใส่ = webhook ตอบ 401 / ไม่ส่งสถานะกลับ)
+      VIRA_INBOUND_KEY: ${VIRA_INBOUND_KEY:-}
+      VIRA_SIGNING_SECRET: ${VIRA_SIGNING_SECRET:-}
+      VIRA_API_KEY: ${VIRA_API_KEY:-}
+      VIRA_BASE_URL: ${VIRA_BASE_URL:-https://vira.bmscloud.in.th}
     depends_on:
       db:
         condition: service_healthy

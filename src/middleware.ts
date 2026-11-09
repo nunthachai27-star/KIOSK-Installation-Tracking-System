@@ -42,7 +42,9 @@ export default auth((req) => {
     '/kiosk-products', '/api/kiosk-products',
     // หน้าข้อมูล License/MAC ต่อเครื่อง (อ่านอย่างเดียว) — ส่งลิงก์ให้โรงพยาบาลดู
     // เข้าถึงด้วย jobId (cuid เดาไม่ได้) ไม่มีปุ่มแก้ไข
-    '/license']
+    '/license',
+    // webhook จาก Vira (Call Center) — ตรวจ Bearer key + ลายเซ็น HMAC ในตัว route เอง
+    '/api/vira/events']
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isPublic) return
 

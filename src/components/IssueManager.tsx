@@ -34,7 +34,9 @@ type Item = {
   rating: number | null; assignedToId: string | null; assignedToName: string | null
   parts: ClaimPartItem[]
   reporter: string | null; createdAt: string; updatedAt: string; eventCount: number
+  vira?: ViraLink | null
 }
+type ViraLink = { kind: string; info: Record<string, unknown>; closed: boolean; sync: { status: string; error: string | null; at: string } | null }
 type ClaimStats = { total: number; received: number; inProgress: number; done: number }
 type PatchBody = {
   status?: IssueStatus; solution?: string | null; warrantyState?: IssueWarranty
@@ -673,6 +675,7 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
             {item.equipment && <span className="inline-block mr-1.5 px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#EEF3FA] text-[#1B5FD9] align-middle">{item.equipment}</span>}
             {item.title}
           </div>
+          {item.vira && <ViraPanel v={item.vira} />}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <select value={item.status} onChange={(e) => onPatch({ status: e.target.value as IssueStatus })}
@@ -879,6 +882,39 @@ function IssueCard({ item, stockCatalog, users, repeatCount, onShowHistory, onPa
           })}
         </ol>
       )}
+    </div>
+  )
+}
+
+// กล่องข้อมูลงานที่ Vira (Call Center) ส่งมา + สถานะการแจ้งกลับ
+function ViraPanel({ v }: { v: ViraLink }) {
+  const t = (k: string) => (typeof v.info[k] === 'string' || typeof v.info[k] === 'number' ? String(v.info[k]) : '')
+  const sync = v.kind === 'chat'
+    ? { label: 'คืนแชทให้ Support แล้ว', color: '#5A6B82' }
+    : !v.sync ? { label: 'ยังไม่ได้แจ้งกลับ', color: '#8492A6' }
+    : v.sync.status === 'SENT' ? { label: 'แจ้งสถานะกลับ Vira แล้ว', color: '#157F4C' }
+    : v.sync.status === 'FAILED' ? { label: 'แจ้งกลับ Vira ไม่สำเร็จ', color: '#C13540' }
+    : { label: 'รอส่งสถานะกลับ Vira', color: '#B45309' }
+  const processes = Array.isArray(v.info.processes) ? (v.info.processes as { at?: string; by?: string; detail?: string }[]) : []
+  return (
+    <div className="mt-2 rounded-lg border border-[#DCE7F7] bg-[#F5F9FF] px-3 py-2 text-[12.5px] text-[#233047] flex flex-col gap-1">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#1B5FD9] text-white">📞 Vira · {t('source') || v.kind}</span>
+        {t('caseId') && <span className="text-[#5A6B82]">เลขเรื่อง {t('caseId')}</span>}
+        {t('severity') && <span className="text-[11px] font-bold text-[#C13540]">{t('severity')}</span>}
+        <span className="ml-auto text-[11.5px] font-semibold" style={{ color: sync.color }} title={v.sync?.error ?? undefined}>{sync.label}</span>
+      </div>
+      {t('ask') && <div><span className="text-[#5A6B82]">สิ่งที่ขอให้ทำ:</span> {t('ask')}</div>}
+      {(t('contactName') || t('contactPhone')) && <div><span className="text-[#5A6B82]">ผู้ติดต่อ:</span> {[t('contactName'), t('contactPhone')].filter(Boolean).join(' · ')}{t('hospcode') ? ` · รหัส รพ. ${t('hospcode')}` : ''}</div>}
+      {t('sentBy') && <div className="text-[#5A6B82]">ส่งโดย {t('sentBy')}{t('channel') ? ` · ช่องทาง ${t('channel')}` : ''}</div>}
+      {t('caseNote') && <div className="text-[#5A6B82]">หมายเหตุ: {t('caseNote')}</div>}
+      {processes.length > 0 && (
+        <details><summary className="cursor-pointer text-[#1B5FD9]">การดำเนินการของ Support ({processes.length})</summary>
+          <ul className="mt-1 pl-4 list-disc">{processes.map((p, i) => <li key={i}>{p.detail}{p.by ? ` — ${p.by}` : ''}</li>)}</ul>
+        </details>
+      )}
+      {t('chat') && <details><summary className="cursor-pointer text-[#1B5FD9]">ข้อความแชท</summary><pre className="mt-1 whitespace-pre-wrap font-[inherit]">{t('chat')}</pre></details>}
+      {!v.closed && v.kind !== 'chat' && <div className="text-[11.5px] text-[#8492A6]">เปลี่ยนสถานะแล้วระบบแจ้งกลับให้เอง · ก่อนตั้ง “เสร็จสิ้น” ให้กรอกวิธีแก้ไข (ส่งเป็นผลให้ต้นทาง)</div>}
     </div>
   )
 }

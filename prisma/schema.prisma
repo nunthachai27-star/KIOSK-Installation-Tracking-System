@@ -424,6 +424,11 @@ model Issue {
   events     IssueEvent[]
   parts      ClaimPart[]
   solutions  IssueSolution[]
+  // งานที่ Vira (Call Center) ส่งมา — ดู src/lib/vira.ts
+  viraKind     String?   // 'case' (ทะเบียนเรื่อง Support) · 'request' (ฝ่ายการตลาด/Lumi) · 'chat' (แชท — ยังไม่รองรับ คืนให้ Support)
+  viraRef      String?   @unique // handoff_id (case/chat) หรือ request_id — ใช้แจ้งความคืบหน้ากลับ
+  viraInfo     Json?     // ข้อมูลที่ Vira ส่งมา (ผู้ติดต่อ, สิ่งที่ขอให้ทำ, เลขเรื่อง) ไว้แสดงในหน้าแจ้งปัญหา
+  viraClosedAt DateTime? // แจ้ง done/cancelled แล้ว หรือ Vira ยกเลิก → หยุดส่งสถานะ
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
@@ -1119,4 +1124,32 @@ model TodoItem {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Vira webhook: เก็บทุกเหตุการณ์ที่รับมา (id = event_id) กันประมวลผลซ้ำเมื่อ Vira ส่งซ้ำ
+model ViraEvent {
+  id         String    @id
+  event      String
+  occurredAt DateTime?
+  payload    Json
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+// คิวเรียก API ของ Vira (แจ้งสถานะ/คืนแชท) — ส่งไม่ผ่านจะลองใหม่ตามรอบ ไม่ทำให้หน้าเว็บช้า
+model ViraOutbox {
+  id        String    @id @default(cuid())
+  path      String    // เช่น /api/team/cases/update
+  body      Json
+  issueId   String?
+  status    String    @default("PENDING") // PENDING · SENT · FAILED
+  attempts  Int       @default(0)
+  lastError String?
+  nextAt    DateTime  @default(now())
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([status, nextAt])
+  @@index([issueId])
 }
